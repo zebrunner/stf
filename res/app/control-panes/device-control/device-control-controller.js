@@ -9,8 +9,11 @@ module.exports = function DeviceControlCtrl($scope, DeviceService, GroupService,
 
   $scope.groupDevices = $scope.groupTracker.devices
 
-  $scope.kickDevice = function(device) {
+  $scope.goHome = function() {
+    $scope.control.home()
+  }
 
+  $scope.kickDevice = function(device) {
     if (!device || !$scope.device) {
       alert('No device found')
       return

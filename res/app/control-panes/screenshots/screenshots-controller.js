@@ -1,3 +1,7 @@
+var io = require('socket.io')
+var socket = io('localhost:7110', {
+  reconnection: false, transports: ['websocket']
+})
 module.exports = function ScreenshotsCtrl($scope) {
   $scope.screenshots = []
   $scope.screenShotSize = 400
@@ -14,7 +18,9 @@ module.exports = function ScreenshotsCtrl($scope) {
     '?crop=' + finalSize + 'x'
   }
 
-  $scope.takeScreenShot = function() {
+  $scope.takeScreenShot = function(){
+  console.log('takeScreenShot')
+    socket.emit('takeScreenShot', {data: 'takeScreenShot'})
     $scope.control.screenshot().then(function(result) {
       $scope.$apply(function() {
         $scope.screenshots.unshift(result)

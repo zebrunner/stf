@@ -102,7 +102,7 @@ module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceServi
         .then(function(device) {
           return changeListener({
             important: true
-          , data: device
+            , data: device
           })
         })
         .catch(function() {})
@@ -120,9 +120,12 @@ module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceServi
           notify(event)
         }
       }
+      console.log('addListener output devices', devices)
+      console.log('addListener output devices', device)
     }
 
     function changeListener(event) {
+      console.log(' ===== device-service ==== changeListener', event)
       var device = get(event.data)
       if (device) {
         modify(device, event.data)
@@ -148,7 +151,7 @@ module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceServi
     this.add = function(device) {
       addListener({
         important: true
-      , data: device
+        , data: device
       })
     }
 
@@ -162,7 +165,7 @@ module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceServi
       filter: function() {
         return true
       }
-    , digest: false
+      , digest: false
     })
 
     oboe('/api/v1/devices')
@@ -178,7 +181,7 @@ module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceServi
       filter: function(device) {
         return device.using
       }
-    , digest: true
+      , digest: true
     })
 
     oboe('/api/v1/user/devices')
@@ -201,7 +204,7 @@ module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceServi
       filter: function(device) {
         return device.serial === serial
       }
-    , digest: true
+      , digest: true
     })
 
     return deviceService.load(serial)

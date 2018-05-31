@@ -175,6 +175,7 @@ module.exports = function DeviceListCtrl(
   }
 
   $scope.invite = function(device) {
+    console.log('device-list-controller invoke ----> invite')
     return GroupService.invite(device).then(function() {
       $scope.$digest()
     })

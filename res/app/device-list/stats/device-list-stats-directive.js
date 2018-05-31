@@ -36,6 +36,7 @@ module.exports = function DeviceListStatsDirective(
       }
 
       function updateStats(device) {
+        console.log('device-list-details-directive update stats',device.usable)
         return (mapping[device.serial] = {
           usable: device.usable ? 1 : 0
         , busy: device.owner ? 1 : 0
@@ -45,7 +46,7 @@ module.exports = function DeviceListStatsDirective(
 
       function addListener(device) {
         var stats = updateStats(device)
-
+        console.log('device-list-stats-directive addListener',device.usable)
         scope.counter.total += 1
         scope.counter.usable += stats.usable
         scope.counter.busy += stats.busy

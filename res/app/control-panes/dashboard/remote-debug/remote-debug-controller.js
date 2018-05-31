@@ -2,6 +2,7 @@ module.exports = function RemoteDebugCtrl($scope, $timeout, gettext) {
   function startRemoteConnect() {
     if ($scope.control) {
       $scope.control.startRemoteConnect().then(function(result) {
+        console.log('startRemoteConnect with result :',result)
         var url = result.lastData
         $scope.$apply(function() {
           $scope.debugCommand = 'adb connect ' + url

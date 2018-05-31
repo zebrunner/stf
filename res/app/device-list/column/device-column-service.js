@@ -565,7 +565,7 @@ function DeviceNameCell(options) {
   , update: function(td, device) {
       var a = td.firstChild
       var t = a.firstChild
-
+      console.log('device-device-column-service  update',device.usable)
       if (device.using) {
         a.className = 'device-product-name-using'
         a.href = '#!/control/' + device.serial
@@ -621,7 +621,7 @@ function DeviceStatusCell(options) {
 
       a.className = 'btn btn-xs device-status ' +
         (stateClasses[device.state] || 'btn-default-outline')
-
+      console.log('error device-column-service ', device.usable)
       if (device.usable && !device.using) {
         a.href = '#!/control/' + device.serial
       }

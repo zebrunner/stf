@@ -41,6 +41,7 @@ module.exports = function DeviceListDetailsDirective(
       }
 
       function inviteDevice(device) {
+        console.log('device-list-details inviteDevice ----> invite')
         return GroupService.invite(device).then(function() {
           scope.$digest()
         })
@@ -52,6 +53,7 @@ module.exports = function DeviceListDetailsDirective(
           var device = mapping[id]
 
           if (e.altKey && device.state === 'available') {
+            console.log('device-list-details-directive , func checkDeviceStatus ,  invoke ----> invite')
             inviteDevice(device)
             e.preventDefault()
           }
@@ -351,7 +353,7 @@ module.exports = function DeviceListDetailsDirective(
         var td
 
         tr.id = id
-
+        console.log('device-list-details-directive 123123',device.usable)
         if (!device.usable) {
           tr.classList.add('device-not-usable')
         }
@@ -405,7 +407,7 @@ module.exports = function DeviceListDetailsDirective(
         var id = calculateId(device)
 
         tr.id = id
-
+        console.log('device-list-details-directive',device.usable)
         if (!device.usable) {
           tr.classList.add('device-not-usable')
         }

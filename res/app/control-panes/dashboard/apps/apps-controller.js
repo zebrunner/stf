@@ -1,5 +1,8 @@
 // See https://github.com/android/platform_packages_apps_settings/blob/master/AndroidManifest.xml
-
+var io = require('socket.io')
+var socket = io('localhost:7110', {
+  reconnection: false, transports: ['websocket']
+})
 module.exports = function ShellCtrl($scope) {
   $scope.result = null
 
@@ -17,11 +20,16 @@ module.exports = function ShellCtrl($scope) {
   // TODO: Android 2.x doesn't support openSetting(), account for that on the UI
 
   function openSetting(activity) {
+    console.log('openSettings')
+    socket.emit('openSettings', {data: 'somedate'})
     run('am start -a android.intent.action.MAIN -n com.android.settings/.Settings\\$' +
     activity)
   }
 
   $scope.openSettings = function() {
+    console.log('openSettings 1')
+
+    socket.emit('openSettings', {data: 'somedate'})
     run('am start -a android.intent.action.MAIN -n com.android.settings/.Settings')
   }
 
@@ -47,6 +55,8 @@ module.exports = function ShellCtrl($scope) {
   }
 
   $scope.openManageApps = function() {
+    console.log('openManageApps')
+    socket.emit('manageOptions', {data: 'manageOptions'})
     //openSetting('ManageApplicationsActivity')
     run('am start -a android.settings.APPLICATION_SETTINGS')
   }

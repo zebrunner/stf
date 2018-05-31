@@ -57,16 +57,20 @@ module.exports = function DeviceScreenDirective(
           }
           catch (err) { /* noop */ }
         }
-
-        var ws = new WebSocket(device.display.url)
+        //console.log(device.display.url,'device url -- screen-directive --')
+        var ws = new WebSocket('ws://localhost:7400/')
+        //"url":  "wss://ua.qaprosoft.com/d/192.168.88.103/RQ30062E1Z/7831/" ,
+        // "url":  "wss://localhost:7100/d/localhost/085922ed01829ce3/7401/" ,
         ws.binaryType = 'blob'
 
-        ws.onerror = function errorListener() {
+        ws.onerror = function errorListener(event) {
           // @todo Handle
+          console.log('errorListener', event)
         }
 
-        ws.onclose = function closeListener() {
+        ws.onclose = function closeListener(event) {
           // @todo Maybe handle
+          console.log('closeListener', event)
         }
 
         ws.onopen = function openListener() {
@@ -113,7 +117,6 @@ module.exports = function DeviceScreenDirective(
               sw *= f / sw
               sh *= f / sh
             }
-
             return {
               w: Math.ceil(sw)
             , h: Math.ceil(sh)
@@ -155,13 +158,13 @@ module.exports = function DeviceScreenDirective(
         function shouldUpdateScreen() {
           return (
             // NO if the user has disabled the screen.
-            scope.$parent.showScreen &&
+            // scope.$parent.showScreen &&
             // NO if we're not even using the device anymore.
-            device.using &&
+            true
             // NO if the page is not visible (e.g. background tab).
-            !PageVisibilityService.hidden &&
+            // !PageVisibilityService.hidden &&
             // NO if we don't have a connection yet.
-            ws.readyState === WebSocket.OPEN
+            //ws.readyState === WebSocket.OPEN
             // YES otherwise
           )
         }
@@ -510,6 +513,7 @@ module.exports = function DeviceScreenDirective(
        * as possible.
        */
       ;(function() {
+        var prevCoords = {}
         var slots = []
         var slotted = Object.create(null)
         var fingers = []
@@ -578,7 +582,6 @@ module.exports = function DeviceScreenDirective(
           if (e.originalEvent) {
             e = e.originalEvent
           }
-
           // Skip secondary click
           if (e.which === 3) {
             return
@@ -601,7 +604,13 @@ module.exports = function DeviceScreenDirective(
               , y
               , screen.rotation
               )
-
+          prevCoords = {
+            x: scaled.xP,
+            par: 0,
+            y: scaled.yP,
+            presure: pressure,
+            seq: nextSeq(),
+          }
           control.touchDown(nextSeq(), 0, scaled.xP, scaled.yP, pressure)
 
           if (fakePinch) {
@@ -662,6 +671,7 @@ module.exports = function DeviceScreenDirective(
               )
 
           control.touchMove(nextSeq(), 0, scaled.xP, scaled.yP, pressure)
+          //control.touchMoveIos(nextSeq(), 0, scaled.xP, scaled.yP, pressure)
 
           if (addGhostFinger) {
             control.touchDown(nextSeq(), 1, 1 - scaled.xP, 1 - scaled.yP, pressure)
@@ -671,6 +681,7 @@ module.exports = function DeviceScreenDirective(
           }
           else if (fakePinch) {
             control.touchMove(nextSeq(), 1, 1 - scaled.xP, 1 - scaled.yP, pressure)
+            //control.touchMoveIos(nextSeq(), 1, 1 - scaled.xP, 1 - scaled.yP, pressure)
           }
 
           control.touchCommit(nextSeq())
@@ -697,6 +708,19 @@ module.exports = function DeviceScreenDirective(
             return
           }
           e.preventDefault()
+          var x = e.pageX - screen.bounds.x
+          var y = e.pageY - screen.bounds.y
+          var pressure = 0.5
+          var scaled = scaler.coords(
+            screen.bounds.w
+            , screen.bounds.h
+            , x
+            , y
+            , screen.rotation
+          )
+          if (Math.abs(prevCoords.x - scaled.xP) >= 0.1 || Math.abs(prevCoords.y - scaled.yP) >= 0.1) {
+            control.touchMoveIos(scaled.xP, scaled.yP, prevCoords.x, prevCoords.y, pressure, nextSeq(), 0)
+          }
 
           control.touchUp(nextSeq(), 0)
 
@@ -876,6 +900,7 @@ module.exports = function DeviceScreenDirective(
                 )
 
             control.touchMove(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
+            //control.touchMoveIos(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
             activateFinger(slot, x, y, pressure)
           }
 

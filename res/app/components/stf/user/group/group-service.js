@@ -9,7 +9,8 @@ module.exports = function GroupServiceFactory(
   }
 
   groupService.invite = function(device) {
-    if (!device.usable) {
+    console.log('group service 2',device.usable)
+    if (!true) {
       return Promise.reject(new Error('Device is not usable'))
     }
 
@@ -24,6 +25,7 @@ module.exports = function GroupServiceFactory(
     })
     return tx.promise
       .then(function(result) {
+        console.log(' === group.invite === result',result)
         return result.device
       })
       .catch(TransactionError, function() {
@@ -32,6 +34,7 @@ module.exports = function GroupServiceFactory(
   }
 
   groupService.kick = function(device, force) {
+    console.log('group service 1',device.usable)
     if (!force && !device.usable) {
       return Promise.reject(new Error('Device is not usable'))
     }
