@@ -78,6 +78,13 @@ enum MessageType {
   FileSystemGetMessage       = 82;
   ConnectStartedMessage      = 92;
   ConnectStoppedMessage      = 93;
+  SetIosDeviceDisplay        = 94;
+  SetIosDevicePorts          = 95;
+  StartStreaming             = 96;
+  TestPush                   = 97;
+  TouchDownIosMessage        = 98;
+  TouchMoveIosMessage        = 99;
+
 }
 
 message ConnectStartedMessage {
@@ -312,6 +319,11 @@ message LeaveGroupMessage {
 message PhysicalIdentifyMessage {
 }
 
+message TouchDownIosMessage {
+ required float x = 1;
+ required float y = 2;
+}
+
 message TouchDownMessage {
   required uint32 seq = 1;
   required uint32 contact = 2;
@@ -326,6 +338,14 @@ message TouchMoveMessage {
   required float x = 3;
   required float y = 4;
   optional float pressure = 5;
+}
+
+message TouchMoveIosMessage {
+  required float toX = 1;
+  required float toY = 2;
+  required float fromX = 3;
+  required float fromY = 4;
+  optional float duration = 5;
 }
 
 message TouchUpMessage {
@@ -566,4 +586,23 @@ message PhoneStateEvent {
 message RotationEvent {
   required string serial = 1;
   required int32 rotation = 2;
+}
+
+message SetIosDeviceDisplay {
+  required string serial = 1;
+  required string channel = 2;
+  required int32 width = 3;
+  required int32 height = 4;
+}
+message SetIosDevicePorts {
+  required string serial = 1;
+  required int32 screenPort = 2;
+  required int32 connectPort = 3;
+}
+message StartStreaming {
+  required int32 port = 1;
+  required string channel = 2;
+}
+message TestPush {
+  required string action = 1;
 }

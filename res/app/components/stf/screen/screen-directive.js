@@ -58,7 +58,7 @@ module.exports = function DeviceScreenDirective(
           catch (err) { /* noop */ }
         }
         //console.log(device.display.url,'device url -- screen-directive --')
-        var ws = new WebSocket('ws://localhost:7400/')
+        var ws = new WebSocket('ws://localhost:'+device.screenPort+'/')
         //"url":  "wss://ua.qaprosoft.com/d/192.168.88.103/RQ30062E1Z/7831/" ,
         // "url":  "wss://localhost:7100/d/localhost/085922ed01829ce3/7401/" ,
         ws.binaryType = 'blob'
