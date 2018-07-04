@@ -65,6 +65,7 @@
     "minimatch": "^3.0.3",
     "minitouch-prebuilt": "^1.1.0",
     "my-local-ip": "^1.0.0",
+    "ngrok": "^3.0.1",
     "openid": "^2.0.1",
     "passport": "^0.3.2",
     "passport-oauth2": "^1.1.2",
