@@ -57,10 +57,9 @@ module.exports = function DeviceScreenDirective(
           }
           catch (err) { /* noop */ }
         }
-        //console.log(device.display.url,'device url -- screen-directive --')
-        var ws = new WebSocket('ws://localhost:'+device.screenPort+'/')
-        //"url":  "wss://ua.qaprosoft.com/d/192.168.88.103/RQ30062E1Z/7831/" ,
-        // "url":  "wss://localhost:7100/d/localhost/085922ed01829ce3/7401/" ,
+
+        var ws = new WebSocket(device.display.url)
+
         ws.binaryType = 'blob'
 
         ws.onerror = function errorListener(event) {
@@ -158,13 +157,13 @@ module.exports = function DeviceScreenDirective(
         function shouldUpdateScreen() {
           return (
             // NO if the user has disabled the screen.
-            // scope.$parent.showScreen &&
+            scope.$parent.showScreen &&
             // NO if we're not even using the device anymore.
-            true
+            device.using &&
             // NO if the page is not visible (e.g. background tab).
-            // !PageVisibilityService.hidden &&
+            !PageVisibilityService.hidden &&
             // NO if we don't have a connection yet.
-            //ws.readyState === WebSocket.OPEN
+            ws.readyState === WebSocket.OPEN
             // YES otherwise
           )
         }

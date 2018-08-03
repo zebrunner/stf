@@ -84,6 +84,8 @@ enum MessageType {
   TestPush                   = 97;
   TouchDownIosMessage        = 98;
   TouchMoveIosMessage        = 99;
+  DeviceIosIntroductionMessage = 100;
+  ProviderIosMessage            = 101;
 
 }
 
@@ -144,6 +146,15 @@ message ProviderMessage {
   required string name = 2;
 }
 
+message ProviderIosMessage {
+  required string channel = 1;
+  required string name = 2;
+  required string device = 3;
+  required string socket = 4;
+  required int32 width = 5;
+  required int32 height = 6;
+}
+
 message DeviceHeartbeatMessage {
   required string serial = 1;
 }
@@ -152,6 +163,12 @@ message DeviceIntroductionMessage {
   required string serial = 1;
   required DeviceStatus status = 2;
   required ProviderMessage provider = 3;
+}
+
+message DeviceIosIntroductionMessage {
+ required string serial = 1;
+ required DeviceStatus status = 2;
+ required ProviderIosMessage provider = 3;
 }
 
 message DeviceRegisteredMessage {
