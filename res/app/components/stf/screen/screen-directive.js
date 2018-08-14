@@ -610,12 +610,20 @@ module.exports = function DeviceScreenDirective(
             presure: pressure,
             seq: nextSeq(),
           }
-          control.touchDown(nextSeq(), 0, scaled.xP, scaled.yP, pressure)
-
-          if (fakePinch) {
-            control.touchDown(nextSeq(), 1, 1 - scaled.xP, 1 - scaled.yP,
-              pressure)
+          if( device.ios && device.ios === true ) {
+            control.touchDownIos(nextSeq(), 0, scaled.xP, scaled.yP, pressure)
+            if (fakePinch) {
+              control.touchDownIos(nextSeq(), 1, 1 - scaled.xP, 1 - scaled.yP,
+                pressure)
+            }
+          } else {
+            control.touchDown(nextSeq(), 0, scaled.xP, scaled.yP, pressure)
+            if (fakePinch) {
+              control.touchDown(nextSeq(), 1, 1 - scaled.xP, 1 - scaled.yP,
+                pressure)
+            }
           }
+
 
           control.touchCommit(nextSeq())
 
@@ -673,7 +681,12 @@ module.exports = function DeviceScreenDirective(
           //control.touchMoveIos(nextSeq(), 0, scaled.xP, scaled.yP, pressure)
 
           if (addGhostFinger) {
-            control.touchDown(nextSeq(), 1, 1 - scaled.xP, 1 - scaled.yP, pressure)
+            if ( device.ios && device.ios === true) {
+              control.touchDownIos(nextSeq(), 1, 1 - scaled.xP, 1 - scaled.yP, pressure)
+            } else {
+              control.touchDown(nextSeq(), 1, 1 - scaled.xP, 1 - scaled.yP, pressure)
+            }
+
           }
           else if (deleteGhostFinger) {
             control.touchUp(nextSeq(), 1)
@@ -865,7 +878,11 @@ module.exports = function DeviceScreenDirective(
                 )
 
             slotted[touch.identifier] = slot
-            control.touchDown(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
+            if ( device.ios && device.ios === true) {
+              control.touchDownIos(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
+            } else {
+              control.touchDown(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
+            }
             activateFinger(slot, x, y, pressure)
           }
 

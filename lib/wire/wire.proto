@@ -86,7 +86,10 @@ enum MessageType {
   TouchMoveIosMessage        = 99;
   DeviceIosIntroductionMessage = 100;
   ProviderIosMessage            = 101;
-
+  CheckIosDeviceConnected   = 102;
+  ConnectDeviceViaUSB       = 103;
+  DeleteIosDevice           = 104;
+  DeleteDisconnectedDevices = 105;
 }
 
 message ConnectStartedMessage {
@@ -622,4 +625,16 @@ message StartStreaming {
 }
 message TestPush {
   required string action = 1;
+}
+message CheckIosDeviceConnected {
+  required string id = 1;
+  required string channel = 2;
+}
+message ConnectDeviceViaUSB {
+  required string id = 1;
+}
+message DeleteIosDevice {
+  required string serial = 1;
+}
+message  DeleteDisconnectedDevices {
 }

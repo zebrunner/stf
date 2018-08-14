@@ -80,6 +80,7 @@
     "semver": "^5.0.1",
     "serve-favicon": "^2.2.0",
     "serve-static": "^1.9.2",
+    "shelljs": "^0.8.2",
     "socket.io": "^2.0.3",
     "split": "^1.0.0",
     "stf-appstore-db": "^1.0.0",

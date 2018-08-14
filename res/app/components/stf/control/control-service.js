@@ -12,10 +12,6 @@ module.exports = function ControlServiceFactory(
 
   function ControlService(target, channel) {
     function sendOneWay(action, data) {
-      console.log(action,'output action !!!!!')
-      console.log(data,'output action !!!!!')
-      console.log(target,'target control-service')
-      console.log(channel,'channel control-service')
       socket.emit(action, channel, data)
     }
 
@@ -26,16 +22,13 @@ module.exports = function ControlServiceFactory(
     }
 
     function keySender(type, fixedKey) {
-      console.log(fixedKey,'fixed key')
       return function(key) {
-        console.log('key sender')
         if (typeof key === 'string') {
           sendOneWay(type, {
             key: key
           })
         }
         else {
-          console.log('key sender')
           var mapped = fixedKey || KeycodesMapped[key]
           if (mapped) {
             sendOneWay(type, {
@@ -68,8 +61,17 @@ module.exports = function ControlServiceFactory(
       })
     }
 
+    this.touchDownIos = function(seq, contact, x, y, pressure) {
+      sendOneWay('input.touchDownIos', {
+        seq: seq
+        , contact: contact
+        , x: x
+        , y: y
+        , pressure: pressure
+      })
+    }
+
     this.touchMoveIos = function(x, y, pX, pY, pressure, contact, seq) {
-      console.log(' send sockets touch toX:',x)
       sendOneWay('input.touchMoveIos', {
         seq: seq
         , contact: contact
@@ -92,7 +94,6 @@ module.exports = function ControlServiceFactory(
     }
 
     this.touchMove = function(seq, contact, x, y, pressure) {
-      console.log(' send sockets touchMoveIos toX:',x)
       sendOneWay('input.touchMove', {
         seq: seq
       , contact: contact
@@ -131,7 +132,6 @@ module.exports = function ControlServiceFactory(
     this.appSwitch = keySender('input.keyPress', 'app_switch')
 
     this.type = function(text) {
-      console.log('output device ',text)
       return sendOneWay('input.type', {
         text: text
       })
@@ -253,7 +253,6 @@ module.exports = function ControlServiceFactory(
     }
 
     this.openStore = function() {
-      console.log('openSotr')
       return sendTwoWay('store.open')
     }
 
