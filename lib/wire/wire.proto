@@ -90,6 +90,8 @@ enum MessageType {
   ConnectDeviceViaUSB       = 103;
   DeleteIosDevice           = 104;
   DeleteDisconnectedDevices = 105;
+  UninstallIosMessage       = 106;
+  SetAppBundleId            = 107;
 }
 
 message ConnectStartedMessage {
@@ -464,6 +466,10 @@ message UninstallMessage {
   required string packageName = 1;
 }
 
+message UninstallIosMessage {
+  required string packageName = 1;
+}
+
 message LaunchActivityMessage {
   required string action = 1;
   required string component = 2;
@@ -637,4 +643,8 @@ message DeleteIosDevice {
   required string serial = 1;
 }
 message  DeleteDisconnectedDevices {
+}
+message SetAppBundleId {
+  required string serial = 1;
+  required string bundleId = 2;
 }

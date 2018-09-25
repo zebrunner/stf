@@ -8,7 +8,10 @@ module.exports = function DeviceScreenCtrl(
   $scope.ScalingService = ScalingService
 
   $scope.installFile = function($files) {
-    console.log('screen-controller, $file :',$file)
-    return InstallService.installFile($scope.control, $files)
+    if($scope.device && $scope.device.ios && $scope.device.ios === true) {
+      InstallService.installIosFile($scope.control, $files, $scope.device.serial)
+    } else {
+      return InstallService.installFile($scope.control, $files)
+    }
   }
 }

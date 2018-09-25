@@ -6,7 +6,8 @@ module.exports = function InstallService(
   $rootScope
 , $http
 , $filter
-, StorageService
+, StorageService,
+  DeviceService
 ) {
   var installService = Object.create(null)
 
@@ -47,7 +48,7 @@ module.exports = function InstallService(
   Installation.prototype.okay = function(state) {
     this.settled = true
     this.progress = 100
-    this.success = true
+    this.success = truecommand
     this.state = state
     this.emit('change')
   }
@@ -96,23 +97,32 @@ module.exports = function InstallService(
         }
       })
       .progressed(function(e) {
+        console.log('~~~~~~~~~installFile output e, progressed:', e)
         if (e.lengthComputable) {
           installation.update(e.loaded / e.total * 100 / 2, 'uploading')
         }
       })
       .then(function(res) {
+        console.log('~~~~~~~~installFile output response, then:', res)
         installation.update(100 / 2, 'processing')
         installation.href = res.data.resources.file.href
         return $http.get(installation.href + '/manifest')
           .then(function(res) {
+            console.log('$http.ger ', installation.href)
             if (res.data.success) {
               installation.manifest = res.data.manifest
+              console.log('control.install data from response :', {
+                href: installation.href
+                , manifest: installation.manifest
+                , launch: installation.launch
+              })
               return control.install({
                   href: installation.href
                 , manifest: installation.manifest
                 , launch: installation.launch
                 })
                 .progressed(function(result) {
+                  console.log('controll install progressed:', result)
                   installation.update(50 + result.progress / 2, result.lastData)
                 })
             }
@@ -120,6 +130,38 @@ module.exports = function InstallService(
               throw new Error('Unable to retrieve manifest')
             }
           })
+      })
+      .then(function() {
+        installation.okay('installed')
+      })
+      .catch(function(err) {
+        installation.fail(err.code || err.message)
+      })
+  }
+
+  installService.installIosFile = function(control, $files, deviceId, bundleId) {
+    console.log('================== invoked installIosFile ===============, files:', $files)
+    var installation = new Installation('uploading')
+    $rootScope.$broadcast('installation', installation)
+    return StorageService.storeIosFile('app', $files, deviceId, bundleId, {
+      filter: function(file) {
+        return /\.(app\.zip|app)$/i.test(file.name)
+      }
+    })
+      .progressed(function(e) {
+        console.log(' ================ installIosFile progressed :', e)
+        if (e.lengthComputable) {
+          installation.update(e.loaded / e.total * 100 / 2, 'uploading')
+        }
+      })
+      .then(function(res) {
+        console.log('============= installIosFille , res :', res)
+        installation.manifest = res.data
+        installation.update(100 / 2, 'processing')
+        control.install({
+          manifest: installation.manifest
+
+        })
       })
       .then(function() {
         installation.okay('installed')

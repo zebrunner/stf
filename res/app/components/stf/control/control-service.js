@@ -17,7 +17,13 @@ module.exports = function ControlServiceFactory(
 
     function sendTwoWay(action, data) {
       var tx = TransactionService.create(target)
-      socket.emit(action, channel, tx.channel, data)
+      if(target.ios && target.ios === true) {
+        console.log('Trying to send some ios actions two way !!!')
+        socket.emit(action + 'Ios', channel, tx.channel, data)
+      } else {
+        socket.emit(action, channel, tx.channel, data)
+      }
+
       return tx.promise
     }
 
@@ -178,6 +184,10 @@ module.exports = function ControlServiceFactory(
 
     this.install = function(options) {
       return sendTwoWay('device.install', options)
+    }
+
+    this.installIos = function(options) {
+      return sendTwoWay('deviceIos.install', options)
     }
 
     this.uninstall = function(pkg) {

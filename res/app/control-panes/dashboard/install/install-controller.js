@@ -4,7 +4,10 @@ module.exports = function InstallCtrl(
 ) {
   $scope.accordionOpen = true
   $scope.installation = null
-
+  $scope.bundleId = ''
+  $scope.onChange = function() {
+    $scope.bundleId = this.bundleId
+  }
   $scope.clear = function() {
     $scope.installation = null
     $scope.accordionOpen = false
@@ -19,9 +22,12 @@ module.exports = function InstallCtrl(
   }
 
   $scope.installFile = function($files) {
-    console.log('install-controller installFile')
-    if ($files.length) {
-      return InstallService.installFile($scope.control, $files)
+    if ($files.length && $scope.bundleId !== '') {
+      if($scope.device && $scope.device.ios && $scope.device.ios === true) {
+        return InstallService.installIosFile($scope.control, $files, $scope.device.serial, $scope.bundleId)
+      } else {
+        return InstallService.installFile($scope.control, $files)
+      }
     }
   }
 
