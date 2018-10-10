@@ -36,7 +36,6 @@ module.exports = function DeviceListStatsDirective(
       }
 
       function updateStats(device) {
-        console.log('device-list-details-directive update stats',device.usable)
         return (mapping[device.serial] = {
           usable: device.usable ? 1 : 0
         , busy: device.owner ? 1 : 0

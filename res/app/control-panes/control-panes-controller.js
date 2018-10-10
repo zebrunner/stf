@@ -59,14 +59,12 @@ module.exports =
 
     // TODO: Move this out to Ctrl.resolve
     function getDevice(serial) {
-      console.log('control-panes-controller ,getDevice func ',serial)
       DeviceService.get(serial, $scope)
         // .then(function(device) {
         //   return GroupService.invite(device)
         // })
         .then(function(device) {
           GroupService.invite(device)
-          console.log('getDevice, output device',device)
           $scope.device = device
           $scope.control = ControlService.create(device, device.channel)
 

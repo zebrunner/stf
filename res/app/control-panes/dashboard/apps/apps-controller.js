@@ -20,15 +20,12 @@ module.exports = function ShellCtrl($scope) {
   // TODO: Android 2.x doesn't support openSetting(), account for that on the UI
 
   function openSetting(activity) {
-    console.log('openSettings')
     socket.emit('openSettings', {data: 'somedate'})
     run('am start -a android.intent.action.MAIN -n com.android.settings/.Settings\\$' +
     activity)
   }
 
   $scope.openSettings = function() {
-    console.log('openSettings 1')
-
     socket.emit('openSettings', {data: 'somedate'})
     run('am start -a android.intent.action.MAIN -n com.android.settings/.Settings')
   }

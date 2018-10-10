@@ -97,18 +97,15 @@ module.exports = function InstallService(
         }
       })
       .progressed(function(e) {
-        console.log('~~~~~~~~~installFile output e, progressed:', e)
         if (e.lengthComputable) {
           installation.update(e.loaded / e.total * 100 / 2, 'uploading')
         }
       })
       .then(function(res) {
-        console.log('~~~~~~~~installFile output response, then:', res)
         installation.update(100 / 2, 'processing')
         installation.href = res.data.resources.file.href
         return $http.get(installation.href + '/manifest')
           .then(function(res) {
-            console.log('$http.ger ', installation.href)
             if (res.data.success) {
               installation.manifest = res.data.manifest
               console.log('control.install data from response :', {
@@ -122,7 +119,6 @@ module.exports = function InstallService(
                 , launch: installation.launch
                 })
                 .progressed(function(result) {
-                  console.log('controll install progressed:', result)
                   installation.update(50 + result.progress / 2, result.lastData)
                 })
             }
@@ -140,7 +136,6 @@ module.exports = function InstallService(
   }
 
   installService.installIosFile = function(control, $files, deviceId, bundleId) {
-    console.log('================== invoked installIosFile ===============, files:', $files)
     var installation = new Installation('uploading')
     $rootScope.$broadcast('installation', installation)
     return StorageService.storeIosFile('app', $files, deviceId, bundleId, {
@@ -149,13 +144,11 @@ module.exports = function InstallService(
       }
     })
       .progressed(function(e) {
-        console.log(' ================ installIosFile progressed :', e)
         if (e.lengthComputable) {
           installation.update(e.loaded / e.total * 100 / 2, 'uploading')
         }
       })
       .then(function(res) {
-        console.log('============= installIosFille , res :', res)
         installation.manifest = res.data
         installation.update(100 / 2, 'processing')
         control.install({

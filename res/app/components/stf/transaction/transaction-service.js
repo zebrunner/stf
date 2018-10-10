@@ -26,7 +26,6 @@ module.exports = function TransactionServiceFactory(socket, TransactionError) {
     }
 
     function cancelListener(someChannel, data) {
-      console.log(' ---- transaction-service ---- cancelListener',data)
       if (someChannel === channel) {
         Object.keys(pending).forEach(function(source) {
           pending[source].cancel(data)

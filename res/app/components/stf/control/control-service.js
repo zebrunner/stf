@@ -18,7 +18,6 @@ module.exports = function ControlServiceFactory(
     function sendTwoWay(action, data) {
       var tx = TransactionService.create(target)
       if(target.ios && target.ios === true) {
-        console.log('Trying to send some ios actions two way !!!')
         socket.emit(action + 'Ios', channel, tx.channel, data)
       } else {
         socket.emit(action, channel, tx.channel, data)
@@ -201,8 +200,6 @@ module.exports = function ControlServiceFactory(
     }
 
     this.rotate = function(rotation, lock) {
-      console.log(' ===== rotate func =====' ,rotation)
-      console.log(' ===== rotate func =====' ,lock)
       return sendOneWay('display.rotate', {
         rotation: rotation,
         lock: lock

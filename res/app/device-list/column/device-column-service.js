@@ -621,7 +621,6 @@ function DeviceStatusCell(options) {
 
       a.className = 'btn btn-xs device-status ' +
         (stateClasses[device.state] || 'btn-default-outline')
-      console.log('error device-column-service ', device.usable)
       if (device.usable && !device.using) {
         a.href = '#!/control/' + device.serial
       }

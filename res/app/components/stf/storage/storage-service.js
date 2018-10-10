@@ -17,8 +17,6 @@ module.exports = function StorageServiceFactory($http, $upload) {
 
     var resolver = Promise.defer()
     var input = options.filter ? files.filter(options.filter) : files
-    console.log('StoreFile, Input:', input)
-    console.log('StoreFile, options:', files)
     if (input.length) {
       $upload.upload({
           url: '/s/upload/' + type

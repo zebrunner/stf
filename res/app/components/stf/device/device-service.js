@@ -120,12 +120,9 @@ module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceServi
           notify(event)
         }
       }
-      console.log('addListener output devices', devices)
-      console.log('addListener output devices', device)
     }
 
     function changeListener(event) {
-      console.log(' ===== device-service ==== changeListener', event)
       var device = get(event.data)
       if (device) {
         modify(device, event.data)

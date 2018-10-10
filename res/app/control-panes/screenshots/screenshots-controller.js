@@ -18,8 +18,7 @@ module.exports = function ScreenshotsCtrl($scope) {
     '?crop=' + finalSize + 'x'
   }
 
-  $scope.takeScreenShot = function(){
-    // socket.emit('takeScreenShot', {data: 'takeScreenShot'})
+  $scope.takeScreenShot = function() {
     $scope.control.screenshot().then(function(result) {
       $scope.$apply(function() {
         $scope.screenshots.unshift(result)

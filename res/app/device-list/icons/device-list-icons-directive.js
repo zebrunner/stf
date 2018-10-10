@@ -82,7 +82,6 @@ module.exports = function DeviceListIconsDirective(
         } else {
           name.classList.remove('state-available')
         }
-        console.log('device list icons directive',device.usable)
         if (device.usable) {
           a.href = '#!/control/' + device.serial
           li.classList.remove('device-is-busy')
@@ -150,7 +149,6 @@ module.exports = function DeviceListIconsDirective(
           var device = mapping[id]
 
           if (e.altKey && device.state === 'available') {
-            console.log('device-list-icons-directive.js , InviteDevice',device)
             inviteDevice(device)
             e.preventDefault()
           }

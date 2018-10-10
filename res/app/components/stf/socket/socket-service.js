@@ -15,7 +15,6 @@ module.exports = function SocketFactory(
     var listeners = []
 
     $scope.$on('$destroy', function() {
-      console.log('-- socket-service -- $destroy event')
       listeners.forEach(function(listener) {
         socket.removeListener(listener.event, listener.handler)
       })
@@ -33,13 +32,10 @@ module.exports = function SocketFactory(
   }
 
   socket.on('outdated', function() {
-    console.log('-- socket-service -- outdated event')
     VersionUpdateService.open()
   })
 
   socket.on('socket.ip', function(ip) {
-    console.log('-- socket-service -- socket.ip event',ip)
-
     $rootScope.$apply(function() {
       socket.ip = ip
     })

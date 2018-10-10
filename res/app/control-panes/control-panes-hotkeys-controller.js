@@ -63,7 +63,6 @@ module.exports =
         $scope.control.menu()
       },
       pressHome: function() {
-        console.log('keyPress home')
         $scope.control.home()
       },
       pressBack: function() {
