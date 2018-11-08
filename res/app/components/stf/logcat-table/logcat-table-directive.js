@@ -63,7 +63,7 @@ module.exports =
 
         function addRow(rowParent, data, batchRequest) {
           var newRow = rowParent.insertRow(-1)
-
+          console.log('logcat-table-directive.addRow data:', data)
           newRow.classList.add('log-' + data.priorityLabel)
 
           //newRow.insertCell(-1)

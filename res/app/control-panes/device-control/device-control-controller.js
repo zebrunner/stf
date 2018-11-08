@@ -78,6 +78,7 @@ module.exports = function DeviceControlCtrl($scope, DeviceService, GroupService,
       $scope.control.rotate(0)
       $timeout(function() {
         if (isLandscape()) {
+          console.log('tryToRotate is Landscape')
           $scope.currentRotation = 'landscape'
         }
       }, 400)
@@ -85,6 +86,7 @@ module.exports = function DeviceControlCtrl($scope, DeviceService, GroupService,
       $scope.control.rotate(90)
       $timeout(function() {
         if (isPortrait()) {
+          console.log('tryToRotate but it still porttrait')
           $scope.currentRotation = 'portrait'
         }
       }, 400)

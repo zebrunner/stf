@@ -266,7 +266,6 @@ module.exports = function DeviceScreenDirective(
             cachedScreen.rotation = screen.rotation
 
             canvasAspect = canvas.width / canvas.height
-
             if (isRotated() && !alwaysUpright) {
               canvasAspect = img.height / img.width
               element[0].classList.add('rotated')
@@ -282,7 +281,8 @@ module.exports = function DeviceScreenDirective(
               // the rotation by using another rotation.
               positioner.style[cssTransform] = 'rotate(' + -cssRotation + 'deg)'
             }
-
+            console.log('Rotation event positioner :', positioner)
+            console.log('Rotation event cachedScreen :', cachedScreen)
             maybeFlipLetterbox()
           }
 
@@ -369,6 +369,7 @@ module.exports = function DeviceScreenDirective(
         })
 
         scope.$on('guest-landscape', function() {
+          console.log('rotate gues-landscape : 90')
           control.rotate(90)
         })
 

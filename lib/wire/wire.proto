@@ -91,7 +91,10 @@ enum MessageType {
   DeleteIosDevice           = 104;
   DeleteDisconnectedDevices = 105;
   UninstallIosMessage       = 106;
-  SetAppBundleId            = 107;
+  SetDeviceApp              = 107;
+  RotationIosEvent          = 108;
+  GetIosDeviceApps          = 109;
+  TransationGetMessage      = 110;
 }
 
 message ConnectStartedMessage {
@@ -614,6 +617,13 @@ message RotationEvent {
   required int32 rotation = 2;
 }
 
+message RotationIosEvent {
+  required string serial = 1;
+  required int32 rotation = 2;
+  required int32 width = 3;
+  required int32 height = 4;
+}
+
 message SetIosDeviceDisplay {
   required string serial = 1;
   required string channel = 2;
@@ -644,7 +654,20 @@ message DeleteIosDevice {
 }
 message  DeleteDisconnectedDevices {
 }
-message SetAppBundleId {
+message SetDeviceApp {
   required string serial = 1;
   required string bundleId = 2;
+  required string bundleName =3;
+  required string pathToApp = 4;
 }
+message GetIosDeviceApps {
+  required string serial = 1;
+  required string bundleId = 2;
+  required string bundleName =3;
+  required string pathToApp = 4;
+}
+message TransationGetMessage {
+  required string source = 1;
+  required string data = 2;
+}
+

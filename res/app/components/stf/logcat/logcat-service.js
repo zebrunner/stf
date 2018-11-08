@@ -94,11 +94,11 @@ module.exports = function LogcatServiceFactory(socket, FilterStringService) {
     service.numberOfEntries++
     service.entries.push(enhanceEntry(rawData))
 
-    if (typeof (service.addEntryListener) === 'function') {
-      if (filterLine(rawData)) {
+    // if (typeof (service.addEntryListener) === 'function') {
+    //   if (filterLine(rawData)) {
         service.addEntryListener(rawData)
-      }
-    }
+      // }
+    //}
   })
 
   service.clear = function() {

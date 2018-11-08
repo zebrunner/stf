@@ -85,6 +85,7 @@ module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceServi
         }
       })
       sync(data)
+      console.log('change data:', data)
       this.emit('change', data)
     }.bind(this)
 
