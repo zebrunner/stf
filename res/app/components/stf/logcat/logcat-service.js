@@ -62,7 +62,7 @@ module.exports = function LogcatServiceFactory(socket, FilterStringService) {
     'FATAL',
     'SILENT'
   ]
-
+  console.log(services)
   var logLevelsLowerCase = _.map(service.logLevels, function(level) {
     return level.toLowerCase()
   })
