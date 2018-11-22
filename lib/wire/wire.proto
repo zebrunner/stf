@@ -78,6 +78,7 @@ enum MessageType {
   FileSystemGetMessage       = 82;
   InstalledApplications      = 83;
   GetInstalledApplications   = 84;
+  Applications               = 85;
   ConnectStartedMessage      = 92;
   ConnectStoppedMessage      = 93;
   SetIosDeviceDisplay        = 94;
@@ -191,6 +192,7 @@ message DevicePresentMessage {
 
 message DeviceAbsentMessage {
   required string serial = 1;
+  // optional string applications = 2;
 }
 
 message DeviceReadyMessage {
@@ -656,9 +658,14 @@ message DeleteIosDevice {
 }
 message  DeleteDisconnectedDevices {
 }
+message Applications {
+  required string bundleId = 1;
+  required string bundleName= 2;
+  required string pathToApp = 3;
+}
 message InstalledApplications {
   required string serial = 1;
-  optional string applications = 2;
+  repeated Applications applications = 2;
 }
 message TransportInstalledApps  {
   required string serial = 1;
@@ -681,5 +688,5 @@ message TransationGetMessage {
 }
 message GetInstalledApplications {
   required string serial = 1;
-  optional string channel = 2;
+  // optional string channel = 2;
 }
