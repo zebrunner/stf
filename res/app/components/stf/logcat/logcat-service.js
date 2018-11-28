@@ -1,7 +1,7 @@
 var _ = require('lodash')
 var _s = require('underscore.string')
 
-module.exports = function LogcatServiceFactory(socket, FilterStringService) {
+module.exports = function LogcatServiceFactory($rootScope, socket, FilterStringService, DeviceService, $routeParams) {
   var service = {}
   service.started = false
   service.numberOfEntries = 0
@@ -21,6 +21,14 @@ module.exports = function LogcatServiceFactory(socket, FilterStringService) {
   }
 
   var _filters = {}
+  var installedApps = []
+
+
+  service.getFilterLevels = function() {
+    return DeviceService.load($routeParams.serial)
+  }
+
+
 
   function defineFilterProperties(properties) {
     _.forEach(properties, function(prop) {
@@ -62,7 +70,6 @@ module.exports = function LogcatServiceFactory(socket, FilterStringService) {
     'FATAL',
     'SILENT'
   ]
-  console.log(services)
   var logLevelsLowerCase = _.map(service.logLevels, function(level) {
     return level.toLowerCase()
   })

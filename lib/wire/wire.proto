@@ -98,6 +98,7 @@ enum MessageType {
   RotationIosEvent          = 108;
   GetIosDeviceApps          = 109;
   TransationGetMessage      = 110;
+  DeviceOnInstallApplication = 111;
 }
 
 message ConnectStartedMessage {
@@ -665,7 +666,7 @@ message Applications {
 }
 message InstalledApplications {
   required string serial = 1;
-  repeated Applications applications = 2;
+  // repeated Applications applications = 2;
 }
 message TransportInstalledApps  {
   required string serial = 1;
@@ -689,4 +690,7 @@ message TransationGetMessage {
 message GetInstalledApplications {
   required string serial = 1;
   // optional string channel = 2;
+}
+message DeviceOnInstallApplication {
+  required string serial = 1;
 }

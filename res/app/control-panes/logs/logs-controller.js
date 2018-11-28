@@ -4,7 +4,17 @@ module.exports = function LogsCtrl($scope, LogcatService) {
 
   $scope.filters = {}
 
-  $scope.filters.levelNumbers = LogcatService.filters.levelNumbers
+  var curentFilterValue = ''
+
+  LogcatService.getFilterLevels()
+    .then(response => {
+      $scope.filters.levelNumbers = response.installedApps.map((item, index) => {
+        return {name: item.bundleName, number: index}
+      })
+    })
+    .catch(err => {
+      $scope.filters.levelNumbers = LogcatService.filters.levelNumbers
+    })
 
   LogcatService.filters.filterLines()
 
@@ -12,14 +22,13 @@ module.exports = function LogsCtrl($scope, LogcatService) {
     if (newValue !== oldValue) {
       LogcatService.started = newValue
       if (newValue) {
-        $scope.control.startLogcat([]).then(function() {
+        $scope.control.startLogcat([curentFilterValue]).then(function() {
         })
       } else {
         $scope.control.stopLogcat()
       }
     }
   })
-
   window.onbeforeunload = function() {
     if ($scope.control) {
       $scope.control.stopLogcat()
@@ -34,6 +43,7 @@ module.exports = function LogsCtrl($scope, LogcatService) {
     angular.forEach(props, function(prop) {
       $scope.$watch('filters.' + prop, function(newValue, oldValue) {
         if (!angular.equals(newValue, oldValue)) {
+          curentFilterValue = newValue.name
           LogcatService.filters[prop] = newValue
         }
       })
