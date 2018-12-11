@@ -8,9 +8,15 @@ module.exports = function LogsCtrl($scope, LogcatService) {
 
   LogcatService.getFilterLevels()
     .then(response => {
-      $scope.filters.levelNumbers = response.installedApps.map((item, index) => {
-        return {name: item.bundleName, number: index}
-      })
+      // @TODO remove this peace of code
+      try {
+        $scope.filters.levelNumbers = response.installedApps.map((item, index) => {
+          return {name: item.bundleName, number: index}
+        })
+      } catch(e) {
+        console.log(e)
+      }
+
     })
     .catch(err => {
       $scope.filters.levelNumbers = LogcatService.filters.levelNumbers

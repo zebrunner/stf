@@ -58,7 +58,7 @@ module.exports = function DeviceScreenDirective(
           catch (err) { /* noop */ }
         }
 
-        var ws = new WebSocket(device.display.url)
+        var ws = new WebSocket('ws://localhost:7171/')
 
         ws.binaryType = 'blob'
 
