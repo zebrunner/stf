@@ -612,7 +612,7 @@ module.exports = function DeviceScreenDirective(
             seq: nextSeq(),
           }
           if( device.ios && device.ios === true ) {
-            control.touchDownIos(nextSeq(), 0, scaled.xP, scaled.yP, pressure)
+             control.touchDownIos(nextSeq(), 0, scaled.xP, scaled.yP, pressure)
             if (fakePinch) {
               control.touchDownIos(nextSeq(), 1, 1 - scaled.xP, 1 - scaled.yP,
                 pressure)
@@ -731,7 +731,8 @@ module.exports = function DeviceScreenDirective(
             , y
             , screen.rotation
           )
-          if (Math.abs(prevCoords.x - scaled.xP) >= 0.1 || Math.abs(prevCoords.y - scaled.yP) >= 0.1) {
+
+          if (Math.abs(prevCoords.x - scaled.xP) >= 0.1 || Math.abs(prevCoords.y - scaled.yP) >= 0.1 && device.ios && device.ios === true) {
             control.touchMoveIos(scaled.xP, scaled.yP, prevCoords.x, prevCoords.y, pressure, nextSeq(), 0)
           }
 
