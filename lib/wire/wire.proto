@@ -3,7 +3,8 @@
 enum MessageType {
   CopyMessage                = 33;
   DeviceIntroductionMessage  = 74;
-  DeviceAbsentMessage        = 1;
+  DeviceOnInstAppMessage     = 1;
+  DeviceAbsentMessage        = 111;
   DeviceIdentityMessage      = 2;
   DeviceLogcatEntryMessage   = 3;
   DeviceLogMessage           = 4;
@@ -98,7 +99,6 @@ enum MessageType {
   RotationIosEvent          = 108;
   GetIosDeviceApps          = 109;
   TransationGetMessage      = 110;
-  DeviceOnInstallApplication = 111;
 }
 
 message ConnectStartedMessage {
@@ -691,6 +691,6 @@ message GetInstalledApplications {
   required string serial = 1;
   // optional string channel = 2;
 }
-message DeviceOnInstallApplication {
+message DeviceOnInstAppMessage {
   required string serial = 1;
 }
