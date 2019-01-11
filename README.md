@@ -18,9 +18,9 @@ Please visit [our  BountySource](https://salt.bountysource.com/teams/openstf) if
 
 ### Gold Sponsor
 
-[<img src="doc/sponsors/headspin-wordmark-orange.png?raw=true" alt="HeadSpin" width="400">](https://performance.headspin.io/)
+[<img src="doc/sponsors/headspin-wordmark-orange.png?raw=true" alt="HeadSpin" width="400">](https://headspin.io/)
 
-> [HeadSpin](https://performance.headspin.io/) enables developers launch high quality and high performing apps Worldwide. Using HeadSpin’s global distributed device cloud infrastructure, developers can test and monitor their apps instantly on 1,500 global cell networks and local devices. HeadSpin seamlessly plugs into your development workflow with no code changes to your apps.
+> [HeadSpin](https://headspin.io/) enables developers launch high quality and high performing apps Worldwide. Using HeadSpin’s global distributed device cloud infrastructure, developers can test and monitor their apps instantly on 1,500 global cell networks and local devices. HeadSpin seamlessly plugs into your development workflow with no code changes to your apps.
 
 HeadSpin offers a generous monthly contribution towards STF development.
 
@@ -32,7 +32,7 @@ Please [contact us][contact-link] for sponsor arrangements. Both recurring and o
 
 * OS support
   - Android
-    * Supports versions 2.3.3 (SDK level 10) to 8.1 (SDK level 27)
+    * Supports versions 2.3.3 (SDK level 10) to 9.0 (SDK level 28)
     * Supports Wear 5.1 (but not 5.0 due to missing permissions)
     * Supports Fire OS, CyanogenMod, and other heavily Android based distributions
     * `root` is **not** required for any current functionality
