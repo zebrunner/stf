@@ -93,7 +93,7 @@ enum MessageType {
   CheckIosDeviceConnected   = 102;
   ConnectDeviceViaUSB       = 103;
   DeleteIosDevice           = 104;
-  DeleteDisconnectedDevices = 105;
+  SetAbsentDisconnectedDevices = 105;
   UninstallIosMessage       = 106;
   SetDeviceApp              = 107;
   RotationIosEvent          = 108;
@@ -657,7 +657,7 @@ message ConnectDeviceViaUSB {
 message DeleteIosDevice {
   required string serial = 1;
 }
-message  DeleteDisconnectedDevices {
+message  SetAbsentDisconnectedDevices {
 }
 message Applications {
   required string bundleId = 1;
