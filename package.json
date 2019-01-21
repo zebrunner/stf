@@ -87,6 +87,7 @@
     "request-promise": "^4.2.2",
     "requestretry": "^3.1.0",
     "rethinkdb": "^2.0.2",
+    "rimraf": "^2.6.3",
     "semver": "^5.0.1",
     "serve-favicon": "^2.2.0",
     "serve-static": "^1.9.2",
