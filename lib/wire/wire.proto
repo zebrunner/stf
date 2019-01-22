@@ -99,6 +99,8 @@ enum MessageType {
   RotationIosEvent          = 108;
   GetIosDeviceApps          = 109;
   TransationGetMessage      = 110;
+  InformationIosDevice      = 111;
+  UpdateIosDevice           = 112;
 }
 
 message ConnectStartedMessage {
@@ -693,4 +695,14 @@ message GetInstalledApplications {
 }
 message DeviceOnInstAppMessage {
   required string serial = 1;
+}
+message InformationIosDevice{
+  
+}
+message UpdateIosDevice{
+  required string id = 1;
+  required string name = 2;
+  required string version = 3;
+  required string architect = 4;
+
 }
