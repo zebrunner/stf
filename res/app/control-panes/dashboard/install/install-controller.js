@@ -22,17 +22,20 @@ module.exports = function InstallCtrl(
   }
 
   $scope.installFile = function($files) {
-    if ($files.length && $scope.bundleId !== '') {
+
       if($scope.device && $scope.device.ios && $scope.device.ios === true) {
-        return InstallService.installIosFile(
-          $scope.control,
-          $files,
-          $scope.device.serial,
-          $scope.bundleId)
+        if ($files.length && $scope.bundleId !== '') {
+          return InstallService.installIosFile(
+            $scope.control,
+            $files,
+            $scope.device.serial,
+            $scope.bundleId)
+        } else {
+          InstallService.validationError('Bundle name is required !')
+        }
       } else {
         return InstallService.installFile($scope.control, $files)
       }
-    }
   }
 
   $scope.uninstall = function(packageName) {
