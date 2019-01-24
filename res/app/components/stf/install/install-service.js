@@ -48,7 +48,7 @@ module.exports = function InstallService(
   Installation.prototype.okay = function(state) {
     this.settled = true
     this.progress = 100
-    this.success = truecommand
+    this.success = true
     this.state = state
     this.emit('change')
   }
@@ -59,6 +59,12 @@ module.exports = function InstallService(
     this.success = false
     this.error = err
     this.emit('change')
+  }
+
+  installService.validationError = function(err) {
+    var installation = new Installation('downloading')
+    $rootScope.$broadcast('installation', installation)
+    installation.fail(err)
   }
 
   installService.installUrl = function(control, url) {
