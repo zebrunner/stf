@@ -99,7 +99,7 @@ enum MessageType {
   RotationIosEvent          = 108;
   GetIosDeviceApps          = 109;
   TransationGetMessage      = 110;
-  UpdateIosDevice           = 111;
+  UpdateIosDevice           = 112;
 }
 
 message ConnectStartedMessage {
