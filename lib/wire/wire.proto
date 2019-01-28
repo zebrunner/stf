@@ -100,6 +100,9 @@ enum MessageType {
   GetIosDeviceApps          = 109;
   TransationGetMessage      = 110;
   UpdateIosDevice           = 112;
+  BatteryIosEvent           = 113;
+  SdkIosVersion             = 114;
+  SizeIsoDevice             = 115;
 }
 
 message ConnectStartedMessage {
@@ -700,4 +703,19 @@ message UpdateIosDevice{
   required string name = 2;
   required string platform = 3;
   required string architect = 4;
+}
+message BatteryIosEvent{
+  required string id = 1;
+  required int32 state = 2;
+  required int32 level = 3;
+}
+message SdkIosVersion{
+  required string id = 1;
+  required string device = 2;
+  required string sdkVersion = 3;
+}
+message SizeIsoDevice{
+  required string id = 1;
+  required double height = 2;
+  required double width = 3;
 }
