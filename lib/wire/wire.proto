@@ -103,6 +103,7 @@ enum MessageType {
   BatteryIosEvent           = 113;
   SdkIosVersion             = 114;
   SizeIsoDevice             = 115;
+  DashboardOpenMessage      = 116;
 }
 
 message ConnectStartedMessage {
@@ -718,4 +719,7 @@ message SizeIsoDevice{
   required string id = 1;
   required double height = 2;
   required double width = 3;
+}
+message DashboardOpenMessage {
+
 }

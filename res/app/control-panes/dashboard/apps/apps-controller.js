@@ -28,6 +28,7 @@ module.exports = function ShellCtrl($scope) {
   $scope.openSettings = function() {
     socket.emit('openSettings', {data: 'somedate'})
     run('am start -a android.intent.action.MAIN -n com.android.settings/.Settings')
+    $scope.control.openSettings()
   }
 
   $scope.openWiFiSettings = function() {
