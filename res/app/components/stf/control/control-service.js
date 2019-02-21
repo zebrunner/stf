@@ -263,6 +263,10 @@ module.exports = function ControlServiceFactory(
       return sendTwoWay('store.open')
     }
 
+    this.openSettings = function(){
+      return sendOneWay('settings.open')
+    }
+    
     this.screenshot = function() {
       return sendTwoWay('screen.capture')
     }
