@@ -189,8 +189,8 @@ module.exports = function ControlServiceFactory(
       return sendTwoWay('deviceIos.install', options)
     }
 
-    this.getIosTreeElements = function() {
-      return sendTwoWay('getTreeElementsIos')
+    this.getTreeElements = function() {
+      return sendTwoWay('getTreeElements')
     }
 
     this.uninstall = function(pkg) {
