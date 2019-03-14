@@ -189,6 +189,10 @@ module.exports = function ControlServiceFactory(
       return sendTwoWay('deviceIos.install', options)
     }
 
+    this.getTreeElements = function() {
+      return sendTwoWay('getTreeElements')
+    }
+
     this.uninstall = function(pkg) {
       return sendTwoWay('device.uninstall', {
         packageName: pkg
@@ -266,7 +270,7 @@ module.exports = function ControlServiceFactory(
     this.openSettings = function(){
       return sendOneWay('settings.open')
     }
-    
+
     this.screenshot = function() {
       return sendTwoWay('screen.capture')
     }

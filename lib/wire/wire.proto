@@ -104,6 +104,8 @@ enum MessageType {
   SdkIosVersion             = 114;
   SizeIsoDevice             = 115;
   DashboardOpenMessage      = 116;
+  GetIosTreeElements        = 117;
+  TransactionTreeMessage    = 118;
 }
 
 message ConnectStartedMessage {
@@ -143,6 +145,15 @@ message TransactionDoneMessage {
   optional string data = 4;
   optional string body = 5;
 }
+
+message TransactionTreeMessage {
+  required string source = 1;
+  required uint32 seq = 2;
+  required bool success = 3;
+  optional string data = 4;
+  optional string body = 5;
+}
+
 
 // Logging
 
@@ -666,12 +677,11 @@ message  SetAbsentDisconnectedDevices {
 }
 message Applications {
   required string bundleId = 1;
-  required string bundleName= 2;
-  required string pathToApp = 3;
+  required string bundleName = 2;
 }
 message InstalledApplications {
   required string serial = 1;
-  // repeated Applications applications = 2;
+  repeated Applications applications = 2;
 }
 message TransportInstalledApps  {
   required string serial = 1;
@@ -721,5 +731,6 @@ message SizeIsoDevice{
   required double width = 3;
 }
 message DashboardOpenMessage {
-
+}
+message GetIosTreeElements {
 }

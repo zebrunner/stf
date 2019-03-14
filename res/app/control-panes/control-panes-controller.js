@@ -33,6 +33,12 @@ module.exports =
         icon: 'fa-info color-orange',
         templateUrl: 'control-panes/info/info.pug',
         filters: ['native', 'web']
+      },
+      {
+        title: gettext('Tree'),
+        icon: 'fa-sitemap color-green',
+        templateUrl: 'control-panes/tree-elements/tree.pug',
+        filters: ['native', 'web']
       }
     ]
 
