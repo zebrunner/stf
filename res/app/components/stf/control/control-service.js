@@ -66,6 +66,12 @@ module.exports = function ControlServiceFactory(
       })
     }
 
+    this.tapDeviceTreeElement = function(label) {
+      sendOneWay('tapDeviceTreeElement', {
+        label: label
+      })
+    }
+
     this.touchDownIos = function(seq, contact, x, y, pressure) {
       sendOneWay('input.touchDownIos', {
         seq: seq

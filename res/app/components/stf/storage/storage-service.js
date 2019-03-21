@@ -25,7 +25,6 @@ module.exports = function StorageServiceFactory($http, $upload) {
         })
         .then(
           function(value) {
-            console.log('storeFile resolve value', value)
             resolver.resolve(value)
           }
         , function(err) {

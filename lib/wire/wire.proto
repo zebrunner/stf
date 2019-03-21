@@ -106,6 +106,7 @@ enum MessageType {
   DashboardOpenMessage      = 116;
   GetIosTreeElements        = 117;
   TransactionTreeMessage    = 118;
+  TapDeviceTreeElement      = 119;
 }
 
 message ConnectStartedMessage {
@@ -733,4 +734,7 @@ message SizeIsoDevice{
 message DashboardOpenMessage {
 }
 message GetIosTreeElements {
+}
+message TapDeviceTreeElement {
+  required string label = 1;
 }

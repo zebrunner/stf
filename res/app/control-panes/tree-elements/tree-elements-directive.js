@@ -1,7 +1,12 @@
 module.exports = function TreeElementsDirective() {
   return {
     restrict: 'A',
-    link: function(scope, elemen, attrs) {
+    controller: 'TreeElementsCntrl',
+    template: require('./tree.pug'),
+    link: function(scope, element, attrs) {
+      function renderTree() {
+
+      }
 
     }
   }
