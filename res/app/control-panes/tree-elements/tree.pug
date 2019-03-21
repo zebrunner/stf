@@ -1,2 +1,28 @@
-div(ng-controller='TreeElementsCntrl')
-  p=123
+.div(ng-controller='TreeElementsCntrl')
+  .row(ng-if="device.tree")
+    .col-md-8
+      div#tree
+        div(ng-if="device.tree")
+          h4 Tree of Elements
+          .btn-group
+            .btn.fa.fa-refresh(ng-click="refresh()")
+            .btn.fa.fa-folder-open-o(ng-click="expandAll()")
+            .btn.fa.fa-times(ng-click="closeAll()")
+          ul(ng-if="device.tree.children && device.tree.children.length >  0")
+            li(ng-repeat="child in device.tree.children"
+            ng-controller="NodeCntrl"
+            ng-click="selectNode($event)"
+            ng-init="node = child")
+              span {{child.name}}
+              span {{child.type}}
+              span(ng-if="device.tree.children && device.tree.children.length >  0" ng-click="toggle()")
+                i.btn-dropdown(ng-class="caret")
+              div(
+              ng-class="display"
+              ng-if="child.children && child.children.length > 0"
+              ng-include='"control-panes/tree-elements/node/node.pug"'
+              )
+    .col-md-4.node-info-container(ng-include='"control-panes/tree-elements/node-control/node-control.pug"')
+  .row(ng-if="!device.tree")
+    tree-preloader
+

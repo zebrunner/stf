@@ -1,0 +1,10 @@
+div.node-info(ng-controller="NodeControlCntrl")
+  h4 Node Control Item
+  div(ng-if="node")
+    p {{node.frame | json}}
+    p {{node.rect| json}}
+    p is visible {{ node.isVisible }}
+    p is enable {{ node.isEnabled }}
+    p type : {{ node.type }}
+    p value : {{ node.value }}
+    button.btn.tap-btn.btn-sm(ng-click="tapElement()") Tap element
