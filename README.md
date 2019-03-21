@@ -168,10 +168,29 @@ _Note: if it takes a long time for RethinkDB to start up, you may be running int
 
 You should now have RethinkDB running locally. Running the command again in the same folder will reuse the data from the previous session.
 
+Then you should add your devices to the project. Open folder stf and select file iosdevice.json or create your json file where is convenient for you. 
+
+The json file should look like this:
+
+```bash
+{
+  "udid device" : {
+    "ip adress device" : "0.0.0.0",
+    "name device" : "come up with a name"
+  }
+}
+```
+
 You're now ready to start up STF itself:
 
 ```bash
 stf local
+```
+
+If you want to use the file created by you. Command to start up STF:
+
+```bash
+stf local --udid-storage "path to your json file"
 ```
 
 After the [webpack](http://webpack.github.io/) build process has finished (which can take a small while) you should have your private STF running on [http://localhost:7100](http://localhost:7100). If you had devices connected before running the command, those devices should now be available for use. If not, you should see what went wrong from your console. Feel free to plug in or unplug any devices at any time.
