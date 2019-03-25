@@ -114,11 +114,6 @@ module.exports = function InstallService(
           .then(function(res) {
             if (res.data.success) {
               installation.manifest = res.data.manifest
-              console.log('control.install data from response :', {
-                href: installation.href
-                , manifest: installation.manifest
-                , launch: installation.launch
-              })
               return control.install({
                   href: installation.href
                 , manifest: installation.manifest

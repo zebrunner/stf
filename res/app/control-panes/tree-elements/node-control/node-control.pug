@@ -1,6 +1,6 @@
 div.node-info(ng-controller="NodeControlCntrl")
-  h4 Node Control Item
   div(ng-if="node")
+    h4 Node Control Item
     p {{node.frame | json}}
     p {{node.rect| json}}
     p is visible {{ node.isVisible }}

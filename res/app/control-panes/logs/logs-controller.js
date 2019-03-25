@@ -6,13 +6,30 @@ module.exports = function LogsCtrl($scope, LogcatService) {
 
   var curentFilterValue = ''
 
+
+  var onInstallAppListener = function(event, data) {
+    $scope.$apply(function() {
+      $scope.filters.levelNumbers = instAppsTolevelNumbers(data)
+    })
+  }
+
+  $scope.$on('onInstallApps', onInstallAppListener)
+
+  $scope.$on('destroy', function() {
+    onInstallAppListener()
+  })
+
+  function instAppsTolevelNumbers(data) {
+    return data.map((item, index) => {
+      return {name: item.bundleName, number: index}
+    })
+  }
+
   LogcatService.getFilterLevels()
     .then(response => {
       // @TODO remove this peace of code
       try {
-        $scope.filters.levelNumbers = response.installedApps.map((item, index) => {
-          return {name: item.bundleName, number: index}
-        })
+        $scope.filters.levelNumbers = instAppsTolevelNumbers(response.installedApps)
       } catch(e) {
         console.log(e)
       }

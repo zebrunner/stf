@@ -2,7 +2,7 @@ var oboe = require('oboe')
 var _ = require('lodash')
 var EventEmitter = require('eventemitter3')
 
-module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceService) {
+module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceService, $rootScope) {
   var deviceService = {}
 
   function Tracker($scope, options) {
@@ -141,9 +141,28 @@ module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceServi
       }
     }
 
+    function applicationsChangeListener(event) {
+      var device = get(event.data)
+      if(device) {
+        modify(device, event.data)
+        notify(event)
+        if(event.data.applications) {
+          $rootScope.$broadcast('onInstallApps', event.data.applications)
+        }
+      } else {
+        if (options.filter(event.data)) {
+          insert(event.data)
+          // We've only got partial data
+          fetch(event.data)
+          notify(event)
+        }
+      }
+    }
+
     scopedSocket.on('device.add', addListener)
     scopedSocket.on('device.remove', changeListener)
     scopedSocket.on('device.change', changeListener)
+    scopedSocket.on('device.applications', applicationsChangeListener)
 
     this.add = function(device) {
       addListener({
