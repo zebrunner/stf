@@ -1,6 +1,6 @@
 {
   "name": "stf",
-  "version": "3.4.0",
+  "version": "3.4.1",
   "description": "Smartphone Test Farm",
   "keywords": [
     "adb",
@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "@slack/client": "^3.5.4",
-    "adbkit": "^2.9.2",
+    "adbkit": "^2.11.1",
     "adbkit-apkreader": "^3.1.1",
     "adbkit-monkey": "^1.0.1",
     "aws-sdk": "^2.4.13",
@@ -161,5 +161,9 @@
     "gm": "~1",
     "adb": "~1"
   },
-  "preferGlobal": true
+  "preferGlobal": true,
+  "collective": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/openstf"
+  }
 }
