@@ -1,0 +1,14 @@
+ul.form-group.node-item#node.pug(ng-if="child.children && child.children.length > 0" ng-class="display")
+  li.child-item.flex-container(
+    ng-repeat="child in child.children"
+    ng-controller='NodeCntrl'
+    ng-click="selectNode($event)"
+    ng-init="node = child"
+    )
+    span.flex-item(ng-if="child.name") {{child.name}}
+    span.flex-item(ng-if="child.type") {{child.type}}
+    span.flex-item(ng-if="child.children && child.children.length > 0" ng-click="toggle()")
+      i.btn-dropdown(ng-class="caret")
+    div(
+    ng-if="child.children && child.children.length > 0"
+    ng-include='"control-panes/tree-elements/node/node.pug"')
