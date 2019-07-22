@@ -10,7 +10,7 @@
 /res/bower_components/
 /res/build/
 /res/test_out/
-/rethinkdb_data/
+/data
 /temp/
 /tmp/
 lib/units/storage/tmp/

@@ -62,13 +62,13 @@
 * [Protocol Buffers](https://github.com/google/protobuf) libraries installed
 * [yasm](http://yasm.tortall.net/) installed (for compiling embedded [libjpeg-turbo](https://github.com/sorccu/node-jpeg-turbo))
 * [pkg-config](http://www.freedesktop.org/wiki/Software/pkg-config/) so that Node.js can find the libraries
-
+* [carthage](https://github.com/Carthage/Carthage)
 Note that you need these dependencies even if you've installed STF directly from [NPM](https://www.npmjs.com/), because they can't be included in the package.
 
 On Mac OS, you can use [homebrew](http://brew.sh/) to install most of the dependencies:
 
 ```bash
-brew install rethinkdb graphicsmagick zeromq protobuf yasm pkg-config
+brew install rethinkdb graphicsmagick zeromq protobuf yasm pkg-config carthage
 ```
 
 ## Building
@@ -83,11 +83,47 @@ git clone https://github.com/qaprosoft/stf
 cd stf
 npm install
 #install extra modules
-npm install promise
-npm install request-promise
-npm install websocket-stream
-npm install mjpeg-consumer
+npm i promise
+npm i request-promise
+npm i websocket-stream
+npm i mjpeg-consumer
+npm i -g appium
 ```
+
+## WDA Setup 
+
+Only command you need to run
+```
+cd /usr/local/lib/node_modules/appium/node_modules/appium-xcuitest-driver/WebDriverAgent \
+    && ./Scripts/bootstrap.sh -d \
+    && mkdir -p /usr/local/lib/node_modules/appium/node_modules/node_modules/appium-xcuitest-driver/WebDriverAgent/Resources/WebDriverAgent.bundle
+```
+
+If you are using `nvm` the base dir could be difference (like `/Users/yours/.nvm/versions/node/v8.4.0/lib/node_modules/appium/node_modules`)
+To check it run `which appium`
+
+Source [Guide](http://appium.io/docs/en/advanced-concepts/wda-custom-server/#wda-setup)
+
+### Build WDA
+* You have to add an certificate and provision profile. TODO: describe where you can get them.
+* Let's build the ap in XCode: in WebDriverAgent directory run `open WebDriverAgent.xcodeproj`
+* Choose profile and hit Build
+
+### Run WDA
+
+* At first connect device to machine where you are going to run WDA.
+* To know device ID run it `instruments -s devices`
+* To start the service run 
+```
+xcodebuild -project WebDriverAgent.xcodeproj \
+    -scheme WebDriverAgentRunner -destination \
+    "id=PUT_DEVICE_ID_HERE" USE_PORT=4944 \
+    MJEG_SERVER_PORT=7702 test
+```
+
+TODO: I stopped here
+
+## Link
 
 You may also wish to link the module so that you'll be able to access the `stf` command directly from the command line:
 

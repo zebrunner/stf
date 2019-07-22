@@ -15,5 +15,4 @@ echo Killing stf processes...
 export pids=`ps -eaf | grep stf | grep 'node' | grep -v grep | awk '{ print $2 }'`
 kill_processes "$pids"
 
-
-
+killall rethinkdb

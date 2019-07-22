@@ -1,5 +1,8 @@
 #!/bin/bash
 
+SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
+mkdir -p "${SCRIPT_PATH}/../data/rethinkdb" && rethinkdb -d "${SCRIPT_PATH}/../data/rethinkdb" --daemon
+
 stf triproxy app001 --bind-pub tcp://127.0.0.1:7111 --bind-dealer tcp://127.0.0.1:7112 --bind-pull tcp://127.0.0.1:7113 &
 stf triproxy dev001 --bind-pub tcp://127.0.0.1:7114 --bind-dealer tcp://127.0.0.1:7115 --bind-pull tcp://127.0.0.1:7116 &
 stf processor proc001 --connect-app-dealer tcp://127.0.0.1:7112 --connect-dev-dealer tcp://127.0.0.1:7115 --public-ip istf.qaprosoft.com --connect-push tcp://127.0.0.1:7116 &
