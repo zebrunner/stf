@@ -81,6 +81,12 @@ Note: it is recommended to remove node_modules and res folders before building!
 ```bash
 git clone https://github.com/qaprosoft/stf
 cd stf
+```
+
+In order to install you have to have xcode cli tool
+`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
+
+```bash
 npm install
 #install extra modules
 npm i promise
@@ -94,7 +100,7 @@ npm i -g wd
 ## WDA Setup 
 
 Only command you need to run
-```
+```bash
 cd /usr/local/lib/node_modules/appium/node_modules/appium-xcuitest-driver/WebDriverAgent \
     && ./Scripts/bootstrap.sh -d \
     && mkdir -p /usr/local/lib/node_modules/appium/node_modules/node_modules/appium-xcuitest-driver/WebDriverAgent/Resources/WebDriverAgent.bundle
@@ -115,16 +121,14 @@ Source [Guide](http://appium.io/docs/en/advanced-concepts/wda-custom-server/#wda
 * At first connect device to machine where you are going to run WDA.
 * To know device ID run it `instruments -s devices`
 * To start the service run 
-```
+```bash
 xcodebuild -project WebDriverAgent.xcodeproj \
     -scheme WebDriverAgentRunner -destination \
     "id=PUT_DEVICE_ID_HERE" USE_PORT=4944 \
     MJEG_SERVER_PORT=7702 test
 ```
 
-TODO: I stopped here
-
-## Link
+## Link & build
 
 You may also wish to link the module so that you'll be able to access the `stf` command directly from the command line:
 
