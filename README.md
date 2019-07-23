@@ -88,6 +88,7 @@ npm i request-promise
 npm i websocket-stream
 npm i mjpeg-consumer
 npm i -g appium
+npm i -g wd
 ```
 
 ## WDA Setup 

@@ -18,3 +18,108 @@ Error: spawn ios-deploy ENOENT
 2019-07-22T14:33:18.870Z INF/ios-usb 76855 [*] Receiving input from "tcp://127.0.0.1:7114"
 2019-07-22T14:33:18.870Z INF/ios-provider 76855 [*] ios provider sending output to "tcp://127.0.0.1:7116"
 2019-07-22T14:33:18.871Z INF/ios-provider 76855 [*] Receiving input from "tcp://127.0.0.1:7114"
+2019-07-23T13:20:40.475Z INF/ios-provider 85563 [*] Subscribing to permanent channel "aYLCyqWDSK6SWkMJRVsh6A=="
+2019-07-23T13:20:40.482Z INF/ios-usb 85563 [*] ios provider sending output to "tcp://127.0.0.1:7116"
+2019-07-23T13:20:40.483Z INF/ios-usb 85563 [*] Receiving input from "tcp://127.0.0.1:7114"
+2019-07-23T13:20:40.483Z INF/ios-provider 85563 [*] ios provider sending output to "tcp://127.0.0.1:7116"
+2019-07-23T13:20:40.484Z INF/ios-provider 85563 [*] Receiving input from "tcp://127.0.0.1:7114"
+events.js:182
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: spawn ios-deploy ENOENT
+    at _errnoException (util.js:1041:11)
+    at Process.ChildProcess._handle.onexit (internal/child_process.js:192:19)
+    at onErrorNT (internal/child_process.js:374:16)
+    at _combinedTickCallback (internal/process/next_tick.js:138:11)
+    at process._tickCallback (internal/process/next_tick.js:180:9)
+2019-07-23T13:23:17.316Z INF/ios-provider 85665 [*] Subscribing to permanent channel "PqCntU2EQwWnJJvJm01n2w=="
+2019-07-23T13:23:17.321Z INF/ios-usb 85665 [*] ios provider sending output to "tcp://127.0.0.1:7116"
+2019-07-23T13:23:17.322Z INF/ios-usb 85665 [*] Receiving input from "tcp://127.0.0.1:7114"
+2019-07-23T13:23:17.322Z INF/ios-provider 85665 [*] ios provider sending output to "tcp://127.0.0.1:7116"
+2019-07-23T13:23:17.322Z INF/ios-provider 85665 [*] Receiving input from "tcp://127.0.0.1:7114"
+events.js:182
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: spawn ios-deploy ENOENT
+    at _errnoException (util.js:1041:11)
+    at Process.ChildProcess._handle.onexit (internal/child_process.js:192:19)
+    at onErrorNT (internal/child_process.js:374:16)
+    at _combinedTickCallback (internal/process/next_tick.js:138:11)
+    at process._tickCallback (internal/process/next_tick.js:180:9)
+2019-07-23T13:26:29.201Z INF/ios-provider 85767 [*] Subscribing to permanent channel "ySAIuzHkSKuzInub83zYCA=="
+2019-07-23T13:26:29.206Z INF/ios-usb 85767 [*] ios provider sending output to "tcp://127.0.0.1:7116"
+2019-07-23T13:26:29.207Z INF/ios-usb 85767 [*] Receiving input from "tcp://127.0.0.1:7114"
+2019-07-23T13:26:29.208Z INF/ios-provider 85767 [*] ios provider sending output to "tcp://127.0.0.1:7116"
+2019-07-23T13:26:29.208Z INF/ios-provider 85767 [*] Receiving input from "tcp://127.0.0.1:7114"
+events.js:182
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: spawn ios-deploy ENOENT
+    at _errnoException (util.js:1041:11)
+    at Process.ChildProcess._handle.onexit (internal/child_process.js:192:19)
+    at onErrorNT (internal/child_process.js:374:16)
+    at _combinedTickCallback (internal/process/next_tick.js:138:11)
+    at process._tickCallback (internal/process/next_tick.js:180:9)
+2019-07-23T13:28:55.137Z INF/ios-provider 85953 [*] Subscribing to permanent channel "+3X1c+G+Qoi+Sh9KQcZXXQ=="
+2019-07-23T13:28:55.143Z INF/ios-usb 85953 [*] ios provider sending output to "tcp://127.0.0.1:7116"
+2019-07-23T13:28:55.143Z INF/ios-usb 85953 [*] Receiving input from "tcp://127.0.0.1:7114"
+2019-07-23T13:28:55.144Z INF/ios-provider 85953 [*] ios provider sending output to "tcp://127.0.0.1:7116"
+2019-07-23T13:28:55.144Z INF/ios-provider 85953 [*] Receiving input from "tcp://127.0.0.1:7114"
+events.js:182
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: spawn ios-deploy ENOENT
+    at _errnoException (util.js:1041:11)
+    at Process.ChildProcess._handle.onexit (internal/child_process.js:192:19)
+    at onErrorNT (internal/child_process.js:374:16)
+    at _combinedTickCallback (internal/process/next_tick.js:138:11)
+    at process._tickCallback (internal/process/next_tick.js:180:9)
+2019-07-23T13:32:06.886Z INF/ios-provider 86055 [*] Subscribing to permanent channel "/28iD++1RbKBjSEAQ+McWg=="
+2019-07-23T13:32:06.891Z INF/ios-usb 86055 [*] ios provider sending output to "tcp://127.0.0.1:7116"
+2019-07-23T13:32:06.892Z INF/ios-usb 86055 [*] Receiving input from "tcp://127.0.0.1:7114"
+2019-07-23T13:32:06.892Z INF/ios-provider 86055 [*] ios provider sending output to "tcp://127.0.0.1:7116"
+2019-07-23T13:32:06.892Z INF/ios-provider 86055 [*] Receiving input from "tcp://127.0.0.1:7114"
+events.js:182
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: spawn ios-deploy ENOENT
+    at _errnoException (util.js:1041:11)
+    at Process.ChildProcess._handle.onexit (internal/child_process.js:192:19)
+    at onErrorNT (internal/child_process.js:374:16)
+    at _combinedTickCallback (internal/process/next_tick.js:138:11)
+    at process._tickCallback (internal/process/next_tick.js:180:9)
+2019-07-23T13:34:36.327Z INF/ios-provider 86183 [*] Subscribing to permanent channel "Mn9coCWCTTix/VD77qFQ8Q=="
+2019-07-23T13:34:36.332Z INF/ios-usb 86183 [*] ios provider sending output to "tcp://127.0.0.1:7116"
+2019-07-23T13:34:36.333Z INF/ios-usb 86183 [*] Receiving input from "tcp://127.0.0.1:7114"
+2019-07-23T13:34:36.334Z INF/ios-provider 86183 [*] ios provider sending output to "tcp://127.0.0.1:7116"
+2019-07-23T13:34:36.334Z INF/ios-provider 86183 [*] Receiving input from "tcp://127.0.0.1:7114"
+events.js:182
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: spawn ios-deploy ENOENT
+    at _errnoException (util.js:1041:11)
+    at Process.ChildProcess._handle.onexit (internal/child_process.js:192:19)
+    at onErrorNT (internal/child_process.js:374:16)
+    at _combinedTickCallback (internal/process/next_tick.js:138:11)
+    at process._tickCallback (internal/process/next_tick.js:180:9)
+2019-07-23T13:41:26.784Z INF/ios-provider 86418 [*] Subscribing to permanent channel "9wilr8FeSeODN+1dkLsVWQ=="
+2019-07-23T13:41:26.790Z INF/ios-usb 86418 [*] ios provider sending output to "tcp://127.0.0.1:7116"
+2019-07-23T13:41:26.790Z INF/ios-usb 86418 [*] Receiving input from "tcp://127.0.0.1:7114"
+2019-07-23T13:41:26.791Z INF/ios-provider 86418 [*] ios provider sending output to "tcp://127.0.0.1:7116"
+2019-07-23T13:41:26.791Z INF/ios-provider 86418 [*] Receiving input from "tcp://127.0.0.1:7114"
+events.js:182
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: spawn ios-deploy ENOENT
+    at _errnoException (util.js:1041:11)
+    at Process.ChildProcess._handle.onexit (internal/child_process.js:192:19)
+    at onErrorNT (internal/child_process.js:374:16)
+    at _combinedTickCallback (internal/process/next_tick.js:138:11)
+    at process._tickCallback (internal/process/next_tick.js:180:9)
