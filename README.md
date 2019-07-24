@@ -95,6 +95,7 @@ npm i websocket-stream
 npm i mjpeg-consumer
 npm i -g appium
 npm i -g wd
+npm i -g ios-deploy
 ```
 
 ## WDA Setup 
