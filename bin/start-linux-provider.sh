@@ -1,19 +1,24 @@
 #!/bin/bash
 
-export RETHINKDB_PORT_28015_TCP="tcp://192.168.88.95:28015"
+# Example of the ios-device statr script
 
-nohup stf ios-provider --name iMac-Developer.local --min-port=7731 --max-port=7740 --connect-app-dealer tcp://192.168.88.95:7160 --connect-dev-dealer tcp://192.168.88.95:7260 --connect-sub tcp://192.168.88.95:7250 \
-	--connect-push tcp://192.168.88.95:7270 --group-timeout 3600 \
-	--public-ip stage.qaprosoft.com --storage-url https://stage.qaprosoft.com/ --screen-jpeg-quality 40 --heartbeat-interval 10000 --vnc-initial-size 600x800 \
-	--wda-host 192.168.88.78 --wda-port 20031 --mjpeg-port 20032 \
-	--udid-storage false --iproxy false \
-	--no-cleanup &
+PUBLIC_IP=stage.qaprosoft.com
+PRIVATE_IP=192.168.88.95
 
-#--screen-ws-url-pattern "wss://stage.qaprosoft.com/d/192.168.88.91/b3c999df4a0de71be4fb5878f0df20c25442b883/7702/" &
-#--screen-ws-url-pattern "wss://istf.qaprosoft.com/d/192.168.88.91/<%= serial %>/<%= publicPort %>/" &
+# Deckare below variable if STF rethink db is remoted
+export RETHINKDB_PORT_28015_TCP="tcp://${PRIVATE_IP}:28015"
 
 
-# stf provider --name "$DEVICEUDID" --min-port=$MIN_PORT --max-port=$MAX_PORT \
-#        --connect-sub tcp://$STF_PRIVATE_HOST:$STF_TCP_SUB_PORT --connect-push tcp://$STF_PRIVATE_HOST:$STF_TCP_PUB_PORT \
-#        --group-timeout 3600 --public-ip $STF_PUBLIC_HOST --storage-url $WEB_PROTOCOL://$STF_PUBLIC_HOST/ --screen-jpeg-quality 40 \
-#        --heartbeat-interval 10000 --vnc-initial-size 600x800 --vnc-port 5900 --no-cleanup --screen-ws-url-pattern "${SOCKET_PROTOCOL}://${STF_PUBLIC_HOST}/d/${STF_PRIVATE_HOST}/<%= serial %>/<%= publicPort %>/" &
+# DEVICE NAME    | TYPE      | VERSION| UDID                                     |APPIUM|  WDA  | MJPEG | IWDP  | STF_MIN | STF_MAX | DEVICE IP
+# iPhone_7       | phone     | 12.3.1 | 4828ca6492816ddd4996fea31c175f7ab97cbc19 | 4841 | 20001 | 20002 | 20003 |  7701   |  7710   | 192.168.88.14
+
+nohup node /Users/build/tools/stf/lib/cli ios-device --serial 4828ca6492816ddd4996fea31c175f7ab97cbc19 \
+        --provider iMac-Developer.local --screen-port 7701 --connect-port 20002 --vnc-port 7732 --public-ip ${PUBLIC_IP} --group-timeout 3600 \
+        --storage-url https://${PUBLIC_IP}/ --adb-host 127.0.0.1 --adb-port 5037 --screen-jpeg-quality 40 --screen-ping-interval 30000 \
+        --screen-ws-url-pattern ws://${publicIp}:${publicPort} --connect-url-pattern ${publicIp}:${publicPort} --heartbeat-interval 10000 \
+        --boot-complete-timeout 60000 --vnc-initial-size 600x800 --mute-master never \
+        --connect-app-dealer tcp://${PRIVATE_IP}:7160 --connect-dev-dealer tcp://${PRIVATE_IP}:7260 \
+        --wda-host 192.168.88.14 \
+        --wda-port 20001 --udid-storage false --iproxy false --connect-sub tcp://${PRIVATE_IP}:7250 --connect-push tcp://${PRIVATE_IP}:7270 --no-cleanup &
+
+
