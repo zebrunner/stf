@@ -56,19 +56,19 @@
 
 * [Node.js](https://nodejs.org/) >= 6.9 (latest stable version preferred)
 * [ADB](http://developer.android.com/tools/help/adb.html) properly set up
-* [RethinkDB](http://rethinkdb.com/) >= 2.2
 * [GraphicsMagick](http://www.graphicsmagick.org/) (for resizing screenshots)
 * [ZeroMQ](http://zeromq.org/) libraries installed
 * [Protocol Buffers](https://github.com/google/protobuf) libraries installed
 * [yasm](http://yasm.tortall.net/) installed (for compiling embedded [libjpeg-turbo](https://github.com/sorccu/node-jpeg-turbo))
 * [pkg-config](http://www.freedesktop.org/wiki/Software/pkg-config/) so that Node.js can find the libraries
+* [carthage](https://github.com/Carthage/Carthage)
 
 Note that you need these dependencies even if you've installed STF directly from [NPM](https://www.npmjs.com/), because they can't be included in the package.
 
 On Mac OS, you can use [homebrew](http://brew.sh/) to install most of the dependencies:
 
 ```bash
-brew install rethinkdb graphicsmagick zeromq protobuf yasm pkg-config
+brew install graphicsmagick zeromq protobuf yasm pkg-config carthage
 ```
 
 ## Building
@@ -79,6 +79,8 @@ First, clone stf sources and fetch all NPM and Bower modules.
 Note: it is recommended to remove node_modules and res folders before building!
 
 ```bash
+In order to install you have to have xcode cli tool
+`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
 git clone https://github.com/qaprosoft/stf
 cd stf
 npm install
@@ -87,6 +89,9 @@ npm install promise
 npm install request-promise
 npm install websocket-stream
 npm install mjpeg-consumer
+npm install -g appium
+npm install -g wd
+npm install -g ios-deploy
 ```
 
 You may also wish to link the module so that you'll be able to access the `stf` command directly from the command line:
