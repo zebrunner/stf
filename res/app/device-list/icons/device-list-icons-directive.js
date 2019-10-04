@@ -82,7 +82,6 @@ module.exports = function DeviceListIconsDirective(
         } else {
           name.classList.remove('state-available')
         }
-
         if (device.usable) {
           a.href = '#!/control/' + device.serial
           li.classList.remove('device-is-busy')
@@ -126,6 +125,7 @@ module.exports = function DeviceListIconsDirective(
       }
 
       function inviteDevice(device) {
+        console.log('device-list-icons-directive.js , InviteDevice',device)
         return GroupService.invite(device).then(function() {
           scope.$digest()
         })

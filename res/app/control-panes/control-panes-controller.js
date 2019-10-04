@@ -33,6 +33,12 @@ module.exports =
         icon: 'fa-info color-orange',
         templateUrl: 'control-panes/info/info.pug',
         filters: ['native', 'web']
+      },
+      {
+        title: gettext('Tree'),
+        icon: 'fa-sitemap color-green',
+        templateUrl: 'control-panes/tree-elements/tree.pug',
+        filters: ['native', 'web']
       }
     ]
 
@@ -60,10 +66,11 @@ module.exports =
     // TODO: Move this out to Ctrl.resolve
     function getDevice(serial) {
       DeviceService.get(serial, $scope)
+        // .then(function(device) {
+        //   return GroupService.invite(device)
+        // })
         .then(function(device) {
-          return GroupService.invite(device)
-        })
-        .then(function(device) {
+          GroupService.invite(device)
           $scope.device = device
           $scope.control = ControlService.create(device, device.channel)
 

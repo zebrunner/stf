@@ -1,0 +1,14 @@
+.node-info {
+  position: fixed;
+}
+.tap-btn {
+  background: #0D7AFF;
+  color: #fff;
+  margin-bottom: 20px;
+}
+
+.tap-btn:hover,
+.tap-btn:focus,
+.tap-btn:active {
+  color: #fff
+}

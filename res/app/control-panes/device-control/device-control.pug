@@ -48,7 +48,7 @@
 
       .stf-vnc-bottom.as-row(ng-hide='$root.standalone')
         .controls.as-cell
-          .btn-group.btn-group-justified
+          .btn-group.btn-group-justified(ng-if='!device.ios')
             a(device-control-key='menu', title='{{"Menu"|translate}}').btn.btn-primary.btn-lg.no-transition
               i.fa.fa-bars
             a(device-control-key='home', title='{{"Home"|translate}}').btn.btn-primary.btn-lg.no-transition
@@ -57,3 +57,6 @@
               i.fa.fa-square-o
             a(device-control-key='back', title='{{"Back"|translate}}').btn.btn-primary.btn-lg.no-transition
               i.fa.fa-mail-reply
+          .btn-group.btn-group-justified(ng-if='device.ios')
+            a(device-control-key='home', title='{{"Home"|translate}}', ng-click="goHome()").btn.btn-primary.btn-lg.no-transition
+              i.fa.fa-bars

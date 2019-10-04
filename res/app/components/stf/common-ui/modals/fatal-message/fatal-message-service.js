@@ -26,7 +26,7 @@ module.exports =
         // TODO: this is ugly, find why its not updated correctly (also on the device list)
         intervalDeviceInfo = $interval(function() {
           update()
-
+          console.log('fatal message service',device.usable)
           if (device.usable) {
             // Try to reconnect
             $scope.ok()

@@ -153,7 +153,8 @@
     "no-path-concat": 2, // `2` is default
     "no-process-exit": 0, // `2` is default
     "no-restricted-modules": 0, // no default, optionally set `[2, "fs", "os"]`
-    "no-sync": 1, // `2` is default
+    "no-sync": 0, // `2` is default
+    "prefer-destructuring": ["error", {"object": true, "array": true}]
 
     // eslint v2
     //"keyword-spacing": 2
