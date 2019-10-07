@@ -54,6 +54,7 @@ RUN set -x && \
     npm pack && \
     tar xzf stf-*.tgz --strip-components 1 -C /app && \
     bower cache clean && \
+    npm install rimraf && \
     npm prune --production && \
     mv node_modules /app && \
 #    npm cache clean && \
