@@ -1,6 +1,6 @@
 require('./tree.css')
 
-module.exports = angular.module('tree-elements', [
+module.exports = angular.module('stf.tree-elements', [
   require('./node/index').name,
   require('./node-control/index').name,
   require('./preloader/index').name
@@ -11,4 +11,3 @@ module.exports = angular.module('tree-elements', [
     )
   }])
   .controller('TreeElementsCntrl', require('./tree-elements-controller'))
-
