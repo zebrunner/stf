@@ -107,7 +107,7 @@ enum MessageType {
   GetIosTreeElements                = 117;
   TransactionTreeMessage            = 118;
   TapDeviceTreeElement              = 119;
-  TemporaryUnavailableMessage       = 120;
+  TemporarilyUnavailableMessage     = 120;
 }
 
 message ConnectStartedMessage {
@@ -742,6 +742,6 @@ message TapDeviceTreeElement {
   required string label = 1;
 }
 
-message TemporaryUnavailableMessage {
+message TemporarilyUnavailableMessage {
   required string serial = 1;
 }
