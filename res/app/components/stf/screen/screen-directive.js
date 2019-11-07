@@ -9,6 +9,7 @@ module.exports = function DeviceScreenDirective(
 , PageVisibilityService
 , $timeout
 , $window
+, TemporarilyUnavialableService
 ) {
   return {
     restrict: 'E'
@@ -70,6 +71,7 @@ module.exports = function DeviceScreenDirective(
         ws.onclose = function closeListener(event) {
           // @todo Maybe handle
           console.log('closeListener', event)
+          TemporarilyUnavialableService.open('Device temporarily unavailable')
         }
 
         ws.onopen = function openListener() {
