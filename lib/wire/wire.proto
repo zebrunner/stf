@@ -83,7 +83,7 @@ enum MessageType {
   ConnectStartedMessage             = 92;
   ConnectStoppedMessage             = 93;
   SetIosDeviceDisplay               = 94;
-  SetIosDevicePorts                 = 95;
+  IosDevicePorts                    = 95;
   StartStreaming                    = 96;
   TestPush                          = 97;
   TouchDownIosMessage               = 98;
@@ -108,6 +108,7 @@ enum MessageType {
   TransactionTreeMessage            = 118;
   TapDeviceTreeElement              = 119;
   TemporarilyUnavailableMessage     = 120;
+  InitializeIosDeviceState          = 121;
 }
 
 message ConnectStartedMessage {
@@ -179,10 +180,6 @@ message ProviderMessage {
 message ProviderIosMessage {
   required string channel = 1;
   required string name = 2;
-  required string device = 3;
-  required string socket = 4;
-  required int32 width = 5;
-  required int32 height = 6;
 }
 
 message DeviceHeartbeatMessage {
@@ -196,9 +193,17 @@ message DeviceIntroductionMessage {
 }
 
 message DeviceIosIntroductionMessage {
- required string serial = 1;
- required DeviceStatus status = 2;
- required ProviderIosMessage provider = 3;
+  required string serial = 1;
+  required DeviceStatus status = 2;
+  required ProviderMessage provider = 3;
+}
+
+message InitializeIosDeviceState {
+  required string serial = 1;
+  required DeviceStatus status = 2;
+  required ProviderIosMessage provider = 3;
+  required IosDevicePorts ports = 4;
+  required UpdateIosDevice options = 5;
 }
 
 message DeviceRegisteredMessage {
@@ -655,8 +660,7 @@ message SetIosDeviceDisplay {
   required int32 width = 3;
   required int32 height = 4;
 }
-message SetIosDevicePorts {
-  required string serial = 1;
+message IosDevicePorts {
   required int32 screenPort = 2;
   required int32 connectPort = 3;
 }
