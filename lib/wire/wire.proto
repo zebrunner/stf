@@ -180,6 +180,7 @@ message ProviderMessage {
 message ProviderIosMessage {
   required string channel = 1;
   required string name = 2;
+  required string screenWsUrlPattern = 3;
 }
 
 message DeviceHeartbeatMessage {
