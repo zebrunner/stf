@@ -43,7 +43,7 @@ module.exports = function SocketFactory(
   })
 
   socket.once('temporarily-unavailable', function() {
-    TemporarilyUnavialableService.open('Device temporarily unavailable')
+    TemporarilyUnavialableService.open('WDA is currently unavailable try your attempt later')
   })
 
   return socket

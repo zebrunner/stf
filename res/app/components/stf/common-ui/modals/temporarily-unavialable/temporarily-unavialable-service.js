@@ -12,13 +12,13 @@ module.exports =
 
       $scope.cancel = function() {
         $uibModalInstance.dismiss('cancel')
-        document.getElementById('temporarily-unavialable').remove()
+        //document.getElementById('temporarily-unavialable').remove()
       }
 
       $scope.second = function() {
         $uibModalInstance.dismiss()
         $location.path('/devices/')
-        document.getElementById('temporarily-unavialable').remove()
+        //document.getElementById('temporarily-unavialable').remove()
       }
 
     }
