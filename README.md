@@ -428,8 +428,8 @@ Then in order to add it officially (only needs to be done once):
 
 ## iOS stream quality optimization guide for slow network performance
 In order to minify stream traffic, you have to change WebDriverAgent default settings.
-1. Open <% WebDriverAgent_root_folder /%> Utilities / FBConfiguration.m
-2. Change the following options FBMjpegScalingFactor, FBMjpegServerScreenshotQuality, FBMjpegServerFramerate, FBScreenshotQuality, FBSnapshotTimeout according to your network need
+1. Open `<%WebDriverAgent_root_folder%>/Utilities/FBConfiguration.m`
+2. Change the following options `FBMjpegScalingFactor`, `FBMjpegServerScreenshotQuality`, `FBMjpegServerFramerate`, `FBScreenshotQuality`, `FBSnapshotTimeout` according to your network need
 3. Restart all running WDA's processes
 
 ## Testing
