@@ -1,12 +1,10 @@
 module.exports = function RemoteDebugCtrl($scope, $timeout, gettext) {
-  let remoteDebugMessage = 'adb connect '
   function startRemoteConnect() {
     if ($scope.control) {
-      remoteDebugMessage = $scope.device.ios ? 'wda connect ' : 'adb connect '
       $scope.control.startRemoteConnect().then(function(result) {
         var url = result.lastData
         $scope.$apply(function() {
-          $scope.debugCommand = remoteDebugMessage + url
+          $scope.debugCommand = 'adb connect ' + url
         })
       })
 
@@ -34,12 +32,4 @@ module.exports = function RemoteDebugCtrl($scope, $timeout, gettext) {
     }
 
   })
-
-  $scope.$watch('device.remoteConnectUrl', function(url) {
-    $timeout(function() {
-      remoteDebugMessage = $scope.device.ios ? 'wda connect ' : 'adb connect '
-      $scope.debugCommand = remoteDebugMessage + url
-    })
-  })
-
 }
