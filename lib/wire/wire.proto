@@ -109,6 +109,7 @@ enum MessageType {
   TapDeviceTreeElement              = 119;
   TemporarilyUnavailableMessage     = 120;
   InitializeIosDeviceState          = 121;
+  UpdateRemoteConnectUrl            = 122;
 }
 
 message ConnectStartedMessage {
@@ -749,4 +750,9 @@ message TapDeviceTreeElement {
 
 message TemporarilyUnavailableMessage {
   required string serial = 1;
+}
+
+message UpdateRemoteConnectUrl {
+  required string serial= 1;
+  required string url = 2;
 }
