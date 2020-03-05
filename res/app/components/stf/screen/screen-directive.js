@@ -9,6 +9,7 @@ module.exports = function DeviceScreenDirective(
 , PageVisibilityService
 , $timeout
 , $window
+, TemporarilyUnavialableService
 ) {
   return {
     restrict: 'E'
@@ -70,6 +71,7 @@ module.exports = function DeviceScreenDirective(
         ws.onclose = function closeListener(event) {
           // @todo Maybe handle
           console.log('closeListener', event)
+          TemporarilyUnavialableService.open('WDA is currently unavailable try your attempt later')
         }
 
         ws.onopen = function openListener() {
@@ -281,8 +283,7 @@ module.exports = function DeviceScreenDirective(
               // the rotation by using another rotation.
               positioner.style[cssTransform] = 'rotate(' + -cssRotation + 'deg)'
             }
-            console.log('Rotation event positioner :', positioner)
-            console.log('Rotation event cachedScreen :', cachedScreen)
+
             maybeFlipLetterbox()
           }
 
@@ -296,6 +297,8 @@ module.exports = function DeviceScreenDirective(
                     scope.displayError = false
                   })
                 }
+
+                scope.$emit('hide-screen-loader')
 
                 var blob = new Blob([message.data], {
                   type: 'image/jpeg'

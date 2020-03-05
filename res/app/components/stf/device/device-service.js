@@ -2,7 +2,12 @@ var oboe = require('oboe')
 var _ = require('lodash')
 var EventEmitter = require('eventemitter3')
 
-module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceService, $rootScope) {
+module.exports = function DeviceServiceFactory(
+  $http,
+  socket,
+  EnhanceDeviceService,
+  $rootScope
+  ) {
   var deviceService = {}
 
   function Tracker($scope, options) {
