@@ -57,7 +57,6 @@ RUN set -x && \
     npm install rimraf && \
     npm prune --production && \
     mv node_modules /app && \
-#    npm cache clean && \
     rm -rf ~/.node-gyp && \
     cd /app && \
     rm -rf /tmp/*
