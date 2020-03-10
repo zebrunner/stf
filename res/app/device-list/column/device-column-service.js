@@ -625,13 +625,8 @@ function DeviceNameCell(options, ownerEmail) {
   , update: function(td, device) {
       var a = td.firstChild
       var t = a.firstChild
-<<<<<<< HEAD
-      console.log('device-device-column-service  update',device.usable)
-      if (device.using) {
-=======
 
       if (device.using && device.owner.email === ownerEmail) {
->>>>>>> e3467007082821d841035647fa0b59e5a4a2ba14
         a.className = 'device-product-name-using'
         a.href = '#!/control/' + device.serial
       }

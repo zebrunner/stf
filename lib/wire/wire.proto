@@ -23,7 +23,6 @@ enum MessageType {
   JoinGroupMessage                  = 11;
   JoinGroupByAdbFingerprintMessage  = 69;
   JoinGroupByVncAuthResponseMessage = 90;
-<<<<<<< HEAD
   VncAuthResponsesUpdatedMessage    = 91;
   AutoGroupMessage                  = 70;
   AdbKeysUpdatedMessage             = 71;
@@ -115,75 +114,14 @@ enum MessageType {
   TemporarilyUnavailableMessage     = 120;
   InitializeIosDeviceState          = 121;
   UpdateRemoteConnectUrl            = 122;
-=======
-  VncAuthResponsesUpdatedMessage = 91;
-  AutoGroupMessage           = 70;
-  AdbKeysUpdatedMessage      = 71;
-  KeyDownMessage             = 12;
-  KeyPressMessage            = 13;
-  KeyUpMessage               = 14;
-  LaunchActivityMessage      = 31;
-  LeaveGroupMessage          = 15;
-  LogcatApplyFiltersMessage  = 16;
-  PasteMessage               = 32;
-  ProbeMessage               = 17;
-  ShellCommandMessage        = 18;
-  ShellKeepAliveMessage      = 19;
-  TouchDownMessage           = 21;
-  TouchMoveMessage           = 22;
-  TouchUpMessage             = 23;
-  TouchCommitMessage         = 65;
-  TouchResetMessage          = 66;
-  GestureStartMessage        = 67;
-  GestureStopMessage         = 68;
-  TransactionDoneMessage     = 24;
-  TransactionProgressMessage = 25;
-  TypeMessage                = 26;
-  UngroupMessage             = 27;
-  UninstallMessage           = 34;
-  RotateMessage              = 35;
-  ForwardTestMessage         = 36;
-  ForwardCreateMessage       = 37;
-  ForwardRemoveMessage       = 38;
-  LogcatStartMessage         = 39;
-  LogcatStopMessage          = 40;
-  BrowserOpenMessage         = 41;
-  BrowserClearMessage        = 42;
-  AirplaneModeEvent          = 43;
-  BatteryEvent               = 44;
-  DeviceBrowserMessage       = 45;
-  ConnectivityEvent          = 46;
-  PhoneStateEvent            = 47;
-  RotationEvent              = 48;
-  StoreOpenMessage           = 49;
-  ScreenCaptureMessage       = 50;
-  DeviceHeartbeatMessage     = 73;
-  RebootMessage              = 52;
-  ConnectStartMessage        = 53;
-  ConnectStopMessage         = 54;
-  RingerSetMessage           = 56;
-  RingerGetMessage           = 64;
-  WifiSetEnabledMessage      = 57;
-  WifiGetStatusMessage       = 58;
-  AccountAddMenuMessage      = 59;
-  AccountAddMessage          = 60;
-  AccountCheckMessage        = 63;
-  AccountGetMessage          = 62;
-  AccountRemoveMessage       = 55;
-  SdStatusMessage            = 61;
-  ReverseForwardsEvent       = 72;
-  FileSystemListMessage      = 81;
-  FileSystemGetMessage       = 82;
-  ConnectStartedMessage      = 92;
-  ConnectStoppedMessage      = 93;
-  GroupUserChangeMessage     = 1200;
-  DeviceGroupChangeMessage   = 1201;
-  DeviceOriginGroupMessage   = 1202;
-  DeleteUserMessage          = 1203;
-  UpdateAccessTokenMessage   = 1204;
-  GroupChangeMessage         = 1205;
-  UserChangeMessage          = 1206;
-  DeviceChangeMessage        = 1207;
+  GroupUserChangeMessage            = 1200;
+  DeviceGroupChangeMessage          = 1201;
+  DeviceOriginGroupMessage          = 1202;
+  DeleteUserMessage                 = 1203;
+  UpdateAccessTokenMessage          = 1204;
+  GroupChangeMessage                = 1205;
+  UserChangeMessage                 = 1206;
+  DeviceChangeMessage               = 1207;
 }
 
 message UpdateAccessTokenMessage {
@@ -330,7 +268,7 @@ message GroupUserChangeMessage {
   required string id = 3;
   required bool isDeletedLater = 4;
   repeated string devices = 5;
->>>>>>> e3467007082821d841035647fa0b59e5a4a2ba14
+
 }
 
 message ConnectStartedMessage {

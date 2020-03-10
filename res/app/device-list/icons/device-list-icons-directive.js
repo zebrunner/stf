@@ -84,12 +84,8 @@ module.exports = function DeviceListIconsDirective(
         } else {
           name.classList.remove('state-available')
         }
-<<<<<<< HEAD
-        if (device.usable) {
-=======
 
         if (device.usable && !device.using) {
->>>>>>> e3467007082821d841035647fa0b59e5a4a2ba14
           a.href = '#!/control/' + device.serial
           li.classList.remove('device-is-busy')
         }
