@@ -268,7 +268,6 @@ message GroupUserChangeMessage {
   required string id = 3;
   required bool isDeletedLater = 4;
   repeated string devices = 5;
->>>>>>> e3467007082821d841035647fa0b59e5a4a2ba14
 }
 
 message ConnectStartedMessage {
