@@ -129,8 +129,8 @@ module.exports = function LogcatServiceFactory($rootScope, socket, FilterStringS
       if (filterLine(rawData)) {
         rawData.logsSerial = service.deviceSerial
         service.addEntryListener(rawData)
-      // }
-    //}
+      }
+    }
   })
 
   service.clear = function() {
