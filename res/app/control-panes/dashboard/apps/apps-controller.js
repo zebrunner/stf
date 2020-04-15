@@ -4,7 +4,7 @@ var io = require('socket.io')
 module.exports = function ShellCtrl($scope, AppState) {
   var websocketUrl = AppState.config.websocketUrl || ''
   var socket = io(websocketUrl, {
-    reconnection: false, transports: ['websocket']
+    reconnection: true, transports: ['websocket']
   })
 
   $scope.result = null
