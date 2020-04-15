@@ -71,7 +71,7 @@ module.exports = function DeviceScreenDirective(
         ws.onclose = function closeListener(event) {
           // @todo Maybe handle
           console.log('closeListener', event)
-          TemporarilyUnavialableService.open('WDA is currently unavailable try your attempt later')
+          TemporarilyUnavialableService.open('Service is currently unavailable! Try your attempt later.')
         }
 
         ws.onopen = function openListener() {
