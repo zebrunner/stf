@@ -9,7 +9,7 @@ module.exports = function SocketFactory(
   var websocketUrl = AppState.config.websocketUrl || ''
 
   var socket = io(websocketUrl, {
-    reconnection: false, transports: ['websocket']
+    reconnection: true, transports: ['websocket']
   })
 
   socket.scoped = function($scope) {
