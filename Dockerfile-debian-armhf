@@ -48,7 +48,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     echo 'npm install --no-optional --loglevel http' | su stf -s /bin/bash && \
     echo '--- Assembling app' && \
     echo 'npm pack' | su stf -s /bin/bash && \
-    tar xzf stf-*.tgz --strip-components 1 -C /app && \
+    tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /app && \
     echo '/tmp/build/node_modules/.bin/bower cache clean' | su stf -s /bin/bash && \
     echo 'npm prune --production' | su stf -s /bin/bash && \
     mv node_modules /app && \

@@ -52,7 +52,7 @@ RUN set -x && \
     export PATH=$PWD/node_modules/.bin:$PATH && \
     npm install --loglevel http && \
     npm pack && \
-    tar xzf stf-*.tgz --strip-components 1 -C /app && \
+    tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /app && \
     bower cache clean && \
     npm prune --production && \
     mv node_modules /app && \
