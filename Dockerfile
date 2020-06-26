@@ -44,7 +44,7 @@ RUN mkdir -p /app && \
     chown -R stf-build:stf-build /tmp/build /app
 
 RUN mkdir /data &&\
-    chown stf-build: myfolder
+    chown stf-build: data
 
 # Switch over to the build user.
 USER stf-build
