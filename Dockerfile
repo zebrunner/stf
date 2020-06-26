@@ -43,7 +43,7 @@ COPY . /tmp/build/
 RUN mkdir -p /app && \
     chown -R stf-build:stf-build /tmp/build /app
 
-RUN mkdir /data &&\
+RUN mkdir data &&\
     chown stf-build: data
 
 # Switch over to the build user.
