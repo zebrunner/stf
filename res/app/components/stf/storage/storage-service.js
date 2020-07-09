@@ -19,7 +19,7 @@ module.exports = function StorageServiceFactory($http, $upload) {
     var input = options.filter ? files.filter(options.filter) : files
     if (input.length) {
       $upload.upload({
-          url: '/s/upload/' + type
+          url: '/stf/s/upload/' + type
         , method: 'POST'
         , file: input
         })
@@ -49,7 +49,7 @@ module.exports = function StorageServiceFactory($http, $upload) {
     var input = options.filter ? files.filter(options.filter) : files
     if (input.length) {
       $upload.upload({
-        url: '/s/uploadIos/' + type + '/' + deviceId + '/' + bundleId
+        url: '/stf/s/uploadIos/' + type + '/' + deviceId + '/' + bundleId
         , method: 'POST'
         , file: input
       })
