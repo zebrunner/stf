@@ -628,11 +628,11 @@ function DeviceNameCell(options, ownerEmail) {
 
       if (device.using && device.owner.email === ownerEmail) {
         a.className = 'device-product-name-using'
-        a.href = '#!/control/' + device.serial
+        a.href = 'stf#!/control/' + device.serial
       }
       else if (device.usable && !device.using) {
         a.className = 'device-product-name-usable'
-        a.href = '#!/control/' + device.serial
+        a.href = 'stf#!/control/' + device.serial
       }
       else {
         a.className = 'device-product-name-unusable'
@@ -682,7 +682,7 @@ function DeviceStatusCell(options) {
       a.className = 'btn btn-xs device-status ' +
         (stateClasses[device.state] || 'btn-default-outline')
       if (device.usable && !device.using) {
-        a.href = '#!/control/' + device.serial
+        a.href = 'stf#!/control/' + device.serial
       }
       else {
         a.removeAttribute('href')
