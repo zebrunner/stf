@@ -41,7 +41,9 @@ COPY . /tmp/build/
 
 # Give permissions to our build user.
 RUN mkdir -p /app && \
-    chown -R stf-build:stf-build /tmp/build /app
+    mkdir -p /data && \
+    chown -R stf-build:stf-build /tmp/build /app && \
+    chown -R stf:stf /data
 
 # Switch over to the build user.
 USER stf-build

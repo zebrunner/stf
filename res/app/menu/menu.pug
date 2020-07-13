@@ -4,19 +4,19 @@
 
 .navbar.stf-menu(ng-controller='MenuCtrl')
   .container-fluid.stf-top-bar
-    a.stf-logo(ng-href="/#!/devices") STF
+    a.stf-logo(ng-href="/stf#!/devices") STF
     ul.nav.stf-nav(nav-menu='current').unselectable
       li(ng-cloak)
-        a(ng-href='/#!/control/{{lastUsedDevice}}', ng-show='lastUsedDevice')
+        a(ng-href='/stf#!/control/{{lastUsedDevice}}', ng-show='lastUsedDevice')
           span.fa.fa-mobile
           span(ng-if='!$root.basicMode', translate) Control
-        a(ng-href='/#!/devices', accesskey='1')
+        a(ng-href='/stf#!/devices', accesskey='1')
           span.fa.fa-sitemap
           span(ng-if='!$root.basicMode', translate) Devices
-        a(ng-href='/#!/groups')
+        a(ng-href='/stf#!/groups')
           span.fa.fa-object-group
           span(ng-if='!$root.basicMode', translate) Groups
-        a(ng-href='/#!/settings')
+        a(ng-href='/stf#!/settings')
           span.fa.fa-gears
           span(ng-if='!$root.basicMode', translate) Settings
     ul.nav.stf-nav.stf-feedback.pull-right(ng-cloak, nav-menu='current').unselectable
@@ -40,7 +40,7 @@
           span(translate) Logout 
 
       li(ng-show='!$root.basicMode')
-        a(ng-href='/#!/help', accesskey='6')
+        a(ng-href='/stf#!/help', accesskey='6')
           i.fa.fa-question-circle.fa-fw
           | {{ "Help" | translate }}
 
