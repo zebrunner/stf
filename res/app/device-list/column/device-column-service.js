@@ -77,12 +77,6 @@ module.exports = function DeviceColumnService($filter, gettext, SettingsService,
         return $filter('translate')(device.group.originName)
       }
     })
-  , model: DeviceModelCell({
-      title: gettext('Model')
-    , value: function(device) {
-        return device ? device.model || device.serial : ''
-      }
-    })
   , name: DeviceNameCell({
       title: gettext('Product')
     , value: function(device) {
@@ -567,46 +561,6 @@ function DeviceBrowserCell(options) {
       return options.value(device).apps.some(function(app) {
         return filterIgnoreCase(app.type, filter.query)
       })
-    }
-  })
-}
-
-function DeviceModelCell(options) {
-  return _.defaults(options, {
-    title: options.title
-  , defaultOrder: 'asc'
-  , build: function() {
-      var td = document.createElement('td')
-      var span = document.createElement('span')
-      var image = document.createElement('img')
-      span.className = 'device-small-image'
-      image.className = 'device-small-image-img pointer'
-      span.appendChild(image)
-      td.appendChild(span)
-      td.appendChild(document.createTextNode(''))
-      return td
-    }
-  , update: function(td, device) {
-      var span = td.firstChild
-      var image = span.firstChild
-      var t = span.nextSibling
-      var src = '/static/app/devices/icon/x24/' +
-            (device.image || '_default.jpg')
-
-      // Only change if necessary so that we don't trigger a download
-      if (image.getAttribute('src') !== src) {
-        image.setAttribute('src', src)
-      }
-
-      t.nodeValue = options.value(device)
-
-      return td
-    }
-  , compare: function(a, b) {
-      return compareRespectCase(options.value(a), options.value(b))
-    }
-  , filter: function(device, filter) {
-      return filterIgnoreCase(options.value(device), filter.query)
     }
   })
 }
