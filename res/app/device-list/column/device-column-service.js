@@ -80,7 +80,7 @@ module.exports = function DeviceColumnService($filter, gettext, SettingsService,
   , model: DeviceModelCell({
       title: gettext('Model')
     , value: function(device) {
-        return device.model ? device.model || device.serial
+        return device.model ? device.model : device.serial
       }
     })
   , name: DeviceNameCell({
