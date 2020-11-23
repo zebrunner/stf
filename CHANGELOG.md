@@ -9,7 +9,7 @@
 
 ### Enhancements
 
-- Updated STFService.apk, minitouch and minicap to support Android 11. Thanks @denis99999 and @pcrepieux!
+- Updated STFService.apk, minitouch and minicap to support Android 10. Thanks @denis99999 and @pcrepieux!
 - Added addAdbPublicKey endpoint [#770](https://github.com/openstf/stf/pull/770). Thanks @neofreko!
 - Added pt_BR translation [#1038](https://github.com/openstf/stf/pull/1038). Thanks @esmiralha!
 - Added market name to device properties [#1002](https://github.com/openstf/stf/pull/1002).
@@ -77,10 +77,6 @@
 - The `--mute-master` option now accepts the values `never` (default), `inuse` (only when a device is being used), and `always` (mute pre-emptively during setup phase). For backwards compatibility, `--mute-master` with no value maps to `inuse`, and `--no-mute-master` to `never`.
 - The battery level and battery temperature columns are now filterable with comparison operators.
 - Log output now includes a timestamp.
-
-### Fixes
-
-- Fixed an issue on Windows where our device binaries may have failed to install due to an `Out of fallback locations` error caused by a faulty mode check. Thanks @iqianxing!
 
 ## 3.1.0 (2017-08-31)
 

@@ -12,7 +12,7 @@
         button.btn.btn-primary-outline(ng-click='installUrl(remoteUrl)',
         uib-tooltip='{{ "Upload From Link" | translate }}', ng-disabled='!remoteUrl')
           i.fa.fa-upload
-
+    input.form-control(ng-if="device.ios",type="text", ng-model="bundleId", name="bundleId", ng-change="onChange()", required)
     .drop-area(ng-file-drop='installFile($files)', ng-file-drag-over-class='dragover').file-input.btn-file
       input(type='file', ng-file-select='installFile($files)')
 

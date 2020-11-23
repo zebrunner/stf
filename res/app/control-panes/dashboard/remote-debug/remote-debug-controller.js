@@ -32,5 +32,4 @@ module.exports = function RemoteDebugCtrl($scope, $timeout, gettext) {
     }
 
   })
-
 }

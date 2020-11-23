@@ -7,7 +7,40 @@ module.exports = function LogsCtrl($scope, $rootScope, $routeParams, LogcatServi
   $scope.started = checkLogBtnStatus() === null ? false : checkLogBtnStatus()
   $scope.filters = {}
 
-  $scope.filters.levelNumbers = LogcatService.filters.levelNumbers
+  var curentFilterValue = ''
+
+
+  var onInstallAppListener = function(event, data) {
+    $scope.$apply(function() {
+      $scope.filters.levelNumbers = instAppsTolevelNumbers(data)
+    })
+  }
+
+  $scope.$on('onInstallApps', onInstallAppListener)
+
+  $scope.$on('destroy', function() {
+    onInstallAppListener()
+  })
+
+  function instAppsTolevelNumbers(data) {
+    return data.map((item, index) => {
+      return {name: item.bundleName, number: index}
+    })
+  }
+
+  LogcatService.getFilterLevels()
+    .then(response => {
+      // @TODO remove this peace of code
+      try {
+        $scope.filters.levelNumbers = instAppsTolevelNumbers(response.installedApps)
+      } catch(e) {
+        console.log(e)
+      }
+
+    })
+    .catch(err => {
+      $scope.filters.levelNumbers = LogcatService.filters.levelNumbers
+    })
 
   LogcatService.filters.filterLines()
 
@@ -82,7 +115,7 @@ module.exports = function LogsCtrl($scope, $rootScope, $routeParams, LogcatServi
       LogcatService.deviceEntries[deviceSerial].started = newValue
 
       if (LogcatService.deviceEntries[deviceSerial].started) {
-        $scope.control.startLogcat([]).then(function() {
+        $scope.control.startLogcat([curentFilterValue]).then(function() {
         })
 
         LogcatService.deviceEntries[deviceSerial].started = true
@@ -100,7 +133,6 @@ module.exports = function LogsCtrl($scope, $rootScope, $routeParams, LogcatServi
       }
     }
   })
-
   window.onbeforeunload = function() {
     if ($scope.control) {
       for(var i = 0; i < LogcatService.deviceEntries.length; i++) {
@@ -129,6 +161,7 @@ module.exports = function LogsCtrl($scope, $rootScope, $routeParams, LogcatServi
       $scope.$watch('filters.' + prop, function(newValue, oldValue) {
         if (!angular.equals(newValue, oldValue)) {
           var deviceSerial = (window.location.href).split('/').pop()
+          curentFilterValue = newValue.name
           LogcatService.filters[prop] = newValue
           if (!Object.keys(LogcatService.deviceEntries).includes(deviceSerial)) {
             LogcatService.initDeviceLogCollector(deviceSerial)
