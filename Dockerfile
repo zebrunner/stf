@@ -54,7 +54,7 @@ RUN set -x && \
     export PATH=$PWD/node_modules/.bin:$PATH && \
     npm install --loglevel http && \
     npm pack && \
-    tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /app && \
+    tar xzf stf-*.tgz --strip-components 1 -C /app && \
     bower cache clean && \
     npm install rimraf && \
     npm prune --production && \
