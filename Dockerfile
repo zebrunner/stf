@@ -50,6 +50,9 @@ RUN mkdir -p /app && \
     chown -R stf-build:stf-build /tmp/build /tmp/bundletool /app && \
     chown -R stf:stf /data
 
+RUN mkdir data &&\
+    chown stf-build: data
+
 # Switch over to the build user.
 USER stf-build
 
