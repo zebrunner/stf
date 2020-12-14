@@ -1,9 +1,12 @@
 // See https://github.com/android/platform_packages_apps_settings/blob/master/AndroidManifest.xml
 var io = require('socket.io')
-var socket = io('localhost:7110', {
-  reconnection: false, transports: ['websocket']
-})
-module.exports = function ShellCtrl($scope) {
+
+module.exports = function ShellCtrl($scope, AppState) {
+  var websocketUrl = AppState.config.websocketUrl || ''
+  var socket = io(websocketUrl, {
+    reconnection: false, transports: ['websocket']
+  })
+
   $scope.result = null
 
   var run = function(cmd) {
@@ -66,6 +69,11 @@ module.exports = function ShellCtrl($scope) {
   $scope.openDeveloperSettings = function() {
     openSetting('DevelopmentSettingsActivity')
   }
+
+  $scope.$on('$destroy', function() {
+    socket.close()
+    socket = null
+  })
 
   $scope.clear = function() {
     $scope.command = ''

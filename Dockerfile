@@ -32,16 +32,23 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     tar -xJf node-v*.tar.xz --strip-components 1 -C /usr/local && \
     rm node-v*.tar.xz && \
     su stf-build -s /bin/bash -c '/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js install' && \
-    apt-get -y install libzmq3-dev libprotobuf-dev git graphicsmagick yasm && \
+    apt-get -y install libzmq3-dev libprotobuf-dev git graphicsmagick openjdk-8-jdk yasm && \
     apt-get clean && \
-    rm -rf /var/cache/apt/* /var/lib/apt/lists/*
+    rm -rf /var/cache/apt/* /var/lib/apt/lists/* && \
+    mkdir /tmp/bundletool && \
+    cd /tmp/bundletool && \
+    wget --progress=dot:mega \
+      https://github.com/google/bundletool/releases/download/1.2.0/bundletool-all-1.2.0.jar && \
+    mv bundletool-all-1.2.0.jar bundletool.jar
 
 # Copy app source.
 COPY . /tmp/build/
 
 # Give permissions to our build user.
 RUN mkdir -p /app && \
-    chown -R stf-build:stf-build /tmp/build /app
+    mkdir -p /data && \
+    chown -R stf-build:stf-build /tmp/build /tmp/bundletool /app && \
+    chown -R stf:stf /data
 
 RUN mkdir data &&\
     chown stf-build: data
@@ -55,15 +62,16 @@ RUN set -x && \
     export PATH=$PWD/node_modules/.bin:$PATH && \
     npm install --loglevel http && \
     npm pack && \
-    tar xzf stf-*.tgz --strip-components 1 -C /app && \
+    tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /app && \
     bower cache clean && \
     npm install rimraf && \
     npm prune --production && \
     mv node_modules /app && \
-#    npm cache clean && \
     rm -rf ~/.node-gyp && \
+    mkdir /app/bundletool && \
+    mv /tmp/bundletool/* /app/bundletool && \
     cd /app && \
-    rm -rf /tmp/*
+    find /tmp -mindepth 1 ! -regex '^/tmp/hsperfdata_root\(/.*\)?' -delete
 
 # Switch to the app user.
 USER stf

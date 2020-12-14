@@ -1,0 +1,8 @@
+.widget-container.fluid-height.stf-remote-debug.stf-appium-remote-debug(ng-controller='AppiumRemoteDebugCtrl')
+  .heading
+    img(ng-src='static/app/icons/appium.png')
+    span(translate) Appium url
+
+  .widget-content.padded
+    .form-inline
+      textarea(readonly, rows='1', ng-model='appiumUrl', msd-elastic, text-focus-select).form-control.remote-debug-textarea

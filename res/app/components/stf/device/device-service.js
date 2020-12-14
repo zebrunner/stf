@@ -1,8 +1,18 @@
+/**
+* Copyright © 2019 contains code contributed by Orange SA, authors: Denis Barbaron - Licensed under the Apache license 2.0
+**/
+
 var oboe = require('oboe')
 var _ = require('lodash')
 var EventEmitter = require('eventemitter3')
+let Promise = require('bluebird')
 
-module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceService, $rootScope) {
+module.exports = function DeviceServiceFactory(
+  $http,
+  socket,
+  EnhanceDeviceService,
+  $rootScope
+  ) {
   var deviceService = {}
 
   function Tracker($scope, options) {
@@ -93,6 +103,12 @@ module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceServi
       if (index >= 0) {
         devices.splice(index, 1)
         delete devicesBySerial[data.serial]
+        for (var serial in devicesBySerial) {
+          if (devicesBySerial[serial] > index) {
+            devicesBySerial[serial]--
+          }
+        }
+        sync(data)
         this.emit('remove', data)
       }
     }.bind(this)
@@ -131,6 +147,8 @@ module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceServi
         }
         notify(event)
       }
+
+      /** code removed to avoid to show forbidden devices in user view!
       else {
         if (options.filter(event.data)) {
           insert(event.data)
@@ -139,6 +157,7 @@ module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceServi
           notify(event)
         }
       }
+      **/
     }
 
     function applicationsChangeListener(event) {
@@ -172,6 +191,43 @@ module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceServi
     }
 
     this.devices = devices
+
+    function addGroupDevicesListener(event) {
+      return Promise.map(event.devices, function(serial) {
+        return deviceService.load(serial).then(function(device) {
+          return device
+        })
+      })
+      .then(function(_devices) {
+        _devices.forEach(function(device) {
+          if (device && typeof devicesBySerial[device.serial] === 'undefined') {
+            insert(device)
+            notify(event)
+          }
+        })
+      })
+    }
+
+    function removeGroupDevicesListener(event) {
+      event.devices.forEach(function(serial) {
+        if (typeof devicesBySerial[serial] !== 'undefined') {
+          remove(devices[devicesBySerial[serial]])
+          notify(event)
+        }
+      })
+    }
+
+    function updateGroupDeviceListener(event) {
+      let device = get(event.data)
+      if (device) {
+        modify(device, event.data)
+        notify(event)
+      }
+    }
+
+    scopedSocket.on('device.addGroupDevices', addGroupDevicesListener)
+    scopedSocket.on('device.removeGroupDevices', removeGroupDevicesListener)
+    scopedSocket.on('device.updateGroupDevice', updateGroupDeviceListener)
   }
 
   Tracker.prototype = new EventEmitter()
