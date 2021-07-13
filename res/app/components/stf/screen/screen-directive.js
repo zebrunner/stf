@@ -157,6 +157,11 @@ module.exports = function DeviceScreenDirective(
         }
 
         function shouldUpdateScreen() {
+          console.log('scope.$parent.showScreen: ', scope.$parent.showScreen)
+          console.log('device.using: ', device.using)
+          console.log('PageVisibilityService.hidden: ', PageVisibilityService.hidden)
+          console.log('!PageVisibilityService.hidden: ', !PageVisibilityService.hidden)
+          console.log('ws.readyState === WebSocket.OPEN: ', ws.readyState === WebSocket.OPEN)
           return (
             // NO if the user has disabled the screen.
             scope.$parent.showScreen &&
