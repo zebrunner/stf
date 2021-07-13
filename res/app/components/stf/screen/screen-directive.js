@@ -172,11 +172,14 @@ module.exports = function DeviceScreenDirective(
 
         function checkEnabled() {
           var newEnabled = shouldUpdateScreen()
+          console.log('shouldUpdateScreen()=', newEnabled)
 
           if (newEnabled === cachedEnabled) {
+            console.log('updateBounds() only')
             updateBounds()
           }
           else if (newEnabled) {
+            console.log('updateBounds() and onScreenInterestGained()')
             updateBounds()
             onScreenInterestGained()
           }
@@ -189,7 +192,9 @@ module.exports = function DeviceScreenDirective(
         }
 
         function onScreenInterestGained() {
+          console.log('onScreenInterestGained()')
           if (ws.readyState === WebSocket.OPEN) {
+            console.log('ws.readyState === WebSocket.OPEN')
             ws.send('size ' + adjustedBoundSize.w + 'x' + adjustedBoundSize.h)
             ws.send('on')
           }
