@@ -101,7 +101,6 @@ module.exports = function DeviceScreenDirective(
         }
 
         var adjustedBoundSize
-        var cachedEnabled = false
 
         function updateBounds() {
           function adjustBoundedSize(w, h) {
@@ -183,11 +182,7 @@ module.exports = function DeviceScreenDirective(
           var newEnabled = shouldUpdateScreen()
           console.log('shouldUpdateScreen()=', newEnabled)
 
-          if (newEnabled === cachedEnabled) {
-            console.log('updateBounds() only')
-            updateBounds()
-          }
-          else if (newEnabled) {
+          if (newEnabled) {
             console.log('updateBounds() and onScreenInterestGained()')
             updateBounds()
             onScreenInterestGained()
@@ -197,7 +192,6 @@ module.exports = function DeviceScreenDirective(
             onScreenInterestLost()
           }
 
-          cachedEnabled = newEnabled
         }
 
         function onScreenInterestGained() {
