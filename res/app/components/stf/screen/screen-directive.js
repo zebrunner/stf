@@ -162,7 +162,10 @@ module.exports = function DeviceScreenDirective(
           console.log('PageVisibilityService.hidden: ', PageVisibilityService.hidden)
           console.log('!PageVisibilityService.hidden: ', !PageVisibilityService.hidden)
           console.log('ws.readyState === WebSocket.OPEN: ', ws.readyState === WebSocket.OPEN)
-          return (
+
+          //forcibly return true to update screen!
+          return true
+/*          return (
             // NO if the user has disabled the screen.
             scope.$parent.showScreen &&
             // NO if we're not even using the device anymore.
@@ -173,6 +176,7 @@ module.exports = function DeviceScreenDirective(
             ws.readyState === WebSocket.OPEN
             // YES otherwise
           )
+*/
         }
 
         function checkEnabled() {
@@ -180,9 +184,8 @@ module.exports = function DeviceScreenDirective(
           console.log('shouldUpdateScreen()=', newEnabled)
 
           if (newEnabled === cachedEnabled) {
-            console.log('updateBounds() only plus fix with onScreenInterestGained()')
+            console.log('updateBounds() only')
             updateBounds()
-            onScreenInterestGained()
           }
           else if (newEnabled) {
             console.log('updateBounds() and onScreenInterestGained()')
