@@ -180,8 +180,9 @@ module.exports = function DeviceScreenDirective(
           console.log('shouldUpdateScreen()=', newEnabled)
 
           if (newEnabled === cachedEnabled) {
-            console.log('updateBounds() only')
+            console.log('updateBounds() only plus fix with onScreenInterestGained()')
             updateBounds()
+            onScreenInterestGained()
           }
           else if (newEnabled) {
             console.log('updateBounds() and onScreenInterestGained()')
