@@ -163,8 +163,7 @@ module.exports = function DeviceScreenDirective(
           console.log('ws.readyState === WebSocket.OPEN: ', ws.readyState === WebSocket.OPEN)
 
           //forcibly return true to update screen!
-          return true
-/*          return (
+          return (
             // NO if the user has disabled the screen.
             scope.$parent.showScreen &&
             // NO if we're not even using the device anymore.
@@ -175,7 +174,6 @@ module.exports = function DeviceScreenDirective(
             ws.readyState === WebSocket.OPEN
             // YES otherwise
           )
-*/
         }
 
         function checkEnabled() {
@@ -365,6 +363,7 @@ module.exports = function DeviceScreenDirective(
 
         // NOTE: instead of fa-pane-resize, a fa-child-pane-resize could be better
         scope.$on('fa-pane-resize', _.debounce(updateBounds, 1000))
+        console.log('scope.$watch(device.using, checkEnabled): ', checkEnabled)
         scope.$watch('device.using', checkEnabled)
         scope.$on('visibilitychange', checkEnabled)
         scope.$watch('$parent.showScreen', checkEnabled)
