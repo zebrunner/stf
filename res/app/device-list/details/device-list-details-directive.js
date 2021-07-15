@@ -411,7 +411,7 @@ module.exports = function DeviceListDetailsDirective(
         var id = calculateId(device)
 
         tr.id = id
-        console.log('device-list-details-directive',device.usable)
+        console.log('device-list-details-directive device: ', device.model, '; using: ', device.using, '; usable: ', device.usable)
         if (!device.usable) {
           tr.classList.add('device-not-usable')
         }

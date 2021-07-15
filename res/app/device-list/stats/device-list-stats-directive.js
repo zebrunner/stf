@@ -49,7 +49,7 @@ module.exports = function DeviceListStatsDirective(
 
       function addListener(device) {
         var stats = updateStats(device)
-        console.log('device-list-stats-directive addListener',device.usable)
+        console.log('device-list-stats-directive device: ', device.model, '; using: ', device.using, '; usable: ', device.usable)
         scope.counter.total += 1
         scope.counter.usable += stats.usable
         scope.counter.busy += stats.busy
