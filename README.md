@@ -1,4 +1,5 @@
-<img src="res/common/logo/exports/STF-128.png?raw=true" style="width:100px;height:100px;" alt="STF">
+SmartTestFarm
+==================
 
 Feel free to support the development with a [**donation**](https://www.paypal.com/donate?hosted_button_id=JLQ4U468TWQPS) for the next improvements.
 
