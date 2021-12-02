@@ -10,7 +10,7 @@ module.exports = angular.module('control-panes', [
   require('./dashboard').name,
   //require('./inspect').name,
   //require('./activity').name,
-  //require('./logs').name, //TODO: [VD] enable android/ios log service later
+  require('./logs').name,
   //require('./resources').name,
   require('./screenshots').name,
   require('./explorer').name,
