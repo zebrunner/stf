@@ -1,7 +1,7 @@
 FROM ubuntu:16.04
 
 # Sneak the stf executable into $PATH.
-ENV PATH /app/bin:$PATH
+ENV PATH /app/bin:/app/go-ios:$PATH
 
 # Work in app dir by default.
 WORKDIR /app
@@ -9,6 +9,32 @@ WORKDIR /app
 # Export default app port, not enough for all processes but it should do
 # for now.
 EXPOSE 3000
+
+ENV DEVICE_UDID qwe123
+
+# WebDriverAgent vars
+ENV WDA_PORT 8100
+ENV MJPEG_PORT 8101
+ENV WDA_ENV /app/zebrunner/wda.env
+ENV WDA_LOG_FILE /app/zebrunner/wda.log
+ENV WDA_WAIT_TIMEOUT 30
+ENV WDA_BUNDLEID com.facebook.WebDriverAgentRunner.xctrunner
+
+RUN mkdir /app/zebrunner
+
+RUN apt-get update && \
+        apt-get install -y wget unzip iputils-ping nano libimobiledevice-utils libimobiledevice6 usbmuxd cmake git build-essential jq
+#awscli ffmpeg
+
+# go-ios utility to manage iOS devices connected to Linux provider host
+#Grab gidevice from github and extract it in a folder
+RUN wget https://github.com/danielpaulus/go-ios/releases/latest/download/go-ios-linux.zip
+RUN mkdir go-ios
+RUN unzip go-ios-linux.zip -d go-ios
+RUN rm go-ios-linux.zip
+
+COPY files/start-wda.sh /opt
+COPY files/WebDriverAgent.ipa /opt
 
 # Install app requirements. Trying to optimize push speed for dependant apps
 # by reducing layers as much as possible. Note that one of the final steps
@@ -48,7 +74,7 @@ COPY . /tmp/build/
 RUN mkdir -p /app && \
     mkdir -p /data && \
     chown -R stf-build:stf-build /tmp/build /tmp/bundletool /app && \
-    chown -R stf:stf /data
+    chown -R stf:stf /data /app/zebrunner
 
 RUN mkdir data &&\
     chown stf-build: data
