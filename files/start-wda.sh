@@ -12,11 +12,25 @@ PLATFORM_VERSION=$(ios info --udid=$DEVICE_UDID | jq -r ".ProductVersion")
     #"TimeZoneOffsetFromUTC":10800,
 
 
+# https://github.com/zebrunner/stf/issues/256 
+#echo "[$(date +'%d/%m/%Y %H:%M:%S')] Pair device $DEVICE_UDID"
+#ios pair --udid=$DEVICE_UDID
+
+
+#echo "[$(date +'%d/%m/%Y %H:%M:%S')] Allow to download DeveloperDiskImages automatically"
+#ios image auto --basedir /app/zebrunner/DeveloperDiskImages
+echo "[$(date +'%d/%m/%Y %H:%M:%S')] Mount /app/zebrunner/DeveloperDiskImages/$PLATFORM_VERSION/DeveloperDiskImage.dmg"
+ios image mount --path=/app/zebrunner/DeveloperDiskImages/$PLATFORM_VERSION/DeveloperDiskImage.dmg --udid=$DEVICE_UDID
+
+
 echo "[$(date +'%d/%m/%Y %H:%M:%S')] Installing WDA application on device"
 ios install --path=/opt/WebDriverAgent.ipa --udid=$DEVICE_UDID
 
-echo "[$(date +'%d/%m/%Y %H:%M:%S')] Activating default com.apple.springboard during WDA startup"
-ios launch com.apple.springboard
+#TODO: investigate if it is required as we can emulate home button click via WDA
+# https://github.com/zebrunner/stf/issues/247
+# so far it seems useless to activate default screen
+#echo "[$(date +'%d/%m/%Y %H:%M:%S')] Activating default com.apple.springboard during WDA startup"
+#ios launch com.apple.springboard
 
 echo "[$(date +'%d/%m/%Y %H:%M:%S')] Starting WebDriverAgent application on port $WDA_PORT"
 ios runwda --bundleid=$WDA_BUNDLEID --testrunnerbundleid=$WDA_BUNDLEID --xctestconfig=WebDriverAgentRunner.xctest --env USE_PORT=$WDA_PORT --env MJPEG_SERVER_PORT=$MJPEG_PORT --env UITEST_DISABLE_ANIMATIONS=YES --udid $DEVICE_UDID > ${WDA_LOG_FILE} 2>&1 &
