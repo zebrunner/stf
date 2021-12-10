@@ -1,7 +1,7 @@
 FROM ubuntu:16.04
 
 # Sneak the stf executable into $PATH.
-ENV PATH /app/bin:/app/go-ios:$PATH
+ENV PATH=/app/bin:/app/go-ios:$PATH
 
 # Work in app dir by default.
 WORKDIR /app
@@ -9,15 +9,15 @@ WORKDIR /app
 # Export default app port
 EXPOSE 3000
 
-ENV DEVICE_UDID qwe123
+ENV DEVICE_UDID=
 
 # WebDriverAgent vars
-ENV WDA_PORT 8100
-ENV MJPEG_PORT 8101
-ENV WDA_ENV /app/zebrunner/wda.env
-ENV WDA_LOG_FILE /app/zebrunner/wda.log
-ENV WDA_WAIT_TIMEOUT 30
-ENV WDA_BUNDLEID com.facebook.WebDriverAgentRunner.xctrunner
+ENV WDA_PORT=8100
+ENV MJPEG_PORT=8101
+ENV WDA_ENV=/app/zebrunner/wda-${DEVICE_UDID}.env
+ENV WDA_LOG_FILE=/app/zebrunner/wda-${DEVICE_UDID}.log
+ENV WDA_WAIT_TIMEOUT=30
+ENV WDA_BUNDLEID=com.facebook.WebDriverAgentRunner.xctrunner
 
 RUN mkdir -p /app/zebrunner/DeveloperDiskImages
 
