@@ -6,8 +6,7 @@ ENV PATH /app/bin:/app/go-ios:$PATH
 # Work in app dir by default.
 WORKDIR /app
 
-# Export default app port, not enough for all processes but it should do
-# for now.
+# Export default app port
 EXPOSE 3000
 
 ENV DEVICE_UDID qwe123
@@ -20,7 +19,7 @@ ENV WDA_LOG_FILE /app/zebrunner/wda.log
 ENV WDA_WAIT_TIMEOUT 30
 ENV WDA_BUNDLEID com.facebook.WebDriverAgentRunner.xctrunner
 
-RUN mkdir /app/zebrunner
+RUN mkdir -p /app/zebrunner/DeveloperDiskImages
 
 RUN apt-get update && \
         apt-get install -y wget unzip iputils-ping nano libimobiledevice-utils libimobiledevice6 usbmuxd cmake git build-essential jq
