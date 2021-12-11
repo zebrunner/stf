@@ -1,10 +1,10 @@
 FROM ubuntu:16.04
 
 # Sneak the stf executable into $PATH.
-ENV PATH=/app/bin:/app/go-ios:$PATH
+ENV PATH=/opt/bin:/opt/go-ios:$PATH
 
 # Work in app dir by default.
-WORKDIR /app
+WORKDIR /opt
 
 # Export default app port
 EXPOSE 3000
@@ -14,15 +14,15 @@ ENV DEVICE_UDID=
 # WebDriverAgent vars
 ENV WDA_PORT=8100
 ENV MJPEG_PORT=8101
-ENV WDA_ENV=/app/zebrunner/wda-${DEVICE_UDID}.env
-ENV WDA_LOG_FILE=/app/zebrunner/wda-${DEVICE_UDID}.log
+ENV WDA_ENV=/opt/zebrunner/wda.env
+ENV WDA_LOG_FILE=/opt/zebrunner/wda.log
 ENV WDA_WAIT_TIMEOUT=30
 ENV WDA_BUNDLEID=com.facebook.WebDriverAgentRunner.xctrunner
 
-RUN mkdir -p /app/zebrunner/DeveloperDiskImages
+RUN mkdir -p /opt/zebrunner/DeveloperDiskImages
 
 RUN apt-get update && \
-        apt-get install -y wget unzip iputils-ping nano libimobiledevice-utils libimobiledevice6 usbmuxd cmake git build-essential jq
+        apt-get install -y curl wget unzip iputils-ping nano libimobiledevice-utils libimobiledevice6 usbmuxd cmake git build-essential jq
 #awscli ffmpeg
 
 # go-ios utility to manage iOS devices connected to Linux provider host
@@ -70,14 +70,15 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 COPY . /tmp/build/
 
 # Give permissions to our build user.
-RUN mkdir -p /app && \
+RUN mkdir -p /opt && \
     mkdir -p /data && \
-    chown -R stf-build:stf-build /tmp/build /tmp/bundletool /app && \
-    chown -R stf:stf /data /app/zebrunner
+    chown -R stf-build:stf-build /tmp/build /tmp/bundletool /opt && \
+    chown -R stf:stf /data /opt/zebrunner
 
 RUN mkdir data &&\
     chown stf-build: data
 
+RUN ln -s /opt /app
 # Switch over to the build user.
 USER stf-build
 
@@ -87,15 +88,15 @@ RUN set -x && \
     export PATH=$PWD/node_modules/.bin:$PATH && \
     npm install --loglevel http && \
     npm pack && \
-    tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /app && \
+    tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /opt && \
     bower cache clean && \
     npm install rimraf && \
     npm prune --production && \
-    mv node_modules /app && \
+    mv node_modules /opt && \
     rm -rf ~/.node-gyp && \
-    mkdir /app/bundletool && \
-    mv /tmp/bundletool/* /app/bundletool && \
-    cd /app && \
+    mkdir /opt/bundletool && \
+    mv /tmp/bundletool/* /opt/bundletool && \
+    cd /opt && \
     find /tmp -mindepth 1 ! -regex '^/tmp/hsperfdata_root\(/.*\)?' -delete
 
 # Switch to the app user.

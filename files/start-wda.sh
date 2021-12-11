@@ -18,9 +18,9 @@ PLATFORM_VERSION=$(ios info --udid=$DEVICE_UDID | jq -r ".ProductVersion")
 
 
 #echo "[$(date +'%d/%m/%Y %H:%M:%S')] Allow to download DeveloperDiskImages automatically"
-#ios image auto --basedir /app/zebrunner/DeveloperDiskImages
-echo "[$(date +'%d/%m/%Y %H:%M:%S')] Mount /app/zebrunner/DeveloperDiskImages/$PLATFORM_VERSION/DeveloperDiskImage.dmg"
-ios image mount --path=/app/zebrunner/DeveloperDiskImages/$PLATFORM_VERSION/DeveloperDiskImage.dmg --udid=$DEVICE_UDID
+#ios image auto --basedir /opt/zebrunner/DeveloperDiskImages
+echo "[$(date +'%d/%m/%Y %H:%M:%S')] Mount /opt/zebrunner/DeveloperDiskImages/$PLATFORM_VERSION/DeveloperDiskImage.dmg"
+ios image mount --path=/opt/zebrunner/DeveloperDiskImages/$PLATFORM_VERSION/DeveloperDiskImage.dmg --udid=$DEVICE_UDID
 
 
 echo "[$(date +'%d/%m/%Y %H:%M:%S')] Installing WDA application on device"
