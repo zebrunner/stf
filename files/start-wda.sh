@@ -95,3 +95,5 @@ rm -f ${sessionFile}
 
 #TODO: to  improve better 1st super slow session startup we have to investigate extra xcuitest caps: https://github.com/appium/appium-xcuitest-driver
 #customSnapshotTimeout, waitForIdleTimeout, animationCoolOffTimeout etc
+
+#TODO: also find a way to override default snapshot generation 60 sec timeout building WebDriverAgent.ipa
