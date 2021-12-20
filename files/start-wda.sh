@@ -22,13 +22,10 @@ PLATFORM_VERSION=$(ios info --udid=$DEVICE_UDID | jq -r ".ProductVersion")
 echo "[$(date +'%d/%m/%Y %H:%M:%S')] Mount /opt/zebrunner/DeveloperDiskImages/$PLATFORM_VERSION/DeveloperDiskImage.dmg"
 ios image mount --path=/opt/zebrunner/DeveloperDiskImages/$PLATFORM_VERSION/DeveloperDiskImage.dmg --udid=$DEVICE_UDID
 
-
 echo "[$(date +'%d/%m/%Y %H:%M:%S')] Installing WDA application on device"
 ios install --path=/opt/WebDriverAgent.ipa --udid=$DEVICE_UDID
 
-#TODO: investigate if it is required as we can emulate home button click via WDA
-# https://github.com/zebrunner/stf/issues/247
-# so far it seems useless to activate default screen
+# no need to launch springboard as it is already started. below command doesn't activate it!
 #echo "[$(date +'%d/%m/%Y %H:%M:%S')] Activating default com.apple.springboard during WDA startup"
 #ios launch com.apple.springboard
 
@@ -40,7 +37,6 @@ ip=""
 #Parse the device IP address from the WebDriverAgent logs using the ServerURL
 #We are trying several times because it takes a few seconds to start the WDA but we want to avoid hardcoding specific seconds wait
 
-#TODO: try to parse and read WDA_PORT and MJPEG_PORT as well
 echo detecting WDA_HOST ip address...
 for ((i=1; i<=$WDA_WAIT_TIMEOUT; i++))
 do
@@ -72,3 +68,30 @@ echo "WDA_HOST=${WDA_HOST}" > ${WDA_ENV}
 echo "WDA_PORT=${WDA_PORT}" >> ${WDA_ENV}
 echo "MJPEG_PORT=${MJPEG_PORT}" >> ${WDA_ENV}
 echo "PLATFORM_VERSION=${PLATFORM_VERSION}" >> ${WDA_ENV}
+
+
+# #247: right after the WDA startup it should load SNAPSHOT of com.apple.springboard default screen and default timeout is 60 sec for 1st start.
+# We have to start this session at once and till next restart WDA sessions might be stopped/started asap.
+echo "[$(date +'%d/%m/%Y %H:%M:%S')] Starting WebDriverAgent 1st session"
+# start new WDA session with default 60 sec snapshot timeout
+sessionFile=/tmp/${DEVICE_UDID}.txt
+curl --silent --location --request POST "http://${WDA_HOST}:${WDA_PORT}/session" --header 'Content-Type: application/json' --data-raw '{"capabilities": {"waitForQuiescence": false}}' > ${sessionFile}
+
+bundleId=`cat $sessionFile | grep "CFBundleIdentifier" | cut -d '"' -f 4`
+echo bundleId: $bundleId
+
+sessionId=`cat $sessionFile | grep -m 1 "sessionId" | cut -d '"' -f 4`
+echo sessionId: $sessionId
+
+if [[ "$bundleId" != "com.apple.springboard" ]]; then
+  echo "[$(date +'%d/%m/%Y %H:%M:%S')] Activating springboard app forcibly..."
+  curl --silent --location --request POST "http://${WDA_HOST}:${WDA_PORT}/session/$sessionId/wda/apps/launch" --header 'Content-Type: application/json' --data-raw '{"bundleId": "com.apple.springboard"}'
+  sleep 1
+  curl --silent --location --request POST "http://${WDA_HOST}:${WDA_PORT}/session" --header 'Content-Type: application/json' --data-raw '{"capabilities": {"waitForQuiescence": false}}'
+fi
+
+rm -f ${sessionFile}
+# stop is not required as manual usage via UI will start new one anyway
+
+#TODO: to  improve better 1st super slow session startup we have to investigate extra xcuitest caps: https://github.com/appium/appium-xcuitest-driver
+#customSnapshotTimeout, waitForIdleTimeout, animationCoolOffTimeout etc
