@@ -12,9 +12,9 @@ PLATFORM_VERSION=$(ios info --udid=$DEVICE_UDID | jq -r ".ProductVersion")
     #"TimeZoneOffsetFromUTC":10800,
 
 
-# https://github.com/zebrunner/stf/issues/256 
-#echo "[$(date +'%d/%m/%Y %H:%M:%S')] Pair device $DEVICE_UDID"
-#ios pair --udid=$DEVICE_UDID
+# https://github.com/zebrunner/stf/issues/256
+echo "[$(date +'%d/%m/%Y %H:%M:%S')] Pair device $DEVICE_UDID"
+ios pair --udid=$DEVICE_UDID
 
 
 #echo "[$(date +'%d/%m/%Y %H:%M:%S')] Allow to download DeveloperDiskImages automatically"
