@@ -32,9 +32,6 @@ RUN mkdir go-ios
 RUN unzip go-ios-linux.zip -d go-ios
 RUN rm go-ios-linux.zip
 
-COPY files/start-wda.sh /opt
-COPY files/WebDriverAgent.ipa /opt
-
 # Install app requirements. Trying to optimize push speed for dependant apps
 # by reducing layers as much as possible. Note that one of the final steps
 # installs development files for node-gyp so that npm install won't have to
@@ -101,6 +98,9 @@ RUN set -x && \
 
 # Switch to the app user.
 USER stf
+
+COPY files/start-wda.sh /opt
+COPY files/WebDriverAgent.ipa /opt
 
 # Show help by default.
 CMD stf --help
