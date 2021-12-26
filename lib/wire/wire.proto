@@ -106,7 +106,7 @@ enum MessageType {
   UpdateIosDevice                   = 112;
   BatteryIosEvent                   = 113;
   SdkIosVersion                     = 114;
-  SizeIsoDevice                     = 115;
+  SizeIosDevice                     = 115;
   DashboardOpenMessage              = 116;
   GetIosTreeElements                = 117;
   TransactionTreeMessage            = 118;
@@ -916,7 +916,7 @@ message SdkIosVersion{
   required string device = 2;
   required string sdkVersion = 3;
 }
-message SizeIsoDevice{
+message SizeIosDevice{
   required string id = 1;
   required double height = 2;
   required double width = 3;
