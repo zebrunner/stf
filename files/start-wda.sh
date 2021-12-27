@@ -12,9 +12,14 @@ PLATFORM_VERSION=$(ios info --udid=$DEVICE_UDID | jq -r ".ProductVersion")
     #"TimeZoneOffsetFromUTC":10800,
 
 
-# https://github.com/zebrunner/stf/issues/256
 echo "[$(date +'%d/%m/%Y %H:%M:%S')] Pair device $DEVICE_UDID"
-ios pair --udid=$DEVICE_UDID
+if [ -f ${P12FILE} ] && [ ! -z ${P12PASSWORD} ]; then
+  # #280 pair supervised iOS device
+  ios pair --p12file="${P12FILE}" --password="${P12PASSWORD}" --udid=$DEVICE_UDID
+else
+  # #256 pair iOS device in regular way
+  ios pair --udid=$DEVICE_UDID
+fi
 
 
 #echo "[$(date +'%d/%m/%Y %H:%M:%S')] Allow to download DeveloperDiskImages automatically"

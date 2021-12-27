@@ -19,6 +19,9 @@ ENV WDA_LOG_FILE=/opt/zebrunner/wda.log
 ENV WDA_WAIT_TIMEOUT=30
 ENV WDA_BUNDLEID=com.facebook.WebDriverAgentRunner.xctrunner
 
+ENV P12FILE=/opt/zebrunner/mcloud.p12
+ENV P12PASSWORD=
+
 RUN mkdir -p /opt/zebrunner/DeveloperDiskImages
 
 RUN apt-get update && \
