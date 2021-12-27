@@ -21,6 +21,11 @@ else
   ios pair --udid=$DEVICE_UDID
 fi
 
+if [ $? == 1 ]; then
+  echo "ERROR! Unable to pair iOS device!"
+  # Below exit completely destroy stf container as there is no sense to continue with unpaired device
+  exit -1
+fi
 
 #echo "[$(date +'%d/%m/%Y %H:%M:%S')] Allow to download DeveloperDiskImages automatically"
 #ios image auto --basedir /opt/zebrunner/DeveloperDiskImages
@@ -60,7 +65,7 @@ done
 if [[ -z $ip ]]; then
   echo "ERROR! Unable to parse WDA_HOST ip from log file!"
   cat $WDA_LOG_FILE
-  # Below exit completely destroy appium container as there is no sense to continue with undefined WDA_HOST ip!
+  # Below exit completely destroy stf container as there is no sense to continue with undefined WDA_HOST ip!
   exit -1
 fi
 
