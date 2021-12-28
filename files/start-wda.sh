@@ -74,10 +74,10 @@ echo "Detected WDA_HOST ip: ${WDA_HOST}"
 echo "WDA_PORT=${WDA_PORT}"
 
 
-echo "WDA_HOST=${WDA_HOST}" > ${WDA_ENV}
-echo "WDA_PORT=${WDA_PORT}" >> ${WDA_ENV}
-echo "MJPEG_PORT=${MJPEG_PORT}" >> ${WDA_ENV}
-echo "PLATFORM_VERSION=${PLATFORM_VERSION}" >> ${WDA_ENV}
+echo "export WDA_HOST=${WDA_HOST}" > ${WDA_ENV}
+echo "export WDA_PORT=${WDA_PORT}" >> ${WDA_ENV}
+echo "export MJPEG_PORT=${MJPEG_PORT}" >> ${WDA_ENV}
+echo "export PLATFORM_VERSION=${PLATFORM_VERSION}" >> ${WDA_ENV}
 
 
 # #247: right after the WDA startup it should load SNAPSHOT of com.apple.springboard default screen and default timeout is 60 sec for 1st start.
