@@ -67,7 +67,7 @@ COPY . /tmp/build/
 RUN mkdir -p /opt && \
     mkdir -p /data && \
     chown -R stf-build:stf-build /tmp/build /tmp/bundletool /opt && \
-    chown -R stf:stf /data /opt/zebrunner
+    chown -R stf:stf /data
 
 RUN mkdir data &&\
     chown stf-build: data
@@ -95,9 +95,6 @@ RUN set -x && \
 
 # Switch to the app user.
 USER stf
-
-COPY files/start-wda.sh /opt
-COPY files/WebDriverAgent.ipa /opt
 
 # Show help by default.
 CMD stf --help
