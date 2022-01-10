@@ -17,12 +17,6 @@ ENV MJPEG_PORT=8101
 ENV WDA_ENV=/opt/zebrunner/wda.env
 ENV WDA_LOG_FILE=/opt/zebrunner/wda.log
 ENV WDA_WAIT_TIMEOUT=30
-ENV WDA_BUNDLEID=com.facebook.WebDriverAgentRunner.xctrunner
-
-ENV P12FILE=/opt/zebrunner/mcloud.p12
-ENV P12PASSWORD=
-
-RUN mkdir -p /opt/zebrunner/DeveloperDiskImages
 
 RUN apt-get update && \
         apt-get install -y curl wget unzip iputils-ping nano libimobiledevice-utils libimobiledevice6 usbmuxd cmake git build-essential jq
