@@ -1,7 +1,7 @@
 FROM ubuntu:16.04
 
 # Sneak the stf executable into $PATH.
-ENV PATH=/opt/bin:/opt/go-ios:$PATH
+ENV PATH=/opt/bin:$PATH
 
 # Work in app dir by default.
 WORKDIR /opt
@@ -25,8 +25,7 @@ RUN apt-get update && \
 # go-ios utility to manage iOS devices connected to Linux provider host
 #Grab gidevice from github and extract it in a folder
 RUN wget https://github.com/danielpaulus/go-ios/releases/latest/download/go-ios-linux.zip
-RUN mkdir go-ios
-RUN unzip go-ios-linux.zip -d go-ios
+RUN unzip go-ios-linux.zip -d /usr/local/bin
 RUN rm go-ios-linux.zip
 
 # Install app requirements. Trying to optimize push speed for dependant apps
