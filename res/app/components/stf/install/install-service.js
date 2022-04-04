@@ -136,34 +136,5 @@ module.exports = function InstallService(
       })
   }
 
-  installService.installIosFile = function(control, $files, deviceId, bundleId) {
-    var installation = new Installation('uploading')
-    $rootScope.$broadcast('installation', installation)
-    return StorageService.storeIosFile('app', $files, deviceId, bundleId, {
-      filter: function(file) {
-        return /\.(app\.zip|app)$/i.test(file.name)
-      }
-    })
-      .progressed(function(e) {
-        if (e.lengthComputable) {
-          installation.update(e.loaded / e.total * 100 / 2, 'uploading')
-        }
-      })
-      .then(function(res) {
-        installation.manifest = res.data
-        installation.update(100 / 2, 'processing')
-        control.install({
-          manifest: installation.manifest
-
-        })
-      })
-      .then(function() {
-        installation.okay('installed')
-      })
-      .catch(function(err) {
-        installation.fail(err.code || err.message)
-      })
-  }
-
   return installService
 }
