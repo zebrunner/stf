@@ -136,12 +136,12 @@ module.exports = function InstallService(
       })
   }
 
-  installService.installIosFile = function(control, $files, deviceId, bundleId) {
+  installService.installIosFile = function(control, $files, deviceId) {
     var installation = new Installation('uploading')
     $rootScope.$broadcast('installation', installation)
-    return StorageService.storeIosFile('app', $files, deviceId, bundleId, {
+    return StorageService.storeIosFile('app', $files, deviceId, {
       filter: function(file) {
-        return /\.(app\.zip|app)$/i.test(file.name)
+        return /\.(app|zip|ipa)$/i.test(file.name)
       }
     })
       .progressed(function(e) {

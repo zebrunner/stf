@@ -44,12 +44,12 @@ module.exports = function StorageServiceFactory($http, $upload) {
     return resolver.promise
   }
 
-  service.storeIosFile = function(type, files, deviceId, bundleId, options) {
+  service.storeIosFile = function(type, files, deviceId, options) {
     var resolver = Promise.defer()
     var input = options.filter ? files.filter(options.filter) : files
     if (input.length) {
       $upload.upload({
-        url: '/s/uploadIos/' + type + '/' + deviceId + '/' + bundleId
+        url: '/s/uploadIos/' + type + '/' + deviceId
         , method: 'POST'
         , file: input
       })

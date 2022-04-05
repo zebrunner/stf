@@ -4,10 +4,6 @@ module.exports = function InstallCtrl(
 ) {
   $scope.accordionOpen = true
   $scope.installation = null
-  $scope.bundleId = ''
-  $scope.onChange = function() {
-    $scope.bundleId = this.bundleId
-  }
   $scope.clear = function() {
     $scope.installation = null
     $scope.accordionOpen = false
@@ -24,12 +20,11 @@ module.exports = function InstallCtrl(
   $scope.installFile = function($files) {
 
       if($scope.device && $scope.device.ios && $scope.device.ios === true) {
-        if ($files.length && $scope.bundleId !== '') {
+        if ($files.length) {
           return InstallService.installIosFile(
             $scope.control,
             $files,
-            $scope.device.serial,
-            $scope.bundleId)
+            $scope.device.serial)
         } else {
           InstallService.validationError('Bundle name is required !')
         }
