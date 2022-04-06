@@ -112,7 +112,9 @@ module.exports = function InstallService(
         installation.href = res.data.resources.file.href
         return $http.get(installation.href + '/manifest')
           .then(function(res) {
-            if (res.data.success) {
+            //TODO: ignore failure for iOS ipa, app and zip
+            //if (res.data.success) {
+            if (true) {
               installation.manifest = res.data.manifest
               return control.install({
                   href: installation.href
