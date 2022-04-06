@@ -115,23 +115,19 @@ module.exports = function InstallService(
             //TODO: ignore failure for iOS ipa, app and zip
             if (res.data.success) {
               installation.manifest = res.data.manifest
-              return control.install({
-                  href: installation.href
-                , manifest: installation.manifest
-                , launch: installation.launch
-                })
-                .progressed(function(result) {
-                  installation.update(50 + result.progress / 2, result.lastData)
-                })
             }
             else {
               installation.manifest = res.data
-              installation.update(100 / 2, 'processing')
-              control.install({
-                manifest: installation.manifest
-              })
               //throw new Error('Unable to retrieve manifest')
             }
+            return control.install({
+                href: installation.href
+              , manifest: installation.manifest
+              , launch: installation.launch
+              })
+              .progressed(function(result) {
+                installation.update(50 + result.progress / 2, result.lastData)
+              })
           })
       })
       .then(function() {
