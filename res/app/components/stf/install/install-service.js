@@ -113,8 +113,7 @@ module.exports = function InstallService(
         return $http.get(installation.href + '/manifest')
           .then(function(res) {
             //TODO: ignore failure for iOS ipa, app and zip
-            //if (res.data.success) {
-            if (true) {
+            if (res.data.success) {
               installation.manifest = res.data.manifest
               return control.install({
                   href: installation.href
@@ -126,7 +125,13 @@ module.exports = function InstallService(
                 })
             }
             else {
-              throw new Error('Unable to retrieve manifest')
+              log.info("iOS install detected: " + res)
+              installation.manifest = res.data
+              installation.update(100 / 2, 'processing')
+              control.install({
+                manifest: installation.manifest
+              })
+              //throw new Error('Unable to retrieve manifest')
             }
           })
       })
