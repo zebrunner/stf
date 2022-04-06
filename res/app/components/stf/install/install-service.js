@@ -125,7 +125,6 @@ module.exports = function InstallService(
                 })
             }
             else {
-              log.info("iOS install detected: " + res)
               installation.manifest = res.data
               installation.update(100 / 2, 'processing')
               control.install({
