@@ -112,13 +112,11 @@ module.exports = function InstallService(
         installation.href = res.data.resources.file.href
         return $http.get(installation.href + '/manifest')
           .then(function(res) {
-            //TODO: ignore failure for iOS ipa, app and zip
             if (res.data.success) {
               installation.manifest = res.data.manifest
             }
             else {
-              installation.manifest = res.data
-              //throw new Error('Unable to retrieve manifest')
+              throw new Error('Unable to retrieve Android manifest or iOS Info.plist!')
             }
             return control.install({
                 href: installation.href
