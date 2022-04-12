@@ -89,9 +89,6 @@ RUN set -x && \
     cd /opt && \
     find /tmp -mindepth 1 ! -regex '^/tmp/hsperfdata_root\(/.*\)?' -delete
 
-USER root
-RUN npm install -g xml-js
-
 #TODO: return stf user back
 ## Switch to the app user.
 #USER stf
