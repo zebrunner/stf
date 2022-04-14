@@ -89,10 +89,10 @@ RUN set -x && \
     cd /opt && \
     find /tmp -mindepth 1 ! -regex '^/tmp/hsperfdata_root\(/.*\)?' -delete
 
-#TODO: return stf user back
-## Switch to the app user.
-#USER stf
-USER root
+# Switch to the app user.
+USER stf
+#Use root user only for debug
+#USER root
 
 # Show help by default.
 CMD stf --help
