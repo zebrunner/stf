@@ -99,7 +99,7 @@ module.exports = function InstallService(
     $rootScope.$broadcast('installation', installation)
     return StorageService.storeFile('apk', $files, {
         filter: function(file) {
-          return /\.(apk|aab)$/i.test(file.name)
+          return /\.(apk|aab|ipa|app|zip)$/i.test(file.name)
         }
       })
       .progressed(function(e) {
@@ -114,48 +114,19 @@ module.exports = function InstallService(
           .then(function(res) {
             if (res.data.success) {
               installation.manifest = res.data.manifest
-              return control.install({
-                  href: installation.href
-                , manifest: installation.manifest
-                , launch: installation.launch
-                })
-                .progressed(function(result) {
-                  installation.update(50 + result.progress / 2, result.lastData)
-                })
             }
             else {
-              throw new Error('Unable to retrieve manifest')
+              throw new Error('Unable to retrieve Android manifest or iOS Info.plist!')
             }
+            return control.install({
+                href: installation.href
+              , manifest: installation.manifest
+              , launch: installation.launch
+              })
+              .progressed(function(result) {
+                installation.update(50 + result.progress / 2, result.lastData)
+              })
           })
-      })
-      .then(function() {
-        installation.okay('installed')
-      })
-      .catch(function(err) {
-        installation.fail(err.code || err.message)
-      })
-  }
-
-  installService.installIosFile = function(control, $files, deviceId, bundleId) {
-    var installation = new Installation('uploading')
-    $rootScope.$broadcast('installation', installation)
-    return StorageService.storeIosFile('app', $files, deviceId, bundleId, {
-      filter: function(file) {
-        return /\.(app\.zip|app)$/i.test(file.name)
-      }
-    })
-      .progressed(function(e) {
-        if (e.lengthComputable) {
-          installation.update(e.loaded / e.total * 100 / 2, 'uploading')
-        }
-      })
-      .then(function(res) {
-        installation.manifest = res.data
-        installation.update(100 / 2, 'processing')
-        control.install({
-          manifest: installation.manifest
-
-        })
       })
       .then(function() {
         installation.okay('installed')
