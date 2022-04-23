@@ -19,14 +19,11 @@ ENV WDA_LOG_FILE=/opt/zebrunner/wda.log
 ENV WDA_WAIT_TIMEOUT=30
 
 RUN apt-get update && \
-        apt-get install -y curl wget unzip iputils-ping nano libimobiledevice-utils libimobiledevice6 usbmuxd cmake git build-essential jq
-#awscli ffmpeg
+        apt-get install -y curl wget unzip iputils-ping nano libimobiledevice-utils libimobiledevice6 usbmuxd cmake git build-essential jq libplist-utils
 
 # go-ios utility to manage iOS devices connected to Linux provider host
 #Grab gidevice from github and extract it in a folder
-RUN wget https://github.com/danielpaulus/go-ios/releases/latest/download/go-ios-linux.zip
-RUN unzip go-ios-linux.zip -d /usr/local/bin
-RUN rm go-ios-linux.zip
+RUN wget https://github.com/danielpaulus/go-ios/releases/latest/download/go-ios-linux.zip && unzip go-ios-linux.zip -d /usr/local/bin && rm go-ios-linux.zip
 
 # Install app requirements. Trying to optimize push speed for dependant apps
 # by reducing layers as much as possible. Note that one of the final steps
@@ -94,6 +91,8 @@ RUN set -x && \
 
 # Switch to the app user.
 USER stf
+#Use root user only for debug
+#USER root
 
 # Show help by default.
 CMD stf --help
