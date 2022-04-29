@@ -19,7 +19,11 @@ ENV WDA_LOG_FILE=/opt/zebrunner/wda.log
 ENV WDA_WAIT_TIMEOUT=30
 
 RUN apt-get update && \
-        apt-get install -y curl wget unzip iputils-ping nano libimobiledevice-utils libimobiledevice6 usbmuxd cmake git build-essential jq libplist-utils
+        apt-get install -y curl wget unzip iputils-ping nano libimobiledevice-utils libimobiledevice6 usbmuxd cmake git build-essential jq libxml2-utils libplist-utils
+
+# jq - jquery command line to operate with go-ios utility
+# libxml2-utils - xmllint to verify Info.plist file type
+# libplist-utils - plistutil to convert binary Info.plist into the xml
 
 # go-ios utility to manage iOS devices connected to Linux provider host
 #Grab gidevice from github and extract it in a folder
