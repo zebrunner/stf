@@ -11,13 +11,6 @@ EXPOSE 3000
 
 ENV DEVICE_UDID=
 
-# WebDriverAgent vars
-ENV WDA_PORT=8100
-ENV MJPEG_PORT=8101
-ENV WDA_ENV=/opt/zebrunner/wda.env
-ENV WDA_LOG_FILE=/opt/zebrunner/wda.log
-ENV WDA_WAIT_TIMEOUT=30
-
 RUN apt-get update && \
         apt-get install -y curl wget unzip iputils-ping nano libimobiledevice-utils libimobiledevice6 usbmuxd cmake git build-essential jq libxml2-utils libplist-utils
 
