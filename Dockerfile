@@ -12,7 +12,7 @@ EXPOSE 3000
 ENV DEVICE_UDID=
 
 RUN apt-get update && \
-        apt-get install -y curl wget unzip iputils-ping nano libimobiledevice-utils libimobiledevice6 usbmuxd cmake git build-essential jq libxml2-utils libplist-utils
+        apt-get install -y curl wget unzip iputils-ping nano telnet libimobiledevice-utils libimobiledevice6 usbmuxd cmake git build-essential jq libxml2-utils libplist-utils
 
 # jq - jquery command line to operate with go-ios utility
 # libxml2-utils - xmllint to verify Info.plist file type
