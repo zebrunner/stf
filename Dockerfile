@@ -80,8 +80,6 @@ RUN set -x && \
     npm pack && \
     tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /opt && \
     bower cache clean && \
-    npm install rimraf && \
-    npm install decompress && \
     npm prune --production && \
     mv node_modules /opt && \
     rm -rf ~/.node-gyp && \
