@@ -15,6 +15,7 @@ EXPOSE 3000
 
 ENV DEVICE_UDID=
 
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
         apt-get install -y curl wget unzip iputils-ping nano telnet libimobiledevice-utils libimobiledevice6 usbmuxd cmake git build-essential jq libplist-utils
 
@@ -29,8 +30,7 @@ RUN wget https://github.com/danielpaulus/go-ios/releases/download/v1.0.69/go-ios
 # by reducing layers as much as possible. Note that one of the final steps
 # installs development files for node-gyp so that npm install won't have to
 # wait for them on the first native module installation.
-RUN export DEBIAN_FRONTEND=noninteractive && \
-    useradd --system \
+RUN useradd --system \
       --create-home \
       --shell /usr/sbin/nologin \
       stf-build && \
@@ -81,6 +81,7 @@ RUN set -x && \
     tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /opt && \
     bower cache clean && \
     npm install rimraf && \
+    npm install decompress && \
     npm prune --production && \
     mv node_modules /opt && \
     rm -rf ~/.node-gyp && \
