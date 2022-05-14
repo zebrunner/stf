@@ -86,7 +86,7 @@ module.exports = function DeviceColumnService($filter, gettext, SettingsService,
   , name: DeviceNameCell({
       title: gettext('Product')
     , value: function(device) {
-        return device.product || device.name || device.model || device.serial
+        return device.name || device.model || device.serial
       }
     }, AppState.user.email)
   , operator: TextCell({
