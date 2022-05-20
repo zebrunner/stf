@@ -90,7 +90,7 @@ RUN set -x && \
 
 # Switch to the app user.
 USER stf
-#Use root user only for debug
+##Use root user only for debug
 #USER root
 
 # Show help by default.
