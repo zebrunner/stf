@@ -1,4 +1,8 @@
-FROM ubuntu:16.04
+#
+# Copyright © 2022 contains code contributed by Orange SA, authors: Denis Barbaron - Licensed under the Apache license 2.0
+#
+
+FROM ubuntu:20.04
 
 # Sneak the stf executable into $PATH.
 ENV PATH=/opt/bin:$PATH
@@ -11,6 +15,7 @@ EXPOSE 3000
 
 ENV DEVICE_UDID=
 
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
         apt-get install -y curl wget unzip iputils-ping nano telnet libimobiledevice-utils libimobiledevice6 usbmuxd cmake git build-essential jq libplist-utils
 
@@ -25,8 +30,7 @@ RUN wget https://github.com/danielpaulus/go-ios/releases/download/v1.0.69/go-ios
 # by reducing layers as much as possible. Note that one of the final steps
 # installs development files for node-gyp so that npm install won't have to
 # wait for them on the first native module installation.
-RUN export DEBIAN_FRONTEND=noninteractive && \
-    useradd --system \
+RUN useradd --system \
       --create-home \
       --shell /usr/sbin/nologin \
       stf-build && \
@@ -36,10 +40,10 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
       stf && \
     sed -i'' 's@http://archive.ubuntu.com/ubuntu/@mirror://mirrors.ubuntu.com/mirrors.txt@' /etc/apt/sources.list && \
     apt-get update && \
-    apt-get -y install wget python build-essential && \
+    apt-get -y install wget python3 build-essential && \
     cd /tmp && \
     wget --progress=dot:mega \
-      https://nodejs.org/dist/v8.12.0/node-v8.12.0-linux-x64.tar.xz && \
+      https://nodejs.org/dist/v17.9.0/node-v17.9.0-linux-x64.tar.xz && \
     tar -xJf node-v*.tar.xz --strip-components 1 -C /usr/local && \
     rm node-v*.tar.xz && \
     su stf-build -s /bin/bash -c '/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js install' && \
@@ -72,11 +76,10 @@ USER stf-build
 RUN set -x && \
     cd /tmp/build && \
     export PATH=$PWD/node_modules/.bin:$PATH && \
-    npm install --loglevel http && \
+    npm install --python="/usr/bin/python3"  --loglevel http && \
     npm pack && \
     tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /opt && \
     bower cache clean && \
-    npm install rimraf && \
     npm prune --production && \
     mv node_modules /opt && \
     rm -rf ~/.node-gyp && \
@@ -87,7 +90,7 @@ RUN set -x && \
 
 # Switch to the app user.
 USER stf
-#Use root user only for debug
+##Use root user only for debug
 #USER root
 
 # Show help by default.
