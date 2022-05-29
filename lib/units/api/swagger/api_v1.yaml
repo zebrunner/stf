@@ -1878,7 +1878,7 @@ paths:
       security:
         - accessTokenAuth: []
     put:
-      summary: Adds device informatin
+      summary: Adds device information
       description: Adds device information
       operationId: putDeviceBySerial
       consumes:
@@ -1894,7 +1894,7 @@ paths:
         - name: device
           in: body
           description: >
-            Information to add for device. Supports only notes -field.
+            Information to add for device. Supports only notes-field and status change(Disconnected).
           required: true
           schema:
             $ref: "#/definitions/DevicePayload"
@@ -2425,6 +2425,11 @@ definitions:
       note:
         description: Device Note
         type: string
+      status:
+        description: Device status
+        type: string
+        enum: 
+         - Disconnected
   DevicesPayload:
     description: Payload object for adding/removing devices
     properties:
