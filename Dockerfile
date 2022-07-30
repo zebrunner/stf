@@ -17,7 +17,7 @@ ENV DEVICE_UDID=
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
-        apt-get install -y curl wget unzip iputils-ping nano telnet libimobiledevice-utils libimobiledevice6 usbmuxd cmake git build-essential jq libplist-utils
+        apt-get install -y curl wget unzip iputils-ping nano telnet libimobiledevice-utils libimobiledevice6 cmake git build-essential jq libplist-utils socat
 
 # jq - jquery command line to operate with go-ios utility
 # libplist-utils - plistutil to convert binary Info.plist into the xml
