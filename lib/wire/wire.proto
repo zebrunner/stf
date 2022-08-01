@@ -910,6 +910,7 @@ message BatteryIosEvent{
   required string id = 1;
   required int32 state = 2;
   required int32 level = 3;
+  required int32 scale = 4;
 }
 message SdkIosVersion{
   required string id = 1;
