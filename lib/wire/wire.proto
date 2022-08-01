@@ -908,9 +908,12 @@ message UpdateIosDevice{
 }
 message BatteryIosEvent{
   required string id = 1;
-  required int32 state = 2;
-  required int32 level = 3;
-  required int32 scale = 4;
+  required string health = 2;
+  required string source = 3;
+  required string status = 4;
+  required int32 level = 5;
+  required string temp = 6;
+  required int32 scale = 7;
 }
 message SdkIosVersion{
   required string id = 1;
