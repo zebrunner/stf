@@ -15,13 +15,24 @@
     button.btn.btn-primary-outline.icon-app.pull-right(ng-click='openWiFiSettings()', ng-if='!device.ios')
       i.fa.fa-wifi.fa-lg.color-skyblue
       .icon-title {{"WiFi" | translate}}
+    button.btn.btn-primary-outline.icon-app.pull-right(ng-click='openWiFiSettings()', ng-if='device.ios', ng-disabled='true')
+      i.fa.fa-wifi.fa-lg.color-skyblue
+      .icon-title {{"WiFi" | translate}}
 
     button.btn.btn-primary-outline.icon-app.pull-right(ng-click='openManageApps()', ng-if='!device.ios')
       i.fa.fa-list.fa-lg.color-orange
       .icon-title {{"Manage Apps" | translate}}
+    button.btn.btn-primary-outline.icon-app.pull-right(ng-click='openManageApps()', ng-if='device.ios', ng-disabled='true')
+      i.fa.fa-list.fa-lg.color-orange
+      .icon-title {{"Manage Apps" | translate}}
+
 
     button.btn.btn-primary-outline.icon-app.pull-right(ng-click='openDeveloperSettings()', ng-if='!device.ios')
       i.fa.fa-sliders.fa-lg.color-darkgreen
       .icon-title {{"Developer" | translate}}
+    button.btn.btn-primary-outline.icon-app.pull-right(ng-click='openDeveloperSettings()', ng-if='device.ios', ng-disabled='true')
+      i.fa.fa-sliders.fa-lg.color-darkgreen
+      .icon-title {{"Developer" | translate}}
+
 
     .clearfix
