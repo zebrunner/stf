@@ -16,5 +16,13 @@
         span.input-group-btn
           button.btn.btn-primary-outline(ng-click='run(command)', ng-disabled='!command')
             i.fa.fa-play
+      .input-group.form-inline(ng-if='device.ios')
+        input(ng-disabled='true', type=text, ng-model='command', Xtext-focus-select,
+          autocapitalize='off', spellcheck='false',
+          tabindex='30', accesskey='S', autocomplete='on').form-control.shell-input
+        span.input-group-btn
+          button.btn.btn-primary-outline(ng-disabled='true', ng-click='run(command)', ng-disabled='!command')
+            i.fa.fa-play
+
     pre.shell-results.selectable(ng-show='data') {{data}}
     pre.shell-results.selectable.shell-results-empty(ng-show='result.settled && !data') No output
