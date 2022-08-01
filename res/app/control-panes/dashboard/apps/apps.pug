@@ -12,7 +12,7 @@
       .icon-title {{"App Store" | translate}}
 
   .widget-content.padded
-    button.btn.btn-primary-outline.icon-app.pull-right(ng-click='openWiFiSettings()')
+    button.btn.btn-primary-outline.icon-app.pull-right(ng-click='openWiFiSettings()', ng-if='!device.ios')
       i.fa.fa-wifi.fa-lg.color-skyblue
       .icon-title {{"WiFi" | translate}}
 
