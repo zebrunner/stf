@@ -1,5 +1,4 @@
 module.exports = angular.module('stf.automation', [
-  require('./store-account').name,
   require('./device-settings').name,
   require('./appium-remote-debug').name
 ])

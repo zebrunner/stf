@@ -161,7 +161,7 @@ module.exports = function DeviceScreenDirective(
             // NO if the user has disabled the screen.
             scope.$parent.showScreen &&
             // NO if we're not even using the device anymore.
-            device.using &&
+            //device.using &&
             // NO if the page is not visible (e.g. background tab).
             !PageVisibilityService.hidden &&
             // NO if we don't have a connection yet.

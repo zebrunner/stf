@@ -151,6 +151,39 @@ clientWithPromise.then(function(api) {
 })
 ```
 
+#### PUT /devices/{serial}
+
+Adds device information.
+
+```bash
+PUT /api/v1/devices/{serial}
+```
+
+Using cURL:
+
+```bash
+curl -X PUT --data '{"device":{"note": "Change battery", "status": "Disconnected"}}' -H "Authorization: Bearer YOUR-TOKEN-HERE" https://stf.example.org/api/v1/devices/xxxxxxxxx
+```
+
+Using Node.js:
+
+```js
+clientWithPromise.then(function(api) {
+  api.devices.putDeviceBySerial({"device":{"note": "Change battery", "status": "Disconnected"}})
+    .then(function(res) {
+      // xxxx
+    })
+})
+
+// OR
+clientWithPromise.then(function(api) {
+  api.devices.putDeviceBySerial({"device":{"note": "Change battery"}})
+    .then(function(res) {
+      // xxxx
+    })
+})
+```
+
 ### User
 
 #### GET /user
