@@ -17,8 +17,5 @@ jobs:
         tag: ${{ github.sha }}
       run: |
         docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
+        docker push richard1ybb/stf:$tag
         docker build . --file Dockerfile --tag richard1ybb/stf:$tag
-    - name: Push the Docker image
-      env:
-        tag: ${{ github.sha }}
-      run: docker push richard1ybb/stf:$tag
