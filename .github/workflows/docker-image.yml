@@ -13,6 +13,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag richard1ybb/stf:$(date +%s)
+      env:
+        tag: ${{ github.sha }}
+      run: docker build . --file Dockerfile --tag richard1ybb/stf:$tag
     - name: Push the Docker image
-      run: docker push richard1ybb/stf:$(date +%s)
+      run: docker push richard1ybb/stf:$tag
