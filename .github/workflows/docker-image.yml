@@ -13,4 +13,4 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag Richard1ybb/stf:$(date +%s)
+      run: docker build . --file Dockerfile --tag richard1ybb/stf:$(date +%s)
