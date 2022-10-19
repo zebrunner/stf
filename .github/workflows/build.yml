@@ -1,0 +1,10 @@
+name: build image
+on:
+  push:
+    tags:
+      - v**
+    branches:
+      - **
+jobs:
+  build:
+    name
