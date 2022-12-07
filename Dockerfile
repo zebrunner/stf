@@ -24,7 +24,7 @@ RUN apt-get update && \
 
 # go-ios utility to manage iOS devices connected to Linux provider host
 #Grab gidevice from github and extract it in a folder
-RUN wget https://github.com/danielpaulus/go-ios/releases/download/v1.0.69/go-ios-linux.zip && unzip go-ios-linux.zip -d /usr/local/bin && rm go-ios-linux.zip
+RUN wget https://github.com/danielpaulus/go-ios/releases/download/v1.0.90/go-ios-linux.zip && unzip go-ios-linux.zip -d /usr/local/bin && rm go-ios-linux.zip
 
 # Install app requirements. Trying to optimize push speed for dependant apps
 # by reducing layers as much as possible. Note that one of the final steps
