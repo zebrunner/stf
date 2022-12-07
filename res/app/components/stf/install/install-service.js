@@ -6,8 +6,7 @@ module.exports = function InstallService(
   $rootScope
 , $http
 , $filter
-, StorageService,
-  DeviceService
+, StorageService
 ) {
   var installService = Object.create(null)
 

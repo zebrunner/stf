@@ -1,4 +1,4 @@
-require('./logs.less')
+require('./logs.css')
 
 module.exports = angular.module('stf.logs', [
   require('stf/logcat').name,
