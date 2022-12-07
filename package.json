@@ -187,6 +187,19 @@
     "xmldom": "~>=0.6.0",
     "xmlhttprequest-ssl": "~>1.6.1"
   },
+  "resolutions": {
+    "constantinople":  "~>=3.1.1",
+    "ejs":  "~>=3.1.7",
+    "eventsource":  "~>=1.1.1",
+    "https-proxy-agent":  "~>2.2.2",
+    "loader-utils": "~>=1.4.1",
+    "lodash":  "~>=4.17.20",
+    "lodash.template":  "~>=4.5.0",
+    "uglify-js": "~>=2.5.0",
+    "underscore": "~>1.12.0",
+    "xmldom": "~>=0.6.0",
+    "xmlhttprequest-ssl": "~>1.6.1"
+  },
   "preferGlobal": true,
   "collective": {
     "type": "opencollective",
