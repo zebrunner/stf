@@ -69,18 +69,6 @@ module.exports =
           // TODO: Change title, flickers too much on Chrome
           // $rootScope.pageTitle = device.name
 
-          if ($scope.device && $scope.device.ios === true) {
-            var treeTab = {
-              title: gettext('Tree'),
-              icon: 'fa-sitemap color-green',
-              templateUrl: 'control-panes/tree-elements/tree.pug',
-              filters: ['native', 'web']
-            }
-
-            $scope.belowTabs.push(treeTab)
-            $scope.topTabs.push(treeTab)
-          }
-
           SettingsService.set('lastUsedDevice', serial)
 
           return device
