@@ -15,7 +15,6 @@ module.exports = angular.module('control-panes', [
   require('./screenshots').name,
   require('./explorer').name,
   require('./info').name,
-  require('./tree-elements').name
 ])
   .config(['$routeProvider', function($routeProvider) {
 
