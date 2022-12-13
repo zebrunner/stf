@@ -15,12 +15,6 @@ module.exports =
         filters: ['native', 'web']
       },
       {
-        title: gettext('Automation'),
-        icon: 'fa-road color-lila',
-        templateUrl: 'control-panes/automation/automation.pug',
-        filters: ['native', 'web']
-      },
-      {
         title: gettext('Advanced'),
         icon: 'fa-bolt color-brown',
         templateUrl: 'control-panes/advanced/advanced.pug',
