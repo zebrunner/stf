@@ -88,6 +88,11 @@ RUN set -x && \
     cd /opt && \
     find /tmp -mindepth 1 ! -regex '^/tmp/hsperfdata_root\(/.*\)?' -delete
 
+RUN cp ./icon/x120/iOS.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/iOS && \
+    cp ./icon/x24/iOS.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/iOS && \
+    cp ./icon/x120/Android.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/Android && \
+    cp ./icon/x24/Android.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/Android
+
 # Switch to the app user.
 USER stf
 ##Use root user only for debug
