@@ -32,6 +32,10 @@ module.exports = function DeviceListCtrl(
     , selected: true
     }
   , {
+      name: 'platform'
+    , selected: false
+    }
+  , {
       name: 'serial'
     , selected: false
     }

@@ -89,6 +89,12 @@ module.exports = function DeviceColumnService($filter, gettext, SettingsService,
         return device.name || device.model || device.serial
       }
     }, AppState.user.email)
+  , platform: TextCell({
+      title: gettext('Platform')
+    , value: function(device) {
+      return device.platform || ''
+    }
+  })
   , operator: TextCell({
       title: gettext('Carrier')
     , value: function(device) {
