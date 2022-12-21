@@ -93,11 +93,10 @@ RUN cp ./icon/x120/iOS.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/ic
     cp ./icon/x120/Android.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/Android && \
     cp ./icon/x24/Android.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/Android
 
-## Switch to the app user.
-#USER stf
-#Use root user only for debug
-# root is required to be able to connect to usbmuxd
-USER root
+# Switch to the app user.
+USER stf
+##Use root user only for debug
+#USER root
 
 # Show help by default.
 CMD stf --help
