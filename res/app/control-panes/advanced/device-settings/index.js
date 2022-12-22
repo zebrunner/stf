@@ -4,7 +4,7 @@ module.exports = angular.module('stf.device-settings', [
 
 ])
   .run(['$templateCache', function($templateCache) {
-    $templateCache.put('control-panes/automation/device-settings/device-settings.pug',
+    $templateCache.put('control-panes/advanced/device-settings/device-settings.pug',
       require('./device-settings.pug')
     )
   }])

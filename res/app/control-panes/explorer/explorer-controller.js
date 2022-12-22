@@ -21,14 +21,16 @@ module.exports = function ExplorerCtrl($scope) {
     var path = $scope.getAbsolutePath()
     $scope.explorer.search = path
 
-    $scope.control.fslist(path)
-      .then(function(result) {
-        $scope.explorer.files = result.body
-        $scope.$digest()
-      })
-      .catch(function(err) {
-        throw new Error(err.message)
-      })
+    if ($scope.cotrol) {
+      $scope.control.fslist(path)
+        .then(function(result) {
+          $scope.explorer.files = result.body
+          $scope.$digest()
+        })
+        .catch(function(err) {
+          throw new Error(err.message)
+        })
+    }
   }
 
   $scope.dirEnterLocation = function() {

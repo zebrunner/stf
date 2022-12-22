@@ -89,6 +89,12 @@ module.exports = function DeviceColumnService($filter, gettext, SettingsService,
         return device.name || device.model || device.serial
       }
     }, AppState.user.email)
+  , platform: TextCell({
+      title: gettext('Platform')
+    , value: function(device) {
+      return device.platform || ''
+    }
+  })
   , operator: TextCell({
       title: gettext('Carrier')
     , value: function(device) {
@@ -591,7 +597,7 @@ function DeviceModelCell(options) {
       var image = span.firstChild
       var t = span.nextSibling
       var src = '/static/app/devices/icon/x24/' +
-            (device.image || '_default.jpg')
+            (device.platform || device.image || '_default.jpg')
 
       // Only change if necessary so that we don't trigger a download
       if (image.getAttribute('src') !== src) {

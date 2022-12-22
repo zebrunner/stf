@@ -10,14 +10,16 @@
 
           .filtering-buttons
             datalist(id='searchFields')
-              select(name='searchFields')
+              select(name='searchFields', tabindex='-1')
                 option(ng-repeat='column in columns', ng-value='column.name + ": "',
                 ng-bind='columnDefinitions[column.name].title | translate')
+            input(type='hidden', autofocus='true', tabindex='0')
             input(type='search', autosave='deviceFilter'
+              tabindex='-1'
               name='deviceFilter', ng-model='search.deviceFilter', ng-change='applyFilter(search.deviceFilter)',
               ng-model-options='{debounce: 150}'
               autocorrect='off', autocapitalize='off', spellcheck='false',
-              list='searchFields', multiple, focus-element='search.focusElement',
+              list='searchFields', multiple,
               text-focus-select, accesskey='4').form-control.input-sm.device-search.pull-right
 
             span.pull-right(ng-if='activeTabs.details && !$root.basicMode')

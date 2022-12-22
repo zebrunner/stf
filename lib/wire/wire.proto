@@ -939,5 +939,4 @@ message TemporarilyUnavailableMessage {
 
 message UpdateRemoteConnectUrl {
   required string serial= 1;
-  required string url = 2;
 }

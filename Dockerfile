@@ -24,7 +24,7 @@ RUN apt-get update && \
 
 # go-ios utility to manage iOS devices connected to Linux provider host
 #Grab gidevice from github and extract it in a folder
-RUN wget https://github.com/danielpaulus/go-ios/releases/download/v1.0.69/go-ios-linux.zip && unzip go-ios-linux.zip -d /usr/local/bin && rm go-ios-linux.zip
+RUN wget https://github.com/danielpaulus/go-ios/releases/download/v1.0.98/go-ios-linux.zip && unzip go-ios-linux.zip -d /usr/local/bin && rm go-ios-linux.zip
 
 # Install app requirements. Trying to optimize push speed for dependant apps
 # by reducing layers as much as possible. Note that one of the final steps
@@ -87,6 +87,11 @@ RUN set -x && \
     mv /tmp/bundletool/* /opt/bundletool && \
     cd /opt && \
     find /tmp -mindepth 1 ! -regex '^/tmp/hsperfdata_root\(/.*\)?' -delete
+
+RUN cp ./icon/x120/iOS.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/iOS && \
+    cp ./icon/x24/iOS.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/iOS && \
+    cp ./icon/x120/Android.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/Android && \
+    cp ./icon/x24/Android.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/Android
 
 # Switch to the app user.
 USER stf

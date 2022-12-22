@@ -5,7 +5,7 @@ module.exports = angular.module('control-panes', [
   require('stf/scoped-hotkeys').name,
   require('./device-control').name,
   require('./advanced').name,
-  require('./automation').name,
+  //require('./automation').name,
   require('./performance').name,
   require('./dashboard').name,
   //require('./inspect').name,
@@ -15,7 +15,6 @@ module.exports = angular.module('control-panes', [
   require('./screenshots').name,
   require('./explorer').name,
   require('./info').name,
-  require('./tree-elements').name
 ])
   .config(['$routeProvider', function($routeProvider) {
 
