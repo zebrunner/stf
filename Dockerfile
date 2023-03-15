@@ -91,7 +91,9 @@ RUN set -x && \
 RUN cp ./icon/x120/iOS.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/iOS && \
     cp ./icon/x24/iOS.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/iOS && \
     cp ./icon/x120/Android.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/Android && \
-    cp ./icon/x24/Android.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/Android
+    cp ./icon/x24/Android.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/Android \
+    cp ./icon/x24/tvOS.png /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/tvOS && \
+    cp ./icon/x120/tvOS.png /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/tvOS
 
 # Switch to the app user.
 USER stf
