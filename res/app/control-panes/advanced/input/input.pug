@@ -26,17 +26,17 @@
 
         h6(translate) Media
         .btn-group
-          button(uib-tooltip='{{ "Rewind" | translate }}', ng-click='press("media_rewind")', ng-disabled='device.platform !== "Android"').btn.btn-primary.btn-xs
+          button(uib-tooltip='{{ "Rewind" | translate }}', ng-click='press("media_rewind")', ng-disabled='device.ios').btn.btn-primary.btn-xs
             i.fa.fa-fast-backward
-          button(uib-tooltip='{{ "Previous" | translate }}', ng-click='press("media_previous")', ng-disabled='device.platform !== "Android"').btn.btn-primary.btn-xs
+          button(uib-tooltip='{{ "Previous" | translate }}', ng-click='press("media_previous")', ng-disabled='device.ios').btn.btn-primary.btn-xs
             i.fa.fa-step-backward
-          button(uib-tooltip='{{ "Play/Pause" | translate }}', ng-click='press("media_play_pause")', ng-disabled='device.platform !== "Android"').btn.btn-primary.btn-xs
+          button(uib-tooltip='{{ "Play/Pause" | translate }}', ng-click='press("media_play_pause")', ng-disabled='device.ios').btn.btn-primary.btn-xs
             i.fa.fa-youtube-play
-          button(uib-tooltip='{{ "Stop" | translate }}', ng-click='press("media_stop")', ng-disabled='device.platform !== "Android"').btn.btn-primary.btn-xs
+          button(uib-tooltip='{{ "Stop" | translate }}', ng-click='press("media_stop")', ng-disabled='device.ios').btn.btn-primary.btn-xs
             i.fa.fa-stop
-          button(uib-tooltip='{{ "Next" | translate }}', ng-click='press("media_next")', ng-disabled='device.platform !== "Android"').btn.btn-primary.btn-xs
+          button(uib-tooltip='{{ "Next" | translate }}', ng-click='press("media_next")', ng-disabled='device.ios').btn.btn-primary.btn-xs
             i.fa.fa-step-forward
-          button(uib-tooltip='{{ "Fast Forward" | translate }}', ng-click='press("media_fast_forward")', ng-disabled='device.platform !== "Android"').btn.btn-primary.btn-xs
+          button(uib-tooltip='{{ "Fast Forward" | translate }}', ng-click='press("media_fast_forward")', ng-disabled='device.ios').btn.btn-primary.btn-xs
             i.fa.fa-fast-forward
     //h6 D-pad
     //table.special-keys-dpad-buttons
