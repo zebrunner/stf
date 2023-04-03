@@ -184,7 +184,7 @@ module.exports = function ControlServiceFactory(
     }
 
     this.identify = function() {
-      return sendTwoWay('device.identify')
+      return sendOneWay('device.identify')
     }
 
     this.install = function(options) {
@@ -273,7 +273,7 @@ module.exports = function ControlServiceFactory(
       return sendTwoWay('store.open')
     }
 
-    this.openSettings = function(){
+    this.openSettings = function() {
       return sendOneWay('settings.open')
     }
 
