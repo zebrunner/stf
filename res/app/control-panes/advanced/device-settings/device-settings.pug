@@ -17,9 +17,9 @@
       .col-md-6
         h6(translate) WiFi
         .btn-group
-          label.btn.btn-sm.btn-primary-outline(ng-model='wifiEnabled', ng-click='toggleWifi(false)', uib-btn-radio='false', uib-tooltip='{{"Disable WiFi" | translate}}')
+          label.btn.btn-sm.btn-primary-outline(ng-model='wifiEnabled', ng-click='toggleWifi(false)', uib-btn-radio='false', uib-tooltip='{{"Disable WiFi" | translate}}' ng-disabled='device.ios')
             i.fa.fa-power-off.fa-fw
-          label.btn.btn-sm.btn-primary-outline(ng-model='wifiEnabled', ng-click='toggleWifi(true)', uib-btn-radio='true', uib-tooltip='{{"Enable WiFi" | translate}}')
+          label.btn.btn-sm.btn-primary-outline(ng-model='wifiEnabled', ng-click='toggleWifi(true)', uib-btn-radio='true', uib-tooltip='{{"Enable WiFi" | translate}}' ng-disabled='device.ios')
             i.fa.fa-wifi.fa-fw
 
     //.row
