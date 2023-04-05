@@ -10,7 +10,7 @@
           i.fa.fa-power-off
         button(uib-tooltip='{{ "Camera" | translate }}', ng-click='press("camera")').btn.btn-primary.btn-xs
           i.fa.fa-camera
-        button(uib-tooltip='{{ "Switch Charset" | translate }}', ng-click='press("switch_charset")').btn.btn-primary.btn-info.btn-xs
+        button(uib-tooltip='{{ "Switch Charset" | translate }}', ng-click='press("switch_charset")' ng-disabled='device.ios').btn.btn-primary.btn-info.btn-xs
           i.fa  Aa
         button(uib-tooltip='{{ "Search" | translate }}', ng-click='press("search")').btn.btn-primary.btn-xs
           i.fa.fa-search
