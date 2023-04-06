@@ -7,11 +7,11 @@
       .col-md-6
         h6(translate) Manner Mode
         .btn-group
-          label.btn.btn-sm.btn-primary-outline(ng-model='ringerMode', uib-btn-radio='"SILENT"', uib-tooltip='{{"Silent Mode" | translate}}')
+          label.btn.btn-sm.btn-primary-outline(ng-model='ringerMode', uib-btn-radio='"SILENT"', uib-tooltip='{{"Silent Mode" | translate}}' ng-disabled='device.ios')
             i.fa.fa-volume-off.fa-fw
-          label.btn.btn-sm.btn-primary-outline(ng-model='ringerMode', uib-btn-radio='"VIBRATE"', uib-tooltip='{{"Vibrate Mode" | translate}}')
+          label.btn.btn-sm.btn-primary-outline(ng-model='ringerMode', uib-btn-radio='"VIBRATE"', uib-tooltip='{{"Vibrate Mode" | translate}}' ng-disabled='device.ios')
             i.fa.fa-mobile.fa-fw
-          label.btn.btn-sm.btn-primary-outline(ng-model='ringerMode', uib-btn-radio='"NORMAL"', uib-tooltip='{{"Normal Mode" | translate}}')
+          label.btn.btn-sm.btn-primary-outline(ng-model='ringerMode', uib-btn-radio='"NORMAL"', uib-tooltip='{{"Normal Mode" | translate}}' ng-disabled='device.ios')
             i.fa.fa-volume-up.fa-fw
 
       .col-md-6
