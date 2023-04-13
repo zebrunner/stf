@@ -3,7 +3,8 @@
     stacked-icon(icon='fa-globe', color='color-blue')
     span(translate) Navigation
     span
-      button.btn.btn-xs.btn-danger-outline.pull-right(ng-click='clearSettings()',
+      button.btn.btn-xs.btn-danger-outline.pull-right(ng-disabled='device.ios'
+      ng-click='clearSettings()',
       uib-tooltip='{{ "Reset all browser settings" | translate }}')
         i.fa.fa-trash-o
         span(translate) Reset
