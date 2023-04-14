@@ -5,6 +5,10 @@ module.exports = function InfoCtrl($scope, LightboxImageService) {
     LightboxImageService.open(title, enhancedPhoto800)
   }
 
+  $scope.finder = function() { 
+    $scope.control.identify()
+  }
+
   var getSdStatus = function() {
     if ($scope.control) {
       $scope.control.getSdStatus().then(function(result) {
@@ -15,4 +19,5 @@ module.exports = function InfoCtrl($scope, LightboxImageService) {
     }
   }
   getSdStatus()
+
 }
