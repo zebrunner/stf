@@ -59,6 +59,6 @@
                 pre.manifest-text(ng-if='showManifest') {{ installation.manifest | json }}
 
       alert(type='danger', close='clear()', ng-if='installation.error')
-        strong(style="display: block" translate) Oops!
+        strong(style='display: block', translate) Oops!
         | &#x20;
-        span(style="white-space: initial") {{ installation.error | installError | translate }} ({{ installation.error }})
+        span(style='white-space: initial') {{ installation.error | installError | translate }} ({{ installation.error }})
