@@ -1,7 +1,7 @@
 .dropdown.context-menu(id='context-menu-{{ $index }}')
   ul.dropdown-menu(role='menu')
     li
-      a.pointer(role='menuitem', ng-click='control.back(); $event.preventDefault()')
+      a.pointer(role='menuitem', ng-click='control.back(); $event.preventDefault()', ng-disabled='device.ios')
         i.fa.fa-mail-reply.fa-fw
         span(translate) Back
     li
@@ -9,7 +9,7 @@
         i.fa.fa-home.fa-fw
         span(translate) Home
     li
-      a.pointer(role='menuitem', ng-click='control.appSwitch(); $event.preventDefault()')
+      a.pointer(role='menuitem', ng-click='control.appSwitch(); $event.preventDefault()', ng-disabled='device.ios')
         i.fa.fa-square-o.fa-fw
         span(translate) Recents
     li.divider
