@@ -15,7 +15,7 @@
   .widget-content.padded
     form(enable-autofill, ng-submit='openUrl()', ng-disabled='device.ios')
       .input-group.url-input-container
-        input.form-control(type='text', name='textURL', placeholder='http://...',
+        input.form-control(type='text', name='textURL', placeholder='http://...', ng-disabled='device.ios',
         autocomplete='url', ng-model='textURL', text-focus-select,
         autocapitalize='off', spellcheck='false', blur-element='blurUrl'
         accesskey='N', tabindex='10', ng-change='textUrlChanged()',
