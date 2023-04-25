@@ -339,10 +339,13 @@ ExecStop=-/usr/bin/docker stop -t 10 %p-%i
 
 It uses Zebrunner CE for authentication.
 In order to config it, you need to provide two endpoints:
+
 ```
-"ZEBRUNNER_CE_LOGIN_URL=https://yourzebrunnerce.com/auth-endpoint" \
-"ZEBRUNNER_CE_USERINFO_URL=https://yourzebrunnerce.com/userinfo-endpoint" \
+"ZEBRUNNER_CE_LOGIN_URL=https://yourzebrunnerce.com/api/iam/v1/auth/login"
+"ZEBRUNNER_CE_USERINFO_URL=https://yourzebrunnerce.com/api/iam/v1/users"
 ```
+
+See `stf auth-zebrunner-ce --help` and change one of the unit files above as required.
 
 **NOTE:** Don't forget to change the `--auth-url` option in the `stf-app` unit. The value should be `https://stf.example.org/auth/zebrunner-ce/`
 
