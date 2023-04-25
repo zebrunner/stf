@@ -61,4 +61,4 @@
       alert(type='danger', close='clear()', ng-if='installation.error')
         strong(style='display: block', translate) Oops!
         | &#x20;
-        span(style='white-space: initial') {{ installation.error | installError | translate }} ({{ installation.error }})
+        span(style="word-wrap: break-word; white-space: pre-line") {{ installation.error | installError | translate }} ({{ installation.error }})
