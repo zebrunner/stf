@@ -16,7 +16,7 @@ module.exports = {
         app: pathutil.resource('app/app.js')
         , authldap: pathutil.resource('auth/ldap/scripts/entry.js')
         , authmock: pathutil.resource('auth/mock/scripts/entry.js')
-        , authzebrunnerce: pathutil.resource('auth/zebrunner-ce/scripts/entry.js')
+        , authzebrunner: pathutil.resource('auth/zebrunner/scripts/entry.js')
       }
     , output: {
         path: pathutil.resource('build')
