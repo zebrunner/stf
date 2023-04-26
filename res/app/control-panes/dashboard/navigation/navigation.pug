@@ -3,7 +3,8 @@
     stacked-icon(icon='fa-globe', color='color-blue')
     span(translate) Navigation
     span
-      button.btn.btn-xs.btn-danger-outline.pull-right(ng-click='clearSettings()',
+      button.btn.btn-xs.btn-danger-outline.pull-right(ng-disabled='device.ios'
+      ng-click='clearSettings()',
       uib-tooltip='{{ "Reset all browser settings" | translate }}')
         i.fa.fa-trash-o
         span(translate) Reset
@@ -12,9 +13,9 @@
       //i.fa.fa-step-forward.pull-right(ng-click='forward()', title='{{"Go Forward"|translate}}')
       //i.fa.fa-step-backward.pull-right(ng-click='back()', title='{{"Go Back"|translate}}')
   .widget-content.padded
-    form(enable-autofill, ng-submit='openUrl()')
+    form(enable-autofill, ng-submit='openUrl()', ng-disabled='device.ios')
       .input-group.url-input-container
-        input.form-control(type='text', name='textURL', placeholder='http://...',
+        input.form-control(type='text', name='textURL', placeholder='http://...', ng-disabled='device.ios',
         autocomplete='url', ng-model='textURL', text-focus-select,
         autocapitalize='off', spellcheck='false', blur-element='blurUrl'
         accesskey='N', tabindex='10', ng-change='textUrlChanged()',

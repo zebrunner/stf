@@ -265,7 +265,7 @@ module.exports = function ControlServiceFactory(
 
     this.clearBrowser = function(browser) {
       return sendTwoWay('browser.clear', {
-        browser: browser.id
+        browser: browser ? browser.id : null
       })
     }
 
