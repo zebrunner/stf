@@ -12,7 +12,7 @@ module.exports = function SignInCtrl($scope, $http, CommonService) {
       , password: $scope.signin.password.$modelValue
     }
     $scope.invalid = false
-    $http.post('/auth/api/v1/zebrunner-ce', data)
+    $http.post('/auth/api/v1/zebrunner', data)
       .success(function(response) {
         $scope.error = null
         location.replace(response.redirect)

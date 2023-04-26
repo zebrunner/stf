@@ -10,7 +10,7 @@ module.exports = angular.module('stf.signin', [
 ])
   .config(function($routeProvider) {
     $routeProvider
-      .when('/auth/zebrunner-ce/', {
+      .when('/auth/zebrunner/', {
         template: require('./signin.pug')
       })
   })
