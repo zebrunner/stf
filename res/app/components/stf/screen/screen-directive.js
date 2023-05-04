@@ -29,6 +29,7 @@ module.exports = function DeviceScreenDirective(
 
       var input = element.find('input')
 
+
       var screen = scope.screen = {
         rotation: 0
       , bounds: {
@@ -261,7 +262,7 @@ module.exports = function DeviceScreenDirective(
 
             cssRotation += rotator(cachedScreen.rotation, screen.rotation)
 
-            canvas.style[cssTransform] = 'rotate(' + cssRotation + 'deg)'
+            // canvas.style[cssTransform] = 'rotate(' + cssRotation + 'deg)'
 
             cachedScreen.bounds.h = screen.bounds.h
             cachedScreen.bounds.w = screen.bounds.w
@@ -281,7 +282,7 @@ module.exports = function DeviceScreenDirective(
               // If the screen image is always in upright position (but we
               // still want the rotation animation), we need to cancel out
               // the rotation by using another rotation.
-              positioner.style[cssTransform] = 'rotate(' + -cssRotation + 'deg)'
+              // positioner.style[cssTransform] = 'rotate(' + -cssRotation + 'deg)'
             }
 
             maybeFlipLetterbox()
@@ -614,7 +615,7 @@ module.exports = function DeviceScreenDirective(
             presure: pressure,
             seq: nextSeq(),
           }
-          if( device.ios && device.ios === true ) {
+          if ( device.ios && device.ios === true ) {
              control.touchDownIos(nextSeq(), 0, scaled.xP, scaled.yP, pressure)
             if (fakePinch) {
               control.touchDownIos(nextSeq(), 1, 1 - scaled.xP, 1 - scaled.yP,
