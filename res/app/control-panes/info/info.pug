@@ -12,17 +12,16 @@
             span(translate) Find Device
 
       .widget-content.padded-small
-        table.table.table-condensed.table-hover.table-infocard
-          tbody
-            tr
-              td(translate) Place
-              td {{device.provider.name}}
-            tr(ng-show='device.name && device.image')
-              td
-              td
-                button(ng-click='openDevicePhoto(device)').btn.btn-xs.btn-primary-outline
-                  i.fa.fa-picture-o
-                  span(translate) Device Photo
+        div.infocard-table
+          div.infocard-table__row
+            div.infocard-table__item(translate) Place
+            div.infocard-table__item {{device.provider.name}}
+          div.infocard-table__row(ng-show='device.name && device.image')
+            div.infocard-table__item
+            div.infocard-table__item
+              button(ng-click='openDevicePhoto(device)').btn.btn-xs.btn-primary-outline
+                i.fa.fa-picture-o
+                span(translate) Device Photo
 
   .col-md-4-x.packery-item
     .widget-container.fluid-height
@@ -30,28 +29,27 @@
         stacked-icon(icon='fa-bolt', color='color-yellow')
         span(translate) Battery
       .widget-content.padded-small
-        table.table.table-condensed.table-hover.table-infocard
-          tbody
-            tr
-              td(translate) Health
-              td {{device.battery.health | batteryHealth | translate}}
-            tr
-              td(translate) Power Source
-              td {{device.battery.source | batterySource | translate}}
-            tr
-              td(translate) Status
-              td {{device.battery.status | batteryStatus | translate}}
-            tr
-              td(translate) Level
-              td
-                uib-progressbar(value='device.battery.level', animate='false', max='device.battery.scale', type='success')
-                  span {{ device.battery.level / device.battery.scale * 100 }}%
-            tr
-              td(translate) Temperature
-              td {{device.battery.temp}} °C
-            tr
-              td(translate) Voltage
-              td {{device.battery.voltage}} v
+        div.infocard-table
+          div.infocard-table__row
+            div.infocard-table__item(translate) Health
+            div.infocard-table__item {{device.battery.health | batteryHealth | translate}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Power Source
+            div.infocard-table__item {{device.battery.source | batterySource | translate}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Status
+            div.infocard-table__item {{device.battery.status | batteryStatus | translate}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Level
+            div.infocard-table__item
+              uib-progressbar(value='device.battery.level || 0', animate='false', max='device.battery.scale', type='success')
+                span {{ device.battery.level ? (device.battery.level / device.battery.scale * 100) : '-' }}%
+          div.infocard-table__row
+            div.infocard-table__item(translate) Temperature
+            div.infocard-table__item {{device.battery.temp}} °C
+          div.infocard-table__row
+            div.infocard-table__item(translate) Voltage
+            div.infocard-table__item {{device.battery.voltage}} v
 
   .col-md-4-x.packery-item
     .widget-container.fluid-height
@@ -59,38 +57,37 @@
         stacked-icon(icon='fa-tablet', color='color-blue')
         span(translate) Display
       .widget-content.padded-small
-        table.table.table-condensed.table-hover.table-infocard
-          tbody
-            tr
-              td(translate) Size
-              td {{device.display.inches ? device.display.inches + '″' : '-'}}
-            tr
-              td(translate) Density
-              td {{device.display.density | displayDensity}}
-            tr
-              td(translate) FPS
-              td {{device.display.fps}}
-            tr
-              td(translate) Width
-              td {{device.display.width}} px
-            tr
-              td(translate) Height
-              td {{device.display.height}} px
-            tr
-              td(translate) ID
-              td {{device.display.id}}
-            tr
-              td(translate) Orientation
-              td {{device.display.rotation}}°
-            tr
-              td(translate) Encrypted
-              td {{device.display.secure | humanizedBool}}
-            tr
-              td(translate) X DPI
-              td {{device.display.xdpi}}
-            tr
-              td(translate) Y DPI
-              td {{device.display.ydpi}}
+        div.infocard-table
+          div.infocard-table__row
+            div.infocard-table__item(translate) Size
+            div.infocard-table__item {{device.display.inches ? device.display.inches + '″' : '-'}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Density
+            div.infocard-table__item {{device.display.density | displayDensity}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) FPS
+            div.infocard-table__item {{device.display.fps}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Width
+            div.infocard-table__item {{device.display.width}} px
+          div.infocard-table__row
+            div.infocard-table__item(translate) Height
+            div.infocard-table__item {{device.display.height}} px
+          div.infocard-table__row
+            div.infocard-table__item(translate) ID
+            div.infocard-table__item {{device.display.id}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Orientation
+            div.infocard-table__item {{device.display.rotation}}°
+          div.infocard-table__row
+            div.infocard-table__item(translate) Encrypted
+            div.infocard-table__item {{device.display.secure | humanizedBool}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) X DPI
+            div.infocard-table__item {{device.display.xdpi}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Y DPI
+            div.infocard-table__item {{device.display.ydpi}}
 
   .col-md-4-x.packery-item
     .widget-container.fluid-height
@@ -98,26 +95,25 @@
         stacked-icon(icon='fa-signal', color='color-brown')
         span(translate) Network
       .widget-content.padded-small
-        table.table.table-condensed.table-hover.table-infocard
-          tbody
-            tr
-              td(translate) Connected
-              td {{device.network.connected | humanizedBool}}
-            tr
-              td(translate) Airplane Mode
-              td {{device.airplaneMode | humanizedBool}}
-            tr
-              td(translate) Using Fallback
-              td {{device.network.failover | humanizedBool}}
-            tr
-              td(translate) Roaming
-              td {{device.network.roaming | humanizedBool}}
-            tr
-              td(translate) Type
-              td {{device.network.type | networkType | translate}}
-            tr
-              td(translate) Sub Type
-              td {{device.network.subtype | networkSubType | translate}}
+        div.infocard-table
+          div.infocard-table__row
+            div.infocard-table__item(translate) Connected
+            div.infocard-table__item {{device.network.connected | humanizedBool}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Airplane Mode
+            div.infocard-table__item {{device.airplaneMode | humanizedBool}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Using Fallback
+            div.infocard-table__item {{device.network.failover | humanizedBool}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Roaming
+            div.infocard-table__item {{device.network.roaming | humanizedBool}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Type
+            div.infocard-table__item {{device.network.type | networkType | translate}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Sub Type
+            div.infocard-table__item {{device.network.subtype | networkSubType | translate}}
 
   .col-md-4-x.packery-item
     .widget-container.fluid-height
@@ -125,28 +121,26 @@
         stacked-icon(icon='fa-credit-card', color='color-lila')
         span(translate) SIM
       .widget-content.padded-small
-        table.table.table-condensed.table-hover.table-infocard
-          tbody
-            tr
-              td(translate) Carrier
-              td {{device.operator}}
-            tr
-              td(translate) Network
-              td {{device.phone.network}}
-            tr
-              td(translate) Number
-              td {{device.phone.phoneNumber}}
-            tr
-              td(translate) IMEI
-              td {{device.phone.imei}}
-            tr
-              td(translate) IMSI
-              td {{device.phone.imsi}}
-            tr
-              td(translate) ICCID
-              td
-                small {{device.phone.iccid}}
-
+        div.infocard-table
+          div.infocard-table__row
+            div.infocard-table__item(translate) Carrier
+            div.infocard-table__item {{device.operator}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Network
+            div.infocard-table__item {{device.phone.network}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Number
+            div.infocard-table__item {{device.phone.phoneNumber}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) IMEI
+            div.infocard-table__item {{device.phone.imei}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) IMSI
+            div.infocard-table__item {{device.phone.imsi}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) ICCID
+            div.infocard-table__item
+              small {{device.phone.iccid}}
 
   .col-md-4-x.packery-item
     .widget-container.fluid-height
@@ -154,23 +148,22 @@
         stacked-icon(icon='fa-phone', color='color-green')
         span(translate) Hardware
       .widget-content.padded-small
-        table.table.table-condensed.table-hover.table-infocard
-          tbody
-            tr
-              td(translate) Manufacturer
-              td {{device.manufacturer}}
-            tr
-              td(translate) Product
-              td {{device.name ? device.name : '-'}}
-            tr
-              td(translate) Model
-              td {{device.model}}
-            tr
-              td(translate) Serial
-              td {{device.serial}}
-            tr
-              td(translate) Released
-              td {{device.releasedAt ? (device.releasedAt | date:longDate) : '-'}}
+        div.infocard-table
+          div.infocard-table__row
+            div.infocard-table__item(translate) Manufacturer
+            div.infocard-table__item {{device.manufacturer}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Product
+            div.infocard-table__item {{device.name ? device.name : '-'}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Model
+            div.infocard-table__item {{device.model}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Serial
+            div.infocard-table__item {{device.serial}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Released
+            div.infocard-table__item {{device.releasedAt ? (device.releasedAt | date:longDate) : '-'}}
 
   .col-md-4-x.packery-item
     .widget-container.fluid-height
@@ -178,20 +171,19 @@
         stacked-icon(icon='fa-mobile', color='color-skyblue')
         span(translate) Platform
       .widget-content.padded-small
-        table.table.table-condensed.table-hover.table-infocard
-          tbody
-            tr
-              td(translate) OS
-              td {{device.platform}}
-            tr
-              td(translate) Version
-              td {{device.version}}
-            tr
-              td(translate) SDK
-              td {{device.sdk}}
-            tr
-              td(translate) ABI
-              td {{device.abi}}
+        div.infocard-table
+          div.infocard-table__row
+            div.infocard-table__item(translate) OS
+            div.infocard-table__item {{device.platform}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Version
+            div.infocard-table__item {{device.version}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) SDK
+            div.infocard-table__item {{device.sdk}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) ABI
+            div.infocard-table__item {{device.abi}}
 
   .col-md-4-x.packery-item
     .widget-container.fluid-height
@@ -199,17 +191,16 @@
         stacked-icon(icon='fa-slack', color='color-black')
         span(translate) CPU
       .widget-content.padded-small
-        table.table.table-condensed.table-hover.table-infocard
-          tbody
-            tr
-              td(translate) Name
-              td {{device.cpu.name ? device.cpu.name : '-'}}
-            tr
-              td(translate) Cores
-              td {{device.cpu.cores ? device.cpu.cores : '-'}}
-            tr
-              td(translate) Frequency
-              td {{device.cpu.freq ? device.cpu.freq + ' GHz' : '-'}}
+        div.infocard-table
+          div.infocard-table__row
+            div.infocard-table__item(translate) Name
+            div.infocard-table__item {{device.cpu.name ? device.cpu.name : '-'}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Cores
+            div.infocard-table__item {{device.cpu.cores ? device.cpu.cores : '-'}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) Frequency
+            div.infocard-table__item {{device.cpu.freq ? device.cpu.freq + ' GHz' : '-'}}
 
   .col-md-4-x.packery-item
     .widget-container.fluid-height
@@ -217,14 +208,13 @@
         stacked-icon(icon='fa-database', color='color-orange')
         span(translate) Memory
       .widget-content.padded-small
-        table.table.table-condensed.table-hover.table-infocard
-          tbody
-            tr
-              td(translate) RAM
-              td {{device.memory.ram ? device.memory.ram + ' MB' : '-'}}
-            tr
-              td(translate) ROM
-              td {{device.memory.rom ? device.memory.rom + ' MB' : '-'}}
-            tr
-              td(translate) SD Card Mounted
-              td {{ sdCardMounted | humanizedBool }}
+        div.infocard-table
+          div.infocard-table__row
+            div.infocard-table__item(translate) RAM
+            div.infocard-table__item {{device.memory.ram ? device.memory.ram + ' MB' : '-'}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) ROM
+            div.infocard-table__item {{device.memory.rom ? device.memory.rom + ' MB' : '-'}}
+          div.infocard-table__row
+            div.infocard-table__item(translate) SD Card Mounted
+            div.infocard-table__item {{ sdCardMounted | humanizedBool }}
