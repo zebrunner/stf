@@ -1,7 +1,7 @@
 .dropdown.context-menu(id='context-menu-{{ $index }}')
   ul.dropdown-menu(role='menu')
     li
-      a.pointer(role='menuitem', ng-click='control.back(); $event.preventDefault()', ng-hide='device.ios')
+      a.pointer(role='menuitem', ng-click='control.back(); $event.preventDefault()', ng-hide='device.ios || device.platform === "tvOS"')
         i.fa.fa-mail-reply.fa-fw
         span(translate) Back
     li
@@ -9,16 +9,16 @@
         i.fa.fa-home.fa-fw
         span(translate) Home
     li
-      a.pointer(role='menuitem', ng-click='control.appSwitch(); $event.preventDefault()', ng-hide='device.ios')
+      a.pointer(role='menuitem', ng-click='control.appSwitch(); $event.preventDefault()', ng-hide='device.ios || device.platform === "tvOS"')
         i.fa.fa-square-o.fa-fw
         span(translate) Recents
     li.divider
     li
-      a.pointer(role='menuitem', ng-click='rotateRight(); $event.preventDefault()')
+      a.pointer(role='menuitem', ng-click='rotateRight(); $event.preventDefault()', ng-hide='device.platform === "tvOS"')
         i.fa.fa-rotate-left.fa-fw
         span(translate) Rotate Left
     li
-      a.pointer(role='menuitem', ng-click='rotateLeft(); $event.preventDefault()')
+      a.pointer(role='menuitem', ng-click='rotateLeft(); $event.preventDefault()', ng-hide='device.platform === "tvOS"')
         i.fa.fa-rotate-right.fa-fw
         span(translate) Rotate Right
     li.divider
