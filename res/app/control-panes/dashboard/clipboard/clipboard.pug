@@ -4,8 +4,8 @@
     span(translate) Clipboard
   .widget-content.padded
     .input-group.form-inline
-      textarea(rows='1', ng-model='control.clipboardContent', msd-elastic, text-focus-select,
+      textarea(rows='1', ng-model='control.clipboardContent', msd-elastic, text-focus-select, ng-disabled='device.platform === "tvOS"'
       tabindex='20').form-control.clipboard-textarea
       span.input-group-btn
-        button.btn.btn-primary-outline(ng-click='control.getClipboardContent()', uib-tooltip='{{ "Get clipboard contents" | translate }}')
+        button.btn.btn-primary-outline(ng-click='control.getClipboardContent()', uib-tooltip='{{ "Get clipboard contents" | translate }}', ng-disabled='device.platform === "tvOS"')
           i.fa.fa-refresh

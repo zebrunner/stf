@@ -99,7 +99,6 @@ device-screen/*.portrait*/.letterboxed canvas.screen {
 /* screen is rotated sideways, possibly with empty space on left/right */
 
 device-screen.rotated .positioner {
-  position: relative;
   display: inline-block;
   top: 0;
   right: 0;
