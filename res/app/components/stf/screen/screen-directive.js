@@ -607,6 +607,7 @@ module.exports = function DeviceScreenDirective(
               , x
               , y
               , screen.rotation
+              , device.ios
               )
           prevCoords = {
             x: scaled.xP,
@@ -680,6 +681,7 @@ module.exports = function DeviceScreenDirective(
               , x
               , y
               , screen.rotation
+              , device.ios
               )
 
           control.touchMove(nextSeq(), 0, scaled.xP, scaled.yP, pressure)
@@ -734,6 +736,7 @@ module.exports = function DeviceScreenDirective(
             , x
             , y
             , screen.rotation
+            , device.ios
           )
 
           if ((Math.abs(prevCoords.x - scaled.xP) >= 0.1 || Math.abs(prevCoords.y - scaled.yP) >= 0.1) && device.ios && device.ios === true) {
@@ -881,6 +884,7 @@ module.exports = function DeviceScreenDirective(
                 , x
                 , y
                 , screen.rotation
+                , device.ios
                 )
 
             slotted[touch.identifier] = slot
@@ -919,6 +923,7 @@ module.exports = function DeviceScreenDirective(
                 , x
                 , y
                 , screen.rotation
+                , device.ios
                 )
 
             control.touchMove(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
