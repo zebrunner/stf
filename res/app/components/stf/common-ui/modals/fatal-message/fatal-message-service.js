@@ -1,12 +1,20 @@
 module.exports =
-  function FatalMessageServiceFactory($uibModal, $location, $route, $interval,
-    StateClassesService) {
-    var FatalMessageService = {}
+  function FatalMessageServiceFactory(
+    $interval,
+    $location,
+    $route,
+    $uibModal,
+    StateClassesService,
+  ) {
+    const FatalMessageService = {}
+    let intervalDeviceInfo
 
-    var intervalDeviceInfo
-
-    var ModalInstanceCtrl = function($scope, $uibModalInstance, device,
-      tryToReconnect) {
+    const ModalInstanceCtrl = function(
+      $scope,
+      $uibModalInstance,
+      device,
+      tryToReconnect,
+    ) {
       $scope.ok = function() {
         $uibModalInstance.close(true)
         $route.reload()
@@ -43,7 +51,7 @@ module.exports =
         $uibModalInstance.dismiss('cancel')
       }
 
-      var destroyInterval = function() {
+      const destroyInterval = function() {
         if (angular.isDefined(intervalDeviceInfo)) {
           $interval.cancel(intervalDeviceInfo)
           intervalDeviceInfo = undefined
@@ -56,7 +64,7 @@ module.exports =
     }
 
     FatalMessageService.open = function(device, tryToReconnect) {
-      var modalInstance = $uibModal.open({
+      const modalInstance = $uibModal.open({
         template: require('./fatal-message.pug'),
         controller: ModalInstanceCtrl,
         resolve: {
@@ -73,8 +81,9 @@ module.exports =
       }, function() {
 
       })
-    }
 
+      return modalInstance
+    }
 
     return FatalMessageService
   }

@@ -1,7 +1,7 @@
 
 div.positioner
   screen-loader
-  canvas.screen(ng-show='device')
+  canvas.screen.screen__canvas(ng-show='device')
   canvas.hacky-stretcher(width=1, height=1)
 div(ng-if='displayError').screen-error
   .screen-error-message
@@ -15,4 +15,4 @@ div(ng-if='displayError').screen-error
       button(ng-click='retryLoadingScreen()', style='text-align: center;').btn.btn-primary.btn-block
         i.fa.fa-refresh
         span(translate) Retry
-input(type='text', autoComplete='off', tabindex='40', accesskey='C', autocorrect='off', autocapitalize='off', focus-element='$root.screenFocus')
+input.screen__input(type='text', autoComplete='off', tabindex='40', accesskey='C', autocorrect='off', autocapitalize='off', focus-element='$root.screenFocus')

@@ -9,23 +9,19 @@ module.exports = function GroupServiceFactory(
   }
 
   groupService.invite = function(device) {
-    if (!true) {
-      return Promise.reject(new Error('Device is not usable'))
-    }
+    const tx = TransactionService.create(device)
 
-    var tx = TransactionService.create(device)
     socket.emit('group.invite', device.channel, tx.channel, {
       requirements: {
         serial: {
-          value: device.serial
-        , match: 'exact'
-        }
-      }
+          value: device.serial,
+          match: 'exact',
+        },
+      },
     })
+
     return tx.promise
-      .then(function(result) {
-        return result.device
-      })
+      .then(({device}) => device)
       .catch(TransactionError, function() {
         throw new Error('Device refused to join the group')
       })
