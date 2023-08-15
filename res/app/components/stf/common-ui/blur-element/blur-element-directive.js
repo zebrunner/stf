@@ -1,4 +1,8 @@
-module.exports = function blurElementDirective($parse, $timeout) {
+module.exports = function blurElementDirective(
+  $parse,
+  $rootScope,
+  $timeout,
+) {
   return {
     restrict: 'A',
     link: function(scope, element, attrs) {
@@ -13,7 +17,15 @@ module.exports = function blurElementDirective($parse, $timeout) {
       })
 
       element.bind('blur', function() {
-        scope.$apply(model.assign(scope, false))
+        if(!$rootScope.$$phase) {
+          scope.$apply(() => {
+            model.assign(scope, false)
+          })
+        } else {
+          scope.$applyAsync(() => {
+            model.assign(scope, false)
+          })
+        }
       })
     }
   }

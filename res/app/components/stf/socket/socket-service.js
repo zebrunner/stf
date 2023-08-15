@@ -3,7 +3,7 @@ var io = require('socket.io')
 module.exports = function SocketFactory(
   $rootScope
 , VersionUpdateService
-, TemporarilyUnavialableService
+, TemporarilyUnavailableService
 , AppState
 ) {
   var websocketUrl = AppState.config.websocketUrl || ''
@@ -43,7 +43,7 @@ module.exports = function SocketFactory(
   })
 
   socket.once('temporarily-unavailable', function() {
-    TemporarilyUnavialableService.open('Service is currently unavailable! Try your attempt later')
+    TemporarilyUnavailableService.open('Service is currently unavailable! Try your attempt later')
   })
 
   return socket
