@@ -22,7 +22,7 @@ Thank you to all the people who have already contributed to STF!
 
 * OS support
   - Android
-    * Supports versions 2.3.3 (SDK level 10) to 10 (SDK level 29)
+    * Supports versions 2.3.3 (SDK level 10) to 12 (SDK level 32)
     * Supports Wear 5.1 (but not 5.0 due to missing permissions)
     * Supports Fire OS, CyanogenMod, and other heavily Android based distributions
     * `root` is **not** required for any current functionality
@@ -112,7 +112,7 @@ As the product has evolved from an internal tool running in our internal network
 
 ## Requirements
 
-* [Node.js](https://nodejs.org/) 8.x **required** (some dependencies don't support newer versions)
+* [Node.js](https://nodejs.org/) up to 20.x **required** (some dependencies don't support newer versions)
 * [ADB](http://developer.android.com/tools/help/adb.html) properly set up
 * [RethinkDB](http://rethinkdb.com/) >= 2.2
 * [CMake](https://cmake.org/) >= 3.9 (for [node-jpeg-turbo](https://github.com/julusian/node-jpeg-turbo#readme))
