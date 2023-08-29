@@ -38,25 +38,30 @@ module.exports = function LogsCtrl($scope, $rootScope, $routeParams, LogcatServi
   }
 
   function setFiltersPriority() {
-    if (Object.keys(LogcatService.deviceEntries).includes(deviceSerial)) {
-      $scope.filters.priority = $scope.filters.levelNumbers[
-        LogcatService.deviceEntries[deviceSerial].selectedLogLevel - 2]
-    } else {
-      if ($scope.started) {
-        $scope.filters.priority = $scope.filters.levelNumbers[0]
-      }
+    const {levelNumbers} = $scope.filters
+    const {deviceEntries} = LogcatService
+
+    if (!levelNumbers) { return }
+
+    if (Object.keys(deviceEntries).includes(deviceSerial)) {
+      $scope.filters.priority = levelNumbers[deviceEntries[deviceSerial].selectedLogLevel - 2]
+    } else if ($scope.started) {
+      $scope.filters.priority = levelNumbers[0]
     }
   }
 
   function restoreFilters() {
-    if (Object.keys(LogcatService.deviceEntries).includes(deviceSerial)) {
-      Object.keys(LogcatService.deviceEntries[deviceSerial].filters).forEach(function(entry) {
-        if ('filter.' + entry !== 'filter.priority') {
-          $scope.filters[entry] = LogcatService.deviceEntries[deviceSerial].filters[entry]
-        } else {
-          setFiltersPriority()
-        }
-      })
+    const {deviceEntries} = LogcatService
+
+    if (Object.keys(deviceEntries).includes(deviceSerial)) {
+      Object.keys(deviceEntries[deviceSerial].filters)
+        .forEach((entry) => {
+          if (`filter.${entry}` !== 'filter.priority') {
+            $scope.filters[entry] = deviceEntries[deviceSerial].filters[entry]
+          } else {
+            setFiltersPriority()
+          }
+        })
     }
   }
 

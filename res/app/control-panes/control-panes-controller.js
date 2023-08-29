@@ -5,9 +5,10 @@
 module.exports =
   function ControlPanesController($scope, $http, gettext, $routeParams,
     $timeout, $location, DeviceService, GroupService, ControlService,
-    StorageService, FatalMessageService, SettingsService) {
+    StorageService, FatalMessageService, SettingsService, $route) {
 
-    var sharedTabs = [
+    let openedModalInstance
+    const sharedTabs = [
       {
         title: gettext('Screenshots'),
         icon: 'fa-camera color-skyblue',
@@ -82,16 +83,25 @@ module.exports =
 
     getDevice($routeParams.serial)
 
-
-
-    $scope.$watch('device.state', function(newValue, oldValue) {
+    $scope.$watch('device.state', (newValue, oldValue) => {
       if (newValue !== oldValue) {
-/*************** fix bug: it seems automation state was forgotten ? *************/
+        // show error message with device status, cause device was disconnected by some reason
         if (oldValue === 'using' || oldValue === 'automation') {
-/******************************************************************************/
-          FatalMessageService.open($scope.device, false)
+          openedModalInstance = FatalMessageService.open($scope.device, false)
+        // close error modal if device was reconnected
+        } else if ((newValue === 'using' || newValue === 'automation') && openedModalInstance) {
+          openedModalInstance.dismiss(true)
+          openedModalInstance = null
+        // reconnect to the available device
+        // TODO: refactor: use API call instead or state reloading (for now it is only working way)
+        } else if (newValue === 'available' && openedModalInstance) {
+          $timeout(()=> {
+            if (openedModalInstance) {
+              openedModalInstance.dismiss(true)
+            }
+            $route.reload()
+          }, 0)
         }
       }
     }, true)
-
   }

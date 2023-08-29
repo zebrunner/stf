@@ -1,4 +1,8 @@
-module.exports = function focusElementDirective($parse, $timeout) {
+module.exports = function focusElementDirective(
+  $parse,
+  $rootScope,
+  $timeout,
+) {
   return {
     restrict: 'A',
     link: function(scope, element, attrs) {
@@ -14,7 +18,15 @@ module.exports = function focusElementDirective($parse, $timeout) {
 
       element.bind('blur', function() {
         if (model && model.assign) {
-          scope.$apply(model.assign(scope, false))
+          if(!$rootScope.$$phase) {
+            scope.$apply(() => {
+              model.assign(scope, false)
+            })
+          } else {
+            scope.$applyAsync(() => {
+              model.assign(scope, false)
+            })
+          }
         }
       })
     }
