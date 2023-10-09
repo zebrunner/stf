@@ -694,7 +694,13 @@ function DeviceStatusCell(options) {
         a.removeAttribute('href')
       }
 
+      if (device.status === 6) {
+        a.className = 'btn btn-xs device-status btn-success-outline'
+      }
+
       t.nodeValue = options.value(device)
+
+
 
       return td
     }
