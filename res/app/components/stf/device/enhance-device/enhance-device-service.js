@@ -46,10 +46,22 @@ module.exports = function EnhanceDeviceServiceFactory($filter, AppState) {
   }
 
   function enhanceDevice(device) {
-    device.enhancedName = device.name || device.model || device.serial || 'Unknown'
+    device.enhancedName = device.marketName || device.name || device.model || device.serial || 'Unknown'
     device.enhancedModel = device.model || 'Unknown'
     device.enhancedImage120 = '/static/app/devices/icon/x120/' + (device.platform || device.image || '_default.jpg')
     device.enhancedImage24 = '/static/app/devices/icon/x24/' + (device.platform || device.image || '_default.jpg')
+    if (device.ios && device.status === 6 && device.state !== 'present') {
+      device.enhancedStateAction = $filter('statusNameAction')('preparing')
+      device.enhancedStatePassive = $filter('statusNamePassive')('preparing')
+      return
+    } 
+    if (device.ios && device.status === 6 && device.state === 'present') {
+      device.status = 3
+      device.state = 'available'
+      device.enhancedStateAction = $filter('statusNameAction')('available')
+      device.enhancedStatePassive = $filter('statusNamePassive')('available')
+      return
+    } 
     device.enhancedStateAction = $filter('statusNameAction')(device.state)
     device.enhancedStatePassive = $filter('statusNamePassive')(device.state)
   }
@@ -95,10 +107,15 @@ module.exports = function EnhanceDeviceServiceFactory($filter, AppState) {
     return url
   }
 
+  function enhanceDeviceAppState(device) {
+    AppState.device.platform = device.platform
+  }
+
   service.enhance = function(device) {
     setState(device)
     enhanceDevice(device)
     enhanceDeviceDetails(device)
+    enhanceDeviceAppState(device)
   }
 
   return service
