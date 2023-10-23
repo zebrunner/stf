@@ -62,6 +62,11 @@ module.exports = function EnhanceDeviceServiceFactory($filter, AppState) {
       device.enhancedStatePassive = $filter('statusNamePassive')('available')
       return
     } 
+    if (device.ios && device.status === 1) {
+      device.enhancedStateAction = $filter('statusNameAction')('offline')
+      device.enhancedStatePassive = $filter('statusNamePassive')('offline')
+      return
+    } 
     device.enhancedStateAction = $filter('statusNameAction')(device.state)
     device.enhancedStatePassive = $filter('statusNamePassive')(device.state)
   }
