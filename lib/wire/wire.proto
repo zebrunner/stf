@@ -416,6 +416,7 @@ enum DeviceStatus {
   CONNECTING = 4;
   AUTHORIZING = 5;
   PREPARING = 6;
+  UNHEALTHY = 7;
 }
 
 message DeviceStatusMessage {
