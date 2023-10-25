@@ -11,7 +11,8 @@ module.exports = angular.module('stf.device-status', [])
         using: gettext('Stop Using'),
         busy: gettext('Busy'),
         available: gettext('Use'),
-        automation: gettext('Stop Automation')
+        automation: gettext('Stop Automation'),
+        unhealthy: gettext('Unhealthy')
       }[text] || gettext('Unknown')
     }
   })
@@ -28,6 +29,7 @@ module.exports = angular.module('stf.device-status', [])
         busy: gettext('Busy'),
         available: gettext('Available'),
         automation: gettext('Automating'),
+        unhealthy: gettext('Unhealthy')
       }[text] || gettext('Unknown')
     }
   })

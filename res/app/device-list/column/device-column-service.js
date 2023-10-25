@@ -702,6 +702,10 @@ function DeviceStatusCell(options) {
         a.className = 'btn btn-xs device-status btn-warning-outline'
       }
 
+      if (device.status === 7) {
+        a.className = 'btn btn-xs device-status btn-danger-outline'
+      }
+
       t.nodeValue = options.value(device)
 
 

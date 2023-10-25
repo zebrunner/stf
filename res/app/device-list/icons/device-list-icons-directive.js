@@ -105,6 +105,10 @@ module.exports = function DeviceListIconsDirective(
           button.className = ('btn btn-xs device-status btn-warning-outline')
         } 
 
+        if (device.status === 7) {
+          button.className = ('btn btn-xs device-status btn-danger-outline')
+        } 
+
         return li
       }
     }
