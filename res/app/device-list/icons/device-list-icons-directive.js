@@ -96,6 +96,19 @@ module.exports = function DeviceListIconsDirective(
           a.removeAttribute('href')
           li.classList.add('device-is-busy')
         }
+
+        if (device.status === 6) {
+          button.className = ('btn btn-xs device-status btn-success-outline')
+        } 
+
+        if (device.status === 1) {
+          button.className = ('btn btn-xs device-status btn-warning-outline')
+        } 
+
+        if (device.status === 7) {
+          button.className = ('btn btn-xs device-status btn-danger-outline')
+        } 
+
         return li
       }
     }
