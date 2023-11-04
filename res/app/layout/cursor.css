@@ -32,10 +32,10 @@ uib-tab-heading {
     Text selectable
 */
 .selectable {
-    -webkit-touch-callout: default;
-    -webkit-user-select: auto;
-    -khtml-user-select: auto;
+    -webkit-touch-callout: text;
+    -webkit-user-select: text;
+    -khtml-user-select: text;
     -moz-user-select: text;
-    -ms-user-select: auto;
-    user-select: auto;
+    -ms-user-select: text;
+    user-select: text;
 }
