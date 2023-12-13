@@ -480,6 +480,16 @@ module.exports = function DeviceListDetailsDirective(
       function updateRow(tr, device) {
         var id = calculateId(device)
 
+        let deviceData = JSON.parse(localStorage.getItem('deviceData'))
+
+        const index = deviceData.findIndex((storedDevice) => storedDevice.serial === device.serial)
+
+        if (index !== -1) {
+          deviceData[index] = device
+        }
+
+        localStorage.setItem('deviceData', JSON.stringify(deviceData))
+
         tr.id = id
         console.log('device-list-details-directive',device.usable)
         if (!device.usable) {
@@ -491,7 +501,9 @@ module.exports = function DeviceListDetailsDirective(
 
         for (var i = 0, l = activeColumns.length; i < l; ++i) {
           scope.columnDefinitions[activeColumns[i]].update(tr.cells[i], device)
+          storeRows()
         }
+
 
         return tr
       }
