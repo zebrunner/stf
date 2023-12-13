@@ -175,11 +175,11 @@ module.exports = function DeviceListCtrl(
   var defaultSort = {
     fixed: [
       {
-        name: 'state'
-        , order: 'asc'
+        name: 'default'
+        , order: 'none'
       }
-    ]
-    , user: [
+    ], 
+    user: [
       {
         name: 'name'
         , order: 'asc'
