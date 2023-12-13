@@ -374,7 +374,8 @@ module.exports = function GroupsCtrl(
   }
 
   $scope.deviceColumns = [
-    {name: 'Model', property: 'model'}
+    {name: 'Status', property: 'status'}
+  , {name: 'Model', property: 'model'}
   , {name: 'Serial', property: 'serial'}
   , {name: 'Carrier', property: 'operator'}
   , {name: 'OS', property: 'version'}
@@ -392,7 +393,8 @@ module.exports = function GroupsCtrl(
   ]
   $scope.defaultDeviceData = {
     columns: [
-      {name: 'Model', selected: true, sort: 'none'}
+      {name: 'Status', selected: true, sort: 'none'}
+    , {name: 'Model', selected: true, sort: 'none'}
     , {name: 'Serial', selected: true, sort: 'none'}
     , {name: 'Carrier', selected: false, sort: 'none'}
     , {name: 'OS', selected: true, sort: 'none'}
