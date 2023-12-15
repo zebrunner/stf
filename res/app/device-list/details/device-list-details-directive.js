@@ -68,10 +68,14 @@ module.exports = function DeviceListDetailsDirective(
           }
 
           if ($rootScope.adminMode && device.state === 'busy') {
+            storeDevices(device)
+            storeRows()
             kickDevice(device, true)
             e.preventDefault()
           }
           else if (device.using) {
+            storeDevices(device)
+            storeRows()
             kickDevice(device)
             e.preventDefault()
           }
@@ -430,7 +434,7 @@ module.exports = function DeviceListDetailsDirective(
         }
       }
 
-      function storeRows () {
+      function storeRows() {
         localStorage.removeItem('deviceOrder')
 
         var tableRows = tbody.querySelectorAll('tr')
@@ -448,6 +452,18 @@ module.exports = function DeviceListDetailsDirective(
         for (var i = 0, l = rows.length; i < l; ++i) {
           patchRow(rows[i], mapping[rows[i].id], patch)
         }
+      }
+
+      function storeDevices(device) {
+        let deviceData = JSON.parse(localStorage.getItem('deviceData'))
+
+        const index = deviceData.findIndex((storedDevice) => storedDevice.serial === device.serial)
+
+        if (index !== -1) {
+          deviceData[index] = device
+        }
+
+        localStorage.setItem('deviceData', JSON.stringify(deviceData))
       }
 
       // Patches the given row by running the given patch operations in
@@ -480,18 +496,9 @@ module.exports = function DeviceListDetailsDirective(
       function updateRow(tr, device) {
         var id = calculateId(device)
 
-        let deviceData = JSON.parse(localStorage.getItem('deviceData'))
-
-        const index = deviceData.findIndex((storedDevice) => storedDevice.serial === device.serial)
-
-        if (index !== -1) {
-          deviceData[index] = device
-        }
-
-        localStorage.setItem('deviceData', JSON.stringify(deviceData))
+        storeDevices(device)
 
         tr.id = id
-        console.log('device-list-details-directive',device.usable)
         if (!device.usable) {
           tr.classList.add('device-not-usable')
         }
