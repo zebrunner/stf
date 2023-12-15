@@ -209,12 +209,6 @@ module.exports = function DeviceListIconsDirective(
         , desc: 'asc'
         }
 
-        var fixedMatch = findInSorting(scope.sort.fixed)
-        if (fixedMatch) {
-          fixedMatch.order = swap[fixedMatch.order]
-          return
-        }
-
         var userMatch = findInSorting(scope.sort.user)
         if (userMatch) {
           userMatch.order = swap[userMatch.order]
@@ -369,6 +363,12 @@ module.exports = function DeviceListIconsDirective(
           // Find the first difference
           for (var i = 0, l = activeSorting.length; i < l; ++i) {
             var sort = activeSorting[i]
+
+            if (sort.name === 'default') {
+              diff = 0
+              break
+            }
+
             diff = scope.columnDefinitions[sort.name].compare(deviceA, deviceB)
             if (diff !== 0) {
               diff *= mapping[sort.order]
