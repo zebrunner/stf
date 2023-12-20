@@ -39,7 +39,10 @@ module.exports = function DeviceListDetailsDirective(
           LogcatService.deviceEntries[device.serial].allowClean = true
         }
         $rootScope.LogcatService = LogcatService
-        return GroupService.kick(device, force).catch(function(e) {
+        return GroupService.kick(device, force).then((response) => {
+          storeDevices(device)
+          storeRows()
+        }).catch(function(e) {
           alert($filter('translate')(gettext('Device cannot get kicked from the group')))
           throw new Error(e)
         })
@@ -48,6 +51,8 @@ module.exports = function DeviceListDetailsDirective(
       function inviteDevice(device) {
         $rootScope.usedDevices.push(device.serial)
         return GroupService.invite(device).then(function() {
+          storeDevices(device)
+          storeRows()
           scope.$digest()
         })
       }
@@ -65,17 +70,15 @@ module.exports = function DeviceListDetailsDirective(
           if (e.shiftKey && device.state === 'available') {
             StandaloneService.open(device)
             e.preventDefault()
+            storeDevices(device)
+            storeRows()
           }
 
           if ($rootScope.adminMode && device.state === 'busy') {
-            storeDevices(device)
-            storeRows()
             kickDevice(device, true)
             e.preventDefault()
           }
-          else if (device.using) {
-            storeDevices(device)
-            storeRows()
+          else if (device.using || e.target.className.includes('state-using')) {
             kickDevice(device)
             e.preventDefault()
           }
