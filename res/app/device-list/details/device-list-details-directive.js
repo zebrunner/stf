@@ -33,6 +33,8 @@ module.exports = function DeviceListDetailsDirective(
       var mapping = Object.create(null)
       var childScopes = Object.create(null)
     
+      tracker.devices.forEach(changeListener)
+
       function kickDevice(device, force) {
         LogcatService.allowClean = true
         if (Object.keys(LogcatService.deviceEntries).includes(device.serial)) {
@@ -51,8 +53,6 @@ module.exports = function DeviceListDetailsDirective(
       function inviteDevice(device) {
         $rootScope.usedDevices.push(device.serial)
         return GroupService.invite(device).then(function() {
-          storeDevices(device)
-          storeRows()
           scope.$digest()
         })
       }
@@ -68,17 +68,15 @@ module.exports = function DeviceListDetailsDirective(
           }
 
           if (e.shiftKey && device.state === 'available') {
-            StandaloneService.open(device)
             e.preventDefault()
-            storeDevices(device)
-            storeRows()
+            StandaloneService.open(device)
           }
 
           if ($rootScope.adminMode && device.state === 'busy') {
             kickDevice(device, true)
             e.preventDefault()
           }
-          else if (device.using || e.target.className.includes('state-using')) {
+          else if (device.using) {
             kickDevice(device)
             e.preventDefault()
           }
@@ -624,6 +622,28 @@ module.exports = function DeviceListDetailsDirective(
 
         let existingDevice = deviceData.some(lsDevice => lsDevice.serial === device.serial)
 
+        let filteredDevice = deviceData.filter(lsDevice => lsDevice.serial === device.serial)
+
+        if (existingDevice) {
+          if (filteredDevice.state !== device.state) {  
+            storeDevices(device)
+
+            let updatedRow = createRow(device)
+
+            // forEach is not a function 
+            for (let i = 0; i < tbody.children.length; i++) {
+              let row = tbody.children[i]
+
+              trId = row.getAttribute('id')
+
+              if (trId.includes(device.serial)) {
+                tbody.replaceChild(updatedRow, row)
+              }
+            }
+
+          }
+        }
+
         if (localStorage.getItem('deviceOrder') && !tbody.innerHTML) {
 
           let rowOrder = JSON.parse(localStorage.getItem('deviceOrder'))
@@ -667,6 +687,8 @@ module.exports = function DeviceListDetailsDirective(
         var id = calculateId(device)
         var tr = tbody.children[id]
 
+        storeDevices(device)
+
         if (tr) {
           // First, update columns
           updateRow(tr, device)
@@ -709,6 +731,7 @@ module.exports = function DeviceListDetailsDirective(
         tracker.removeListener('change', changeListener)
         tracker.removeListener('remove', removeListener)
       })
+
     }
   }
 }
