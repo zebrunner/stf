@@ -1,6 +1,7 @@
 const _ = require('lodash') // TODO: import debounce only
 const rotator = require('./rotator')
 const ImagePool = require('./imagepool')
+const Promise = require('bluebird')
 
 module.exports = function DeviceScreenDirective(
   $document,
@@ -21,10 +22,13 @@ module.exports = function DeviceScreenDirective(
     template: require('./screen.pug'),
     scope: {
       control: '<',
-      device: '<',
+      device: '=',
     },
     link: function($scope, $element) {
       // eslint-disable-next-line prefer-destructuring
+      if ($scope.device.ios && $scope.device.present && (!$scope.device.display.width || !$scope.device.display.height)) {
+        Promise.delay(1000).then(() => window.location.reload())
+      }
       const element = $element[0]
       const URL = window.URL || window.webkitURL
       const BLANK_IMG = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='
