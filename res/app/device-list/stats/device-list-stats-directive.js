@@ -94,6 +94,8 @@ module.exports = function DeviceListStatsDirective(
       tracker.on('change', changeListener)
       tracker.on('remove', removeListener)
 
+      tracker.devices.forEach(changeListener)
+
       scope.$on('$destroy', function() {
         tracker.removeListener('add', addListener)
         tracker.removeListener('change', changeListener)

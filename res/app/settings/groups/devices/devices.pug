@@ -44,7 +44,7 @@ li.list-group-item.groups-list
                   column-data='groupDeviceData.columns')
 
             .widget-container.fluid-height.overflow-auto
-              table.table.table-hover.dataTable.ng-table
+              table.table.table-hover.dataTable.ng-table(draggable)
                 thead
                   tr
                     th.header
@@ -64,7 +64,7 @@ li.list-group-item.groups-list
                       ng-click='sortBy(groupDeviceData, column)')
                         div.strong(ng-bind-template="{{column.name | translate}}")
 
-                tbody
+                tbody(draggable)
                   tr.selectable(ng-repeat="device in filteredGroups[getGroupIndex($parent.$index)].devices \
                   | groupObjectsFilter:\
                     groupsEnv[filteredGroups[getGroupIndex($parent.$index)].id].availableDevices:\
@@ -133,7 +133,7 @@ li.list-group-item.groups-list
                   column-data='deviceData.columns')
 
             .widget-container.fluid-height.overflow-auto
-              table.table.table-hover.dataTable.ng-table
+              table.table.table-hover.dataTable.ng-table(draggable)
                 thead
                   tr
                     th.header
@@ -161,7 +161,7 @@ li.list-group-item.groups-list
                       ng-click='sortBy(deviceData, column)')
                         div.strong(ng-bind-template="{{column.name | translate}}")
 
-                tbody
+                tbody(draggable)
                   tr.selectable(ng-repeat="device in groupsEnv[filteredGroups[getGroupIndex($parent.$index)].id].availableDevices \
                   | availableObjectsFilter:filteredGroups[getGroupIndex($parent.$index)]:'devices':'serial' \
                   | filter:deviceSearch \

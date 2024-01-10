@@ -926,6 +926,7 @@ message SizeIosDevice{
   required string id = 1;
   required double height = 2;
   required double width = 3;
+  required int32 scale = 4;
 }
 message DashboardOpenMessage {
 }

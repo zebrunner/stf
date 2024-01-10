@@ -400,6 +400,39 @@
         ]
       }
     },
+    "/devices/{serial}/size": {
+      "get": {
+        "summary": "Gets the size of a device",
+        "description": "Gets the size of a device",
+        "operationId": "getDeviceSize",
+        "tags": [
+          "user"
+        ],
+        "parameters": [
+          {
+            "name": "serial",
+            "in": "path",
+            "description": "Device identifier (serial)",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Device size information",
+            "schema": {
+              "$ref": "#/definitions/SizeResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
     "/swagger.json": {}
   },
   "definitions": {
@@ -486,6 +519,17 @@
       "properties": {
         "message": {
           "type": "string"
+        }
+      }
+    },
+    "SizeResponse": {
+      "required": ["height", "width"],
+      "properties": {
+        "height": {
+          "type": "integer"
+        },
+        "width": {
+          "type": "integer"
         }
       }
     }

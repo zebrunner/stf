@@ -32,7 +32,8 @@ module.exports = function DeviceListDetailsDirective(
       var prefix = 'd' + Math.floor(Math.random() * 1000000) + '-'
       var mapping = Object.create(null)
       var childScopes = Object.create(null)
-
+    
+      tracker.devices.forEach(changeListener)
 
       function kickDevice(device, force) {
         LogcatService.allowClean = true
@@ -40,7 +41,10 @@ module.exports = function DeviceListDetailsDirective(
           LogcatService.deviceEntries[device.serial].allowClean = true
         }
         $rootScope.LogcatService = LogcatService
-        return GroupService.kick(device, force).catch(function(e) {
+        return GroupService.kick(device, force).then((response) => {
+          storeDevices(device)
+          storeRows()
+        }).catch(function(e) {
           alert($filter('translate')(gettext('Device cannot get kicked from the group')))
           throw new Error(e)
         })
@@ -64,8 +68,8 @@ module.exports = function DeviceListDetailsDirective(
           }
 
           if (e.shiftKey && device.state === 'available') {
-            StandaloneService.open(device)
             e.preventDefault()
+            StandaloneService.open(device)
           }
 
           if ($rootScope.adminMode && device.state === 'busy') {
@@ -177,12 +181,6 @@ module.exports = function DeviceListDetailsDirective(
         var swap = {
           asc: 'desc'
         , desc: 'asc'
-        }
-
-        var fixedMatch = findInSorting(scope.sort.fixed)
-        if (fixedMatch) {
-          fixedMatch.order = swap[fixedMatch.order]
-          return
         }
 
         var userMatch = findInSorting(scope.sort.user)
@@ -339,12 +337,17 @@ module.exports = function DeviceListDetailsDirective(
           // Find the first difference
           for (var i = 0, l = activeSorting.length; i < l; ++i) {
             var sort = activeSorting[i]
-            diff = scope.columnDefinitions[sort.name].compare(deviceA, deviceB)
-            if (diff !== 0) {
-              diff *= mapping[sort.order]
-              break
+
+            if (sort.name !== 'default') {
+              diff = scope.columnDefinitions[sort.name].compare(deviceA, deviceB)
+              if (diff !== 0) {
+                diff *= mapping[sort.order]
+
+                break
+              }
             }
           }
+
 
           return diff
         }
@@ -356,6 +359,18 @@ module.exports = function DeviceListDetailsDirective(
         var id = calculateId(device)
         var tr = document.createElement('tr')
         var td
+
+        tr.setAttribute('draggable', 'true') 
+
+        tr.addEventListener('dragstart', function (event) {
+          handleDragStart(event, id);
+        });
+        tr.addEventListener('dragover', function (event) {
+          handleDragOver(event);
+        });
+        tr.addEventListener('drop', function (event) {
+          handleDrop(event, id);
+        });
 
         tr.id = id
         if (!device.usable) {
@@ -373,11 +388,83 @@ module.exports = function DeviceListDetailsDirective(
         return tr
       }
 
+      // Drag-and-drop event handlers
+      function handleDragStart(event, id) {
+        event.dataTransfer.setData('text/plain', id)
+      }
+
+      function handleDragOver(event) {
+        event.preventDefault();
+      }
+
+      function handleDrop(event, targetId) {
+        event.preventDefault();
+        var sourceId = event.dataTransfer.getData('text/plain')
+      
+        // Find the source and target rows
+        var sourceRow = tbody.children[sourceId]
+        var targetRow = tbody.children[targetId]
+      
+        // Ensure both source and target rows exist
+        if (sourceRow && targetRow) {
+          // Swap the positions of source and target rows in the DOM
+          var tempNode = document.createElement('tr')
+          targetRow.parentNode.insertBefore(tempNode, targetRow)
+          sourceRow.parentNode.insertBefore(targetRow, sourceRow)
+          tempNode.parentNode.insertBefore(sourceRow, tempNode)
+          tempNode.parentNode.removeChild(tempNode)
+      
+          // // Update the order of items
+          var sourceDevice = mapping[sourceId]
+          var targetDevice = mapping[targetId]
+      
+          // Swap the order of devices in your model or perform the necessary updates
+          var sourceIndex = tracker.devices.indexOf(sourceDevice);
+          var targetIndex = tracker.devices.indexOf(targetDevice);
+      
+          if (sourceIndex !== -1 && targetIndex !== -1) {
+            tracker.devices[sourceIndex] = targetDevice;
+            tracker.devices[targetIndex] = sourceDevice;
+          }
+          
+          // Save the updated order to LocalStorage
+          storeRows()
+
+          // Trigger a digest cycle to update the view
+          scope.$apply();
+        }
+      }
+
+      function storeRows() {
+        localStorage.removeItem('deviceOrder')
+
+        var tableRows = tbody.querySelectorAll('tr')
+        var rowsArray = []
+        
+        tableRows.forEach(rowElement => {
+          rowsArray.push(rowElement.outerHTML)
+        })
+  
+        localStorage.setItem('deviceOrder', JSON.stringify(rowsArray))
+      }
+
       // Patches all rows.
       function patchAll(patch) {
         for (var i = 0, l = rows.length; i < l; ++i) {
           patchRow(rows[i], mapping[rows[i].id], patch)
         }
+      }
+
+      function storeDevices(device) {
+        let deviceData = JSON.parse(localStorage.getItem('deviceData'))
+
+        const index = deviceData.findIndex((storedDevice) => storedDevice.serial === device.serial)
+
+        if (index !== -1) {
+          deviceData[index] = device
+        }
+
+        localStorage.setItem('deviceData', JSON.stringify(deviceData))
       }
 
       // Patches the given row by running the given patch operations in
@@ -410,8 +497,9 @@ module.exports = function DeviceListDetailsDirective(
       function updateRow(tr, device) {
         var id = calculateId(device)
 
+        storeDevices(device)
+
         tr.id = id
-        console.log('device-list-details-directive',device.usable)
         if (!device.usable) {
           tr.classList.add('device-not-usable')
         }
@@ -421,15 +509,18 @@ module.exports = function DeviceListDetailsDirective(
 
         for (var i = 0, l = activeColumns.length; i < l; ++i) {
           scope.columnDefinitions[activeColumns[i]].update(tr.cells[i], device)
+          storeRows()
         }
+
 
         return tr
       }
 
       // Inserts a row into the table into its correct position according to
       // current sorting.
+
       function insertRow(tr, deviceA) {
-        return insertRowToSegment(tr, deviceA, 0, rows.length - 1)
+        return tbody.appendChild(tr)
       }
 
       // Inserts a row into a segment of the table into its correct position
@@ -520,20 +611,83 @@ module.exports = function DeviceListDetailsDirective(
         // correct order in the table.
         for (var i = 0, l = sorted.length; i < l; ++i) {
           tbody.appendChild(sorted[i])
+          storeRows()
         }
+
       }
 
       // Triggers when the tracker sees a device for the first time.
       function addListener(device) {
-        var row = createRow(device)
-        filterRow(row, device)
-        insertRow(row, device)
+        let deviceData = localStorage.getItem('deviceData') ? JSON.parse(localStorage.getItem('deviceData')) : [];
+
+        let existingDevice = deviceData.some(lsDevice => lsDevice.serial === device.serial)
+
+        let filteredDevice = deviceData.filter(lsDevice => lsDevice.serial === device.serial)
+
+        if (existingDevice) {
+          if (filteredDevice.state !== device.state) {  
+            storeDevices(device)
+
+            let updatedRow = createRow(device)
+
+            // forEach is not a function 
+            for (let i = 0; i < tbody.children.length; i++) {
+              let row = tbody.children[i]
+
+              trId = row.getAttribute('id')
+
+              if (trId.includes(device.serial)) {
+                tbody.replaceChild(updatedRow, row)
+              }
+            }
+
+          }
+        }
+
+        if (localStorage.getItem('deviceOrder') && !tbody.innerHTML) {
+
+          let rowOrder = JSON.parse(localStorage.getItem('deviceOrder'))
+
+          rowOrder.forEach(storedRow => {
+            let idMatch = storedRow.match(/id="[^-]+-([^"]+)"/)
+            
+            let matchingDevices = deviceData.some(element => {
+              return element.serial === idMatch[1]
+            })
+
+            if (matchingDevices) {
+              let storedDevice = deviceData.find((element) => element.serial === idMatch[1])
+
+              let row = createRow(storedDevice)
+              filterRow(row, storedDevice)
+              insertRow(row, storedDevice)
+
+            }
+          })
+        }
+
+        if (!existingDevice) {
+          // Add the deviceA to the array
+          deviceData.push(device)
+      
+          // Store the updated array in LocalStorage
+          localStorage.setItem('deviceData', JSON.stringify(deviceData))
+
+          let row = createRow(device)
+          filterRow(row, device)
+          insertRow(row, device)
+        }
+
+        storeRows()
+
       }
 
       // Triggers when the tracker notices that a device changed.
       function changeListener(device) {
         var id = calculateId(device)
         var tr = tbody.children[id]
+
+        storeDevices(device)
 
         if (tr) {
           // First, update columns
@@ -542,14 +696,14 @@ module.exports = function DeviceListDetailsDirective(
           // Maybe the row is not sorted correctly anymore?
           var diff = compareRow(tr, device)
 
-          if (diff < 0) {
-            // Should go higher in the list
-            insertRowToSegment(tr, device, 0, tr.rowIndex - 1)
-          }
-          else if (diff > 0) {
-            // Should go lower in the list
-            insertRowToSegment(tr, device, tr.rowIndex + 1, rows.length - 1)
-          }
+            if (diff < 0) {
+              // Should go higher in the list
+              insertRowToSegment(tr, device, 0, tr.rowIndex - 1);
+            } else if (diff > 0) {
+              // Should go lower in the list
+              insertRowToSegment(tr, device, tr.rowIndex + 1, rows.length - 1);
+            }
+
         }
       }
 
@@ -577,6 +731,7 @@ module.exports = function DeviceListDetailsDirective(
         tracker.removeListener('change', changeListener)
         tracker.removeListener('remove', removeListener)
       })
+
     }
   }
 }

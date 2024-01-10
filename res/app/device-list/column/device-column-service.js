@@ -392,7 +392,7 @@ function compareRespectCase(a, b) {
     return 0
   }
   else {
-    return a < b ? -1 : 1
+    return a.localeCompare(b)
   }
 }
 
