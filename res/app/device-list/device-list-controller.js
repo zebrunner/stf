@@ -25,7 +25,7 @@ module.exports = function DeviceListCtrl(
     }
   , {
       name: 'model'
-    , selected: true
+    , selected: false
     }
   , {
       name: 'name'
