@@ -27,7 +27,7 @@ module.exports = function DeviceScreenDirective(
     link: function($scope, $element) {
       // eslint-disable-next-line prefer-destructuring
       if ($scope.device.ios && $scope.device.present && (!$scope.device.display.width || !$scope.device.display.height)) {
-        Promise.delay(1000).then(() => window.location.reload())
+        Promise.delay(1000).then(() => $route.reload())
       }
       const element = $element[0]
       const URL = window.URL || window.webkitURL

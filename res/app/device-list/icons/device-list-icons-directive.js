@@ -281,8 +281,45 @@ module.exports = function DeviceListIconsDirective(
 
       // Updates filters on visible items.
       function updateFilters(filters) {
-        activeFilters = filters
-        return filterAll()
+        let deviceFilters = JSON.parse(localStorage.getItem('deviceFilters'))
+
+        // Use input filters
+        if (!deviceFilters[0]) {
+          activeFilters = filters
+          storeFilters(filters)
+          return filterAll()
+        }
+
+        // Use saved filters
+        if (deviceFilters[0] && !filters[0]) {
+          activeFilters = deviceFilters
+          return filterAll()
+        }
+
+        if (!deviceFilters[0] && !filters[0]) {
+          activeFilters = filters
+          return filterAll()
+        }
+
+        // Check if saved filter is the same as the current filter
+        if (deviceFilters[0] && filters[0] && deviceFilters[0].field === filters[0].field && deviceFilters[0].query === filters[0].query) {
+          activeFilters = deviceFilters
+          return filterAll()
+        }
+
+        // Check if they are different
+        if (deviceFilters[0] && filters[0] && (deviceFilters[0].field !== filters[0].field || deviceFilters[0].query !== filters[0].query)) {
+          activeFilters = filters
+          storeFilters(filters)
+          filterAll()
+        } 
+
+      }
+
+      // Saves and updates filters on LocalStorage.
+      function storeFilters(filters) {
+        localStorage.removeItem('deviceFilters')
+        localStorage.setItem('deviceFilters', JSON.stringify(filters))
       }
 
       // Applies filteItem() to all items.
