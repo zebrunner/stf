@@ -11,7 +11,6 @@ module.exports = function DeviceListDetailsDirective(
 , LightboxImageService
 , StandaloneService
 , LogcatService
-, $route
 ) {
   return {
     restrict: 'E'
@@ -704,7 +703,6 @@ module.exports = function DeviceListDetailsDirective(
               let row = createRow(storedDevice)
               filterRow(row, storedDevice)
               insertRow(row, storedDevice)
-
             }
           })
         }
@@ -775,6 +773,19 @@ module.exports = function DeviceListDetailsDirective(
         tracker.removeListener('remove', removeListener)
       })
 
+      let scrollbarDiv = document.getElementsByClassName('pane-center fill-height ng-scope fa-pane-scroller')
+
+      let storedScrollPosition = localStorage.getItem('scrollPosition')
+
+      if (storedScrollPosition) {
+        console.log(storedScrollPosition, 'scroll position')
+        console.log(scrollbarDiv, 'scrollbarDiv')
+        scrollbarDiv[0].scroll(0, parseInt(storedScrollPosition))
+      }
+
+      window.addEventListener("beforeunload", () => {
+        localStorage.setItem('scrollPosition', scrollbarDiv[0].scrollTop)
+      })
     }
   }
 }
