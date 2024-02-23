@@ -57,4 +57,3 @@ module.exports = function MenuCtrl(
     $location.path('/devices/')
   }
 }
-

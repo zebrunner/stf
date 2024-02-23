@@ -404,7 +404,6 @@ module.exports = function DeviceListDetailsDirective(
         var td
 
         tr.setAttribute('draggable', 'true') 
-        tr.setAttribute('style', 'user-select: text;')
 
         tr.addEventListener('dragstart', function (event) {
           handleDragStart(event, id);
