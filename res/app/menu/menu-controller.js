@@ -12,7 +12,8 @@ module.exports = function MenuCtrl(
 , LogcatService
 , socket
 , $cookies
-, $window) {
+, $window
+, $route) {
 
   SettingsService.bind($scope, {
     target: 'lastUsedDevice'
@@ -48,4 +49,12 @@ module.exports = function MenuCtrl(
       socket.disconnect()
     }, 100)
   }
+
+  $scope.scrollToStoredPosition = function() {
+    if ($route.current.$$route.originalPath === '/devices') {
+      return
+    }    
+    $location.path('/devices/')
+  }
 }
+

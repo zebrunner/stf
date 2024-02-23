@@ -11,6 +11,7 @@ module.exports = function DeviceListDetailsDirective(
 , LightboxImageService
 , StandaloneService
 , LogcatService
+, $route
 ) {
   return {
     restrict: 'E'
@@ -774,19 +775,36 @@ module.exports = function DeviceListDetailsDirective(
         tracker.removeListener('remove', removeListener)
       })
 
-      let scrollbarDiv = document.getElementsByClassName('pane-center fill-height ng-scope fa-pane-scroller')
-
+      let scrollbarDiv = document.getElementsByClassName('pane-center fill-height ng-scope fa-pane-scroller')[0]
       let storedScrollPosition = localStorage.getItem('scrollPosition')
 
-      if (storedScrollPosition) {
-        console.log(storedScrollPosition, 'scroll position')
-        console.log(scrollbarDiv, 'scrollbarDiv')
-        scrollbarDiv[0].scroll(0, parseInt(storedScrollPosition))
-      }
-
-      window.addEventListener("beforeunload", () => {
-        localStorage.setItem('scrollPosition', scrollbarDiv[0].scrollTop)
+      scrollbarDiv.addEventListener('scroll', () => {
+        if ($route.current.$$route.originalPath === '/devices') {
+          localStorage.setItem('scrollPosition', scrollbarDiv.scrollTop)
+        }
       })
+
+      $rootScope.$on('$routeChangeSuccess', function(event, current, previous) {
+        if (storedScrollPosition && $route.current.$$route.originalPath === '/devices') {
+          scrollbarDiv.scroll(0, parseInt(storedScrollPosition))
+        }  
+      });
+
+      document.addEventListener('DOMContentLoaded', function() {
+        if (storedScrollPosition) {
+          scrollbarDiv.scroll(0, parseInt(storedScrollPosition))
+        }  
+      })
+
+      window.addEventListener('load', function() {
+        if (storedScrollPosition) {
+          scrollbarDiv.scroll(0, parseInt(storedScrollPosition))
+        }  
+      })
+
+      if (storedScrollPosition) {
+        scrollbarDiv.scroll(0, parseInt(storedScrollPosition))
+      }  
     }
   }
 }
