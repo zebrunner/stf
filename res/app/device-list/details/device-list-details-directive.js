@@ -403,6 +403,8 @@ module.exports = function DeviceListDetailsDirective(
         var tr = document.createElement('tr')
         var td
 
+        tr.setAttribute('style', 'user-select: auto') 
+
         tr.setAttribute('draggable', 'true') 
 
         tr.addEventListener('dragstart', function (event) {
