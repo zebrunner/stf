@@ -10,7 +10,7 @@
         a(ng-href='/stf#!/control/{{lastUsedDevice}}', ng-show='lastUsedDevice')
           span.fa.fa-mobile
           span(ng-if='!$root.basicMode', translate) Control
-        a(ng-href='/stf#!/devices', accesskey='1')
+        a(accesskey='1', ng-click='scrollToStoredPosition()', style='cursor: pointer;')
           span.fa.fa-sitemap
           span(ng-if='!$root.basicMode', translate) Devices
         a(ng-href='/stf#!/groups')
@@ -43,4 +43,3 @@
         a(ng-href='/stf#!/help', accesskey='6')
           i.fa.fa-question-circle.fa-fw
           | {{ "Help" | translate }}
-
