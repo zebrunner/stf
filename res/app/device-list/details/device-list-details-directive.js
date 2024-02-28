@@ -425,6 +425,13 @@ module.exports = function DeviceListDetailsDirective(
         for (var i = 0, l = activeColumns.length; i < l; ++i) {
           td = scope.columnDefinitions[activeColumns[i]].build()
           scope.columnDefinitions[activeColumns[i]].update(td, device)
+          td.addEventListener('contextmenu', function(event) {
+            var selection = window.getSelection()
+            var range = document.createRange()
+            range.selectNodeContents(this)
+            selection.removeAllRanges()
+            selection.addRange(range)
+        });
           tr.appendChild(td)
         }
 
