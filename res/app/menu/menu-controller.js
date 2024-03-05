@@ -15,6 +15,8 @@ module.exports = function MenuCtrl(
 , $window
 , $route) {
 
+  const contactEmail = 'support@zebrunner.com'
+
   SettingsService.bind($scope, {
     target: 'lastUsedDevice'
   })
@@ -30,11 +32,11 @@ module.exports = function MenuCtrl(
   })
 
   $scope.mailToSupport = function() {
-    CommonService.url('mailto:' + $scope.contactEmail)
+    CommonService.url('mailto:' + contactEmail)
   }
 
   $http.get('/auth/contact').then(function(response) {
-    $scope.contactEmail = response.data.contact.email
+    contactEmail = response.data.contact.email
   })
 
   $scope.logout = function() {
