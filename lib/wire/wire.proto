@@ -17,6 +17,7 @@ enum MessageType {
   DevicePropertiesMessage           = 7;
   DeviceRegisteredMessage           = 8;
   DeviceStatusMessage               = 9;
+  DeviceTypeMessage                 = 20;
   GroupMessage                      = 10;
   InstallMessage                    = 30;
   PhysicalIdentifyMessage           = 29;
@@ -422,6 +423,11 @@ enum DeviceStatus {
 message DeviceStatusMessage {
   required string serial = 1;
   required DeviceStatus status = 2;
+}
+
+message DeviceTypeMessage {
+  required string serial = 1;
+  required string type = 2;
 }
 
 message DeviceDisplayMessage {

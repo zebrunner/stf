@@ -11,6 +11,7 @@ module.exports = function DeviceListDetailsDirective(
 , LightboxImageService
 , StandaloneService
 , LogcatService
+, $route
 ) {
   return {
     restrict: 'E'
@@ -255,8 +256,50 @@ module.exports = function DeviceListDetailsDirective(
 
       // Updates filters on visible items.
       function updateFilters(filters) {
-        activeFilters = filters
-        return filterAll()
+        let deviceFilters = JSON.parse(localStorage.getItem('deviceFilters'))
+
+        if (!deviceFilters) {
+          deviceFilters = []
+        }
+
+        // Use input filters
+        if (!deviceFilters[0]) {
+          activeFilters = filters
+          storeFilters(filters)
+          return filterAll()
+        }
+
+        // Use saved filters
+        if (deviceFilters[0] && !filters[0]) {
+          activeFilters = deviceFilters
+          return filterAll()
+        }
+
+        if (!deviceFilters[0] && !filters[0]) {
+          activeFilters = filters
+          return filterAll()
+        }
+
+        // Check if saved filter is the same as the current filter
+        if (deviceFilters[0] && filters[0] && deviceFilters[0].field === filters[0].field && deviceFilters[0].query === filters[0].query) {
+          activeFilters = deviceFilters
+          return filterAll()
+        }
+
+        // Check if they are different
+        if (deviceFilters[0] && filters[0] && (deviceFilters[0].field !== filters[0].field || deviceFilters[0].query !== filters[0].query)) {
+          activeFilters = filters
+          storeFilters(filters)
+          filterAll()
+          return storeRows()
+        } 
+
+      }
+
+      // Saves and updates filters on LocalStorage.
+      function storeFilters(filters) {
+        localStorage.removeItem('deviceFilters')
+        localStorage.setItem('deviceFilters', JSON.stringify(filters))
       }
 
       // Applies filterRow() to all rows.
@@ -360,6 +403,8 @@ module.exports = function DeviceListDetailsDirective(
         var tr = document.createElement('tr')
         var td
 
+        tr.setAttribute('style', 'user-select: auto') 
+
         tr.setAttribute('draggable', 'true') 
 
         tr.addEventListener('dragstart', function (event) {
@@ -380,6 +425,13 @@ module.exports = function DeviceListDetailsDirective(
         for (var i = 0, l = activeColumns.length; i < l; ++i) {
           td = scope.columnDefinitions[activeColumns[i]].build()
           scope.columnDefinitions[activeColumns[i]].update(td, device)
+          td.addEventListener('contextmenu', function(event) {
+            var selection = window.getSelection()
+            var range = document.createRange()
+            range.selectNodeContents(this)
+            selection.removeAllRanges()
+            selection.addRange(range)
+        });
           tr.appendChild(td)
         }
 
@@ -611,7 +663,7 @@ module.exports = function DeviceListDetailsDirective(
         // correct order in the table.
         for (var i = 0, l = sorted.length; i < l; ++i) {
           tbody.appendChild(sorted[i])
-          storeRows()
+          // storeRows()
         }
 
       }
@@ -661,7 +713,6 @@ module.exports = function DeviceListDetailsDirective(
               let row = createRow(storedDevice)
               filterRow(row, storedDevice)
               insertRow(row, storedDevice)
-
             }
           })
         }
@@ -679,7 +730,7 @@ module.exports = function DeviceListDetailsDirective(
         }
 
         storeRows()
-
+        updateFilters(scope.filter())
       }
 
       // Triggers when the tracker notices that a device changed.
@@ -732,6 +783,36 @@ module.exports = function DeviceListDetailsDirective(
         tracker.removeListener('remove', removeListener)
       })
 
+      let scrollbarDiv = document.getElementsByClassName('pane-center fill-height ng-scope fa-pane-scroller')[0]
+      let storedScrollPosition = localStorage.getItem('scrollPosition')
+
+      scrollbarDiv.addEventListener('scroll', () => {
+        if ($route.current.$$route.originalPath === '/devices') {
+          localStorage.setItem('scrollPosition', scrollbarDiv.scrollTop)
+        }
+      })
+
+      $rootScope.$on('$routeChangeSuccess', function(event, current, previous) {
+        if (storedScrollPosition && $route.current.$$route.originalPath === '/devices') {
+          scrollbarDiv.scroll(0, parseInt(storedScrollPosition))
+        }  
+      });
+
+      document.addEventListener('DOMContentLoaded', function() {
+        if (storedScrollPosition) {
+          scrollbarDiv.scroll(0, parseInt(storedScrollPosition))
+        }  
+      })
+
+      window.addEventListener('load', function() {
+        if (storedScrollPosition) {
+          scrollbarDiv.scroll(0, parseInt(storedScrollPosition))
+        }  
+      })
+
+      if (storedScrollPosition) {
+        scrollbarDiv.scroll(0, parseInt(storedScrollPosition))
+      }  
     }
   }
 }

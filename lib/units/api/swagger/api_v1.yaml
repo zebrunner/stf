@@ -2031,6 +2031,32 @@ paths:
             $ref: "#/definitions/UnexpectedErrorResponse"
       security:
         - accessTokenAuth: []
+  /devices/{serial}/owner:
+    x-swagger-router-controller: devices
+    get:
+      summary: Gets the group owner of a device
+      description: Gets the group owner of a device
+      operationId: getDeviceOwner
+      tags:
+        - user
+      parameters:
+        - name: serial
+          in: path
+          description: Device identifier (serial)
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Device size information
+          schema:
+            $ref: "#/definitions/OwnerResponse"
+        default:
+          description: >
+            Unexpected Error:
+              * 404: Not Found => unknown device
+              * 500: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
   /devices/{serial}/groups:
     x-swagger-router-controller: devices
     get:
@@ -2065,6 +2091,32 @@ paths:
             $ref: "#/definitions/UnexpectedErrorResponse"
       security:
         - accessTokenAuth: []
+  /devices/{serial}/type: 
+    x-swagger-router-controller: devices
+    get:
+      summary: Gets the type of a device
+      description: Gets the type of a device
+      operationId: getDeviceType
+      tags:
+        - user
+      parameters:
+        - name: serial
+          in: path
+          description: Device identifier (serial)
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Device type information
+          schema:
+            $ref: "#/definitions/TypeResponse"
+        default:
+          description: >
+            Unexpected Error:
+              * 404: Not Found => unknown device
+              * 500: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
   /devices/{serial}/bookings:
     x-swagger-router-controller: devices
     get:
@@ -2366,6 +2418,21 @@ definitions:
         type: integer
       width:
         type: integer
+  OwnerResponse:
+    required:
+      - email
+      - name
+    properties:
+      email: 
+        type: string
+      name:
+        type: string
+  TypeResponse:
+    required:
+      - type
+    properties:
+      type:
+        type: string
   DeviceResponse:
     required:
       - success

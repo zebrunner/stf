@@ -12,7 +12,10 @@ module.exports = function MenuCtrl(
 , LogcatService
 , socket
 , $cookies
-, $window) {
+, $window
+, $route) {
+
+  const contactEmail = 'support@zebrunner.com'
 
   SettingsService.bind($scope, {
     target: 'lastUsedDevice'
@@ -29,11 +32,11 @@ module.exports = function MenuCtrl(
   })
 
   $scope.mailToSupport = function() {
-    CommonService.url('mailto:' + $scope.contactEmail)
+    CommonService.url('mailto:' + contactEmail)
   }
 
   $http.get('/auth/contact').then(function(response) {
-    $scope.contactEmail = response.data.contact.email
+    contactEmail = response.data.contact.email
   })
 
   $scope.logout = function() {
@@ -47,5 +50,12 @@ module.exports = function MenuCtrl(
     setTimeout(function() {
       socket.disconnect()
     }, 100)
+  }
+
+  $scope.scrollToStoredPosition = function() {
+    if ($route.current.$$route.originalPath === '/devices') {
+      return
+    }    
+    $location.path('/devices/')
   }
 }

@@ -12,6 +12,7 @@ module.exports = function DeviceListCtrl(
 , ControlService
 , SettingsService
 , $location
+, $route
 ) {
   $scope.tracker = DeviceService.trackAll($scope)
   $scope.control = ControlService.create($scope.tracker.devices, '*ALL')
@@ -25,7 +26,7 @@ module.exports = function DeviceListCtrl(
     }
   , {
       name: 'model'
-    , selected: true
+    , selected: false
     }
   , {
       name: 'name'
@@ -221,6 +222,12 @@ module.exports = function DeviceListCtrl(
   }
 
   $scope.applyFilter = function(query) {
+    if (!query) {
+      localStorage.removeItem('deviceFilters')
+      localStorage.setItem('deviceFilters', JSON.stringify([]))
+      $scope.filter = []
+      $route.reload()
+    }
     $scope.filter = QueryParser.parse(query)
   }
 
@@ -240,5 +247,15 @@ module.exports = function DeviceListCtrl(
     $scope.filter = []
     $scope.sort = defaultSort
     $scope.columns = defaultColumns
+    localStorage.removeItem('deviceFilters')
+    localStorage.setItem('deviceFilters', JSON.stringify([]))
+  }
+
+  let deviceFilters = JSON.parse(localStorage.getItem('deviceFilters')) || []
+
+  let filter = deviceFilters[0]
+
+  if (filter) {
+    $scope.search.deviceFilter = `${filter.field ? filter.field : ''}: ${filter.query ? filter.query : ''}`
   }
 }
