@@ -26,6 +26,9 @@ module.exports = function DeviceScreenDirective(
     },
     link: function($scope, $element) {
       // eslint-disable-next-line prefer-destructuring
+      if ($scope.device.ios && $scope.device.present && (!$scope.device.display.width || !$scope.device.display.height)) {
+       return Promise.delay(1000).then(() => window.location.reload())
+      }
       const element = $element[0]
       const URL = window.URL || window.webkitURL
       const BLANK_IMG = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='
