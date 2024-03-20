@@ -7,7 +7,7 @@
         stacked-icon(icon='fa-location-arrow', color='color-pink')
         span(translate) Physical Device
         .pull-right
-          button(ng-click='device.ios ? press("finder") : finder()').btn.btn-xs.btn-primary-outline
+          button(ng-click='device.ios ? press("finder") : finder()', ng-disabled='device.platform === "tvOS"').btn.btn-xs.btn-primary-outline
             i.fa.fa-info
             span(translate) Find Device
 
