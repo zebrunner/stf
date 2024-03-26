@@ -15,7 +15,7 @@ module.exports = function MenuCtrl(
 , $window
 , $route) {
 
-  const contactEmail = 'support@zebrunner.com'
+  let contactEmail = 'support@zebrunner.com'
 
   SettingsService.bind($scope, {
     target: 'lastUsedDevice'
