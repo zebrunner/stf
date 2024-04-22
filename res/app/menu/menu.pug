@@ -19,27 +19,27 @@
         a(ng-href='/stf#!/settings')
           span.fa.fa-gears
           span(ng-if='!$root.basicMode', translate) Settings
-    ul.nav.stf-nav.stf-feedback.pull-right(ng-cloak, nav-menu='current').unselectable
+    ul.nav.stf-nav.stf-feedback.pull-right(ng-cloak, nav-menu='current', style='padding: 0').unselectable
       li.stf-nav-web-native-button(ng-if='!$root.basicMode && isControlRoute')
         .btn-group
           button(type='button', ng-model='$root.platform', uib-btn-radio="'web'", translate).btn.btn-sm.btn-default-outline Web
           button(type='button', ng-model='$root.platform', uib-btn-radio="'native'", translate).btn.btn-sm.btn-default-outline Native
 
-      li.stf-nav-web-native-button(ng-if='!$root.basicMode')
+      li.stf-nav-web-native-button()
        button.btn.btn-sm.btn-default-outline(
         type='button'
         ng-click='mailToSupport()')
           i.fa.fa-envelope-o
           span(translate) Contact Support 
 
-      li.stf-nav-web-native-button(ng-if='!$root.basicMode')
+      li.stf-nav-web-native-button()
        button.btn.btn-sm.btn-default-outline(
         type='button'
         ng-click='logout()')
           i.fa.fa-sign-out
           span(translate) Logout 
 
-      li(ng-show='!$root.basicMode')
+      li()
         a(ng-href='/stf#!/help', accesskey='6')
           i.fa.fa-question-circle.fa-fw
           | {{ "Help" | translate }}

@@ -10,7 +10,7 @@
 }
 
 .stf-menu .stf-top-bar {
-  height: 44px;
+  height: fit-content;
   padding: 0 10px 0 20px;
   width: 100%;
   float: left;
@@ -42,7 +42,7 @@
   line-height: 44px;
   color: #777777;
   font-weight: 400;
-  height: 44px;
+  height: fit-content;
   position: relative;
 }
 
@@ -64,4 +64,11 @@
 .stf-menu.navbar {
   height: 44px !important;
   min-height: 44px !important;
+  background-color: white;
+}
+
+@media (min-width: 600px) {
+  .stf-menu .stf-nav > li {
+    padding: 0;
+  }
 }
