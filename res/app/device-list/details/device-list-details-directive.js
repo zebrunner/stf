@@ -258,12 +258,8 @@ module.exports = function DeviceListDetailsDirective(
       function updateFilters(filters) {
         let deviceFilters = JSON.parse(localStorage.getItem('deviceFilters'))
 
-        if (!deviceFilters) {
-          deviceFilters = []
-        }
-
         // Use input filters
-        if (!deviceFilters[0]) {
+        if (!deviceFilters || !deviceFilters[0]) {
           activeFilters = filters
           storeFilters(filters)
           return filterAll()
