@@ -95,6 +95,9 @@ RUN cp ./icon/x120/iOS.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/ic
     cp ./icon/x24/tvOS.png /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/tvOS && \
     cp ./icon/x120/tvOS.png /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/tvOS
 
+#951 bump up Pixel 7 on Andoroid 14
+COPY files/STFService.apk /opt/vendor/STFService
+
 # Switch to the app user.
 USER stf
 ##Use root user only for debug
