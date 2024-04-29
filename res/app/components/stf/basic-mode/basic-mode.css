@@ -39,3 +39,13 @@
 .guest-landscape .basic-mode .fill-height {
   width: 100%;
 }
+
+@media (max-width: 767px) {
+  .basic-mode .stf-device-list .device-search {
+    width: 8em;
+  }
+  .pull-right > .dropdown-menu {
+    left: -140px;
+    right: auto;
+  }
+}

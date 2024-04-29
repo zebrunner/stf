@@ -22,7 +22,7 @@
               list='searchFields', multiple,
               text-focus-select, accesskey='4').form-control.input-sm.device-search.pull-right
 
-            span.pull-right(ng-if='activeTabs.details && !$root.basicMode')
+            span.pull-right(ng-if='activeTabs.details')
               .btn-group(uib-dropdown).pull-right
                 button.btn.btn-sm.btn-primary-outline(type='button', uib-dropdown-toggle)
                   i.fa.fa-columns
@@ -44,15 +44,15 @@
             uib-tab(active='activeTabs.icons', select='focusSearch()')
               uib-tab-heading
                 i.fa.fa-th-large
-                span(translate) Devices
+                span(ng-if='!$root.basicMode', translate) Devices
               div.device-list-devices-content(ng-if='activeTabs.icons').selectable
 
                 device-list-icons(tracker='tracker', columns='columns', sort='sort', filter='filter')
 
-            uib-tab(active='activeTabs.details', select='focusSearch()', ng-if='!$root.basicMode')
+            uib-tab(active='activeTabs.details', select='focusSearch()')
               uib-tab-heading
                 i.fa.fa-list
-                span(translate) Details
+                span(ng-if='!$root.basicMode', translate) Details
               div.device-list-details-content(ng-if='activeTabs.details').selectable
 
                 device-list-details(tracker='tracker', columns='columns', sort='sort', filter='filter').selectable
