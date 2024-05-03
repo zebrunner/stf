@@ -1,5 +1,5 @@
 div(ng-controller='ControlPanesHotKeysCtrl').fill-height
-  div().fill-height
+  div(ng-if='$root.basicMode || $root.standalone').fill-height
     div.fill-height.basic-remote-control
       .remote-control
         div(ng-include='"control-panes/device-control/device-control-standalone.pug"').fill-height
