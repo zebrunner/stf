@@ -50,7 +50,6 @@ module.exports = function EnhanceDeviceServiceFactory($filter, AppState) {
     device.enhancedModel = device.model || 'Unknown'
     device.enhancedImage120 = '/static/app/devices/icon/x120/' + (device.platform || device.image || '_default.jpg')
     device.enhancedImage24 = '/static/app/devices/icon/x24/' + (device.platform || device.image || '_default.jpg')
-    console.log(device)
     if (device.ios && device.state === "available" && !device.using) {
       device.enhancedStateAction = $filter('statusNameAction')('available')
       device.enhancedStatePassive = $filter('statusNamePassive')('available')
