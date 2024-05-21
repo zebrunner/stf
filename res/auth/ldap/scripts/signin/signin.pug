@@ -11,7 +11,10 @@
       .alert.alert-danger(ng-show='error')
         span(ng-show='error.$invalid', translate) Check errors below
         span(ng-show='error.$incorrect', translate) Incorrect login details
-        span(ng-show='error.$server', translate) Server error. Check log output.
+        span(ng-show='error.$server', translate)
+          | We do not recognize that username or password.
+          br
+          | Please check your spelling and try again or use another login option.
 
       .form-group
         .input-group
