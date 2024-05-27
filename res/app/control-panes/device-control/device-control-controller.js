@@ -1,7 +1,7 @@
 var _ = require('lodash')
 
 module.exports = function DeviceControlCtrl($scope, DeviceService, GroupService,
-  $location, $timeout, $window, $rootScope, LogcatService) {
+  $location, $timeout, $window, $rootScope, LogcatService, $route) {
 
   $scope.showScreen = true
 
@@ -54,6 +54,9 @@ module.exports = function DeviceControlCtrl($scope, DeviceService, GroupService,
             $scope.$digest()
           })
           $location.path('/devices/')
+          setTimeout(function() {
+            $route.reload()
+          }, 50)
         }
       } else {
         GroupService.kick(device).then(function() {

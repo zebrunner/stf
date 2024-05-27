@@ -6,6 +6,8 @@ module.exports = function ScreenshotsCtrl($scope) {
   $scope.screenshots = []
   $scope.screenShotSize = 400
 
+  let screenshotButtons = document.getElementsByClassName('btn btn-sm btn-primary-outline')
+
   $scope.clear = function() {
     $scope.screenshots = []
   }
@@ -24,6 +26,16 @@ module.exports = function ScreenshotsCtrl($scope) {
         $scope.screenshots.unshift(result)
       })
     })
+    Array.from(screenshotButtons).forEach((button) => {
+      button.setAttribute('disabled', 'disabled');
+      button.setAttribute('style', 'cursor: wait;')
+    });
+    setTimeout(function() {
+      Array.from(screenshotButtons).forEach((button) => {
+        button.removeAttribute('disabled')
+        button.setAttribute('style', 'cursor: pointer;')
+      });
+    }, 3000)
   }
 
   $scope.zoom = function(param) {

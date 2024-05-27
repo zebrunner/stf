@@ -17,7 +17,7 @@
 
         h6(translate) Volume
         .btn-group
-          button(uib-tooltip='{{ "Mute" | translate }}', ng-click='press("mute")').btn.btn-primary.btn-xs
+          button(uib-tooltip='{{ "Mute" | translate }}' id='muteButton').btn.btn-primary.btn-xs
             i.fa.fa-volume-off
           button(uib-tooltip='{{ "Volume Down" | translate }}', ng-click='press("volume_down")').btn.btn-primary.btn-xs
             i.fa.fa-volume-down
