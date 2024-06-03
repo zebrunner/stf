@@ -740,28 +740,28 @@ function DeviceNoteCell(options) {
     title: options.title
   , defaultOrder: 'asc'
   , build: function() {
-    var td = document.createElement('td')
-    var span = document.createElement('span')
-    var i = document.createElement('i')
+      var td = document.createElement('td')
+      var span = document.createElement('span')
+      var i = document.createElement('i')
 
-    td.className = 'device-note'
-    span.className = 'xeditable-wrapper'
-    span.appendChild(document.createTextNode(''))
+      td.className = 'device-note'
+      span.className = 'xeditable-wrapper'
+      span.appendChild(document.createTextNode(''))
 
-    i.className = 'device-note-edit fa fa-pencil pointer'
+      i.className = 'device-note-edit fa fa-pencil pointer'
 
-    td.appendChild(i)
-    td.appendChild(span)
+      td.appendChild(i)
+      td.appendChild(span)
 
-    return td
-  }
-, update: function(td, item) {
-    var span = td.children[1]
-    var t = span.firstChild
+      return td
+    }
+  , update: function(td, item) {
+      var span = td.children[1]
+      var t = span.firstChild
 
-    t.nodeValue = options.value(item)
-    return td
-  }
+      t.nodeValue = options.value(item)
+      return td
+    }
   , compare: function(a, b) {
       return compareIgnoreCase(options.value(a), options.value(b))
     }
