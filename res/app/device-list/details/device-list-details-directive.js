@@ -108,7 +108,7 @@ module.exports = function DeviceListDetailsDirective(
           var i = e.target
           var id = i.parentNode.parentNode.id
           var device = mapping[id]
-          var xeditableWrapper = i.parentNode.firstChild
+          var xeditableWrapper = i.parentNode.querySelector('.xeditable-wrapper')
           var xeditableSpan = document.createElement('span')
           var childScope = scope.$new()
 
@@ -134,11 +134,11 @@ module.exports = function DeviceListDetailsDirective(
         for (var i = 0; i < tr.cells.length; i++) {
           var col = tr.cells[i]
 
-          if (col.firstChild &&
-              col.firstChild.nodeName.toLowerCase() === 'span' &&
-              col.firstChild.classList.contains('xeditable-wrapper')) {
+          if (col.children[1] &&
+            col.children[1].nodeName.toLowerCase() === 'span' &&
+            col.children[1].classList.contains('xeditable-wrapper')) {
 
-            var xeditableWrapper = col.firstChild
+            var xeditableWrapper = col.children[1]
             var children = xeditableWrapper.children
 
             // Remove all childs under xeditablerWrapper

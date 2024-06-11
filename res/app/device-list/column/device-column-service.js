@@ -750,13 +750,13 @@ function DeviceNoteCell(options) {
 
       i.className = 'device-note-edit fa fa-pencil pointer'
 
-      td.appendChild(span)
       td.appendChild(i)
+      td.appendChild(span)
 
       return td
     }
   , update: function(td, item) {
-      var span = td.firstChild
+      var span = td.children[1]
       var t = span.firstChild
 
       t.nodeValue = options.value(item)
