@@ -664,6 +664,26 @@ module.exports = function DeviceListDetailsDirective(
 
       }
 
+      function checkUpdatedData(device) {
+        if (device.using && device.state === 'using' && (!device.display.width || !device.display.height)) {
+          setTimeout(() => {
+            return $route.reload()
+          }, 1000);
+        }
+
+        const deviceRow = tbody.querySelector(`#${calculateId(device)}`)
+
+        if (deviceRow && device.display.width && device.display.height) { 
+          const sizeText = `${device.display.width.toString()}x${device.display.height.toString()}`
+
+          const sizeTd = deviceRow.querySelector('td#device-screen');
+
+          if (sizeTd && sizeTd.innerText !== sizeText) {
+            $route.reload()
+          } 
+        }
+      }
+
       // Triggers when the tracker sees a device for the first time.
       function addListener(device) {
         let deviceData = localStorage.getItem('deviceData') ? JSON.parse(localStorage.getItem('deviceData')) : [];
@@ -721,18 +741,23 @@ module.exports = function DeviceListDetailsDirective(
           localStorage.setItem('deviceData', JSON.stringify(deviceData))
 
           let row = createRow(device)
+
           filterRow(row, device)
           insertRow(row, device)
         }
 
         storeRows()
         updateFilters(scope.filter())
+
+        checkUpdatedData(device)
       }
 
       // Triggers when the tracker notices that a device changed.
       function changeListener(device) {
         var id = calculateId(device)
         var tr = tbody.children[id]
+        
+        checkUpdatedData(device)
 
         storeDevices(device)
 
@@ -750,8 +775,8 @@ module.exports = function DeviceListDetailsDirective(
               // Should go lower in the list
               insertRowToSegment(tr, device, tr.rowIndex + 1, rows.length - 1);
             }
-
         }
+
       }
 
       // Triggers when a device is removed entirely from the tracker.
