@@ -664,6 +664,10 @@ module.exports = function DeviceListDetailsDirective(
 
       }
 
+      function escapeCSSSelector(id) {
+        return id.replace(/([!\"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~])/g, '\\$1');
+      }
+
       function checkUpdatedData(device) {
         if (device.using && device.state === 'using' && (!device.display.width || !device.display.height)) {
           setTimeout(() => {
@@ -671,7 +675,8 @@ module.exports = function DeviceListDetailsDirective(
           }, 1000);
         }
 
-        const deviceRow = tbody.querySelector(`#${calculateId(device)}`)
+        const escapedId = escapeCSSSelector(calculateId(device));
+        const deviceRow = tbody.querySelector(`#${escapedId}`);
 
         if (deviceRow && device.display.width && device.display.height) { 
           const sizeText = `${device.display.width.toString()}x${device.display.height.toString()}`
