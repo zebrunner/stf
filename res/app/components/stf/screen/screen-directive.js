@@ -77,6 +77,7 @@ module.exports = function DeviceScreenDirective(
       let wsReconnectionTimeoutID = null
       let wsReconnecting = false
       let tempUnavailableModalInstance = null
+      let swipeMessage = false
 
       $scope.screen = screen
       ScreenLoaderService.show()
@@ -220,6 +221,32 @@ module.exports = function DeviceScreenDirective(
 
         function messageListener(message) {
           screen.rotation = $scope.device.display.rotation
+          let swipeTimeout;
+
+
+          if (typeof message.data === 'string') {
+              const data = JSON.parse(message.data);
+              if (data.type === 'swiping') {
+                swipeMessage = true;
+                const loadingScreen = document.getElementsByClassName('lds-roller')[0]
+                if (loadingScreen) {
+                  console.log('swiping detected')
+                  ScreenLoaderService.show()
+                  loadingScreen.style.backdropFilter = 'none'
+                  loadingScreen.style.backgroundColor = 'transparent'
+
+                  if (swipeTimeout) {
+                    clearTimeout(swipeTimeout);
+                  }
+          
+                  swipeTimeout = setTimeout(() => {
+                    swipeMessage = false;
+                  }, 1500);
+
+                  return;
+              }
+            } 
+          }        
 
           if (message.data instanceof Blob) {
             if (shouldUpdateScreen()) {
@@ -228,7 +255,7 @@ module.exports = function DeviceScreenDirective(
                   $scope.displayError = false
                 })
               }
-              if (ScreenLoaderService.isVisible) {
+              if (ScreenLoaderService.isVisible && !swipeMessage) {
                 ScreenLoaderService.hide()
               }
 
