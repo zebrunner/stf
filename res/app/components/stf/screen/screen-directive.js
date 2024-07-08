@@ -230,7 +230,6 @@ module.exports = function DeviceScreenDirective(
                 swipeMessage = true;
                 const loadingScreen = document.getElementsByClassName('lds-roller')[0]
                 if (loadingScreen) {
-                  console.log('swiping detected')
                   ScreenLoaderService.show()
                   loadingScreen.style.backdropFilter = 'none'
                   loadingScreen.style.backgroundColor = 'transparent'
