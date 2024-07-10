@@ -141,13 +141,6 @@ module.exports = function ScalingServiceFactory() {
           w = scaledValue
         }
 
-        if (rotation === 90 && isIosDevice) {
-          return {
-            xP: y / h,
-            yP: x / w
-          }
-        }
-
         return {
           xP: x / w
         , yP: y / h
