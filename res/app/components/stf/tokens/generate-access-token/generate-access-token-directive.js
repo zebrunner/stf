@@ -22,6 +22,7 @@ module.exports = function generateAccessTokenDirective() {
 
       $scope.closeGenerateToken = function() {
         $scope.title = ''
+        $scope.generateForm.title = ''
         $scope.showGenerate = false
       }
     }

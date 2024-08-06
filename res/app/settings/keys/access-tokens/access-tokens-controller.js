@@ -1,17 +1,17 @@
 module.exports = function AccessTokensCtrl($scope, AccessTokenService) {
 
-    $scope.accessTokenTitles = []
+    $scope.accessTokens = []
     $scope.newToken = null
 
     function updateTokens() {
       AccessTokenService.getAccessTokens()
         .success(function(response) {
-          $scope.accessTokenTitles = response.titles || []
+          $scope.accessTokens = response.tokens || []
         })
     }
 
-    $scope.removeToken = function(title) {
-      AccessTokenService.removeAccessToken(title)
+    $scope.removeToken = function(id) {
+      AccessTokenService.removeAccessToken(id)
     }
 
     $scope.closeGenerated = function() {
@@ -24,8 +24,6 @@ module.exports = function AccessTokensCtrl($scope, AccessTokenService) {
       $scope.newToken = token
       $scope.showGenerated = true
     })
-
     $scope.$on('user.keys.accessTokens.updated', updateTokens)
-
     updateTokens()
 }
