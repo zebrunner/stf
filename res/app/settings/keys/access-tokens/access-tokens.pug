@@ -14,7 +14,7 @@
   .widget-content.padded
 
     nothing-to-show(icon='fa-key', message='{{"No access tokens" | translate}}',
-    ng-if='!accessTokenTitles.length && !showGenerate && !showGenerated')
+    ng-if='!accessTokens.length && !showGenerate && !showGenerated')
 
     generate-access-token(show-clipboard='true', show-generate='showGenerate')
 
@@ -29,12 +29,12 @@
         textarea(readonly, rows='2', text-focus-select, ng-model='newToken.tokenId').form-control.token-id-textarea
 
     ul.list-group.key-list
-      li.list-group-item(ng-repeat='title in accessTokenTitles track by $index').animate-repeat
+      li.list-group-item(ng-repeat='token in accessTokens track by token.id').animate-repeat
         a
           i.fa.fa-key.fa-2x.fa-fw.key-list-icon
           .key-list-details.selectable
-            .key-list-title(ng-bind='title')
+            .key-list-title(ng-bind='token.title')
 
-          button.btn.btn-xs.btn-danger-outline.pull-right.key-list-remove(ng-click='removeToken(title)')
+          button.btn.btn-xs.btn-danger-outline.pull-right.key-list-remove(ng-click='removeToken(token.id)')
             i.fa.fa-trash-o
             span(translate) Remove

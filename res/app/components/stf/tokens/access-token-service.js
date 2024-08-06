@@ -10,7 +10,7 @@ module.exports = function AccessTokenServiceFactory(
   var AccessTokenService = {}
 
   AccessTokenService.getAccessTokens = function() {
-    return $http.get('/api/v1/user/accessTokens')
+    return $http.get('/api/v1/user/fullAccessTokens')
   }
 
   AccessTokenService.generateAccessToken = function(title) {
@@ -19,9 +19,9 @@ module.exports = function AccessTokenServiceFactory(
     })
   }
 
-  AccessTokenService.removeAccessToken = function(title) {
+  AccessTokenService.removeAccessToken = function(id) {
     socket.emit('user.keys.accessToken.remove', {
-      title: title
+      id: id
     })
   }
 
