@@ -13,7 +13,7 @@ module.exports = function DateFormatCtrl(
   })
   
   $scope.validateInput = function(event) {
-    const validChars = 'dmy/:has '
+    const validChars = 'dmy/:has M'
     const key = String.fromCharCode(event.which || event.keyCode)
     if (!validChars.includes(key)) {
       event.preventDefault()
