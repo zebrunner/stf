@@ -13,5 +13,4 @@
           .input-group-addon.input-sm
             i.fa.fa-clock-o(
             uib-tooltip="{{'Define your own Date format' | translate}}" tooltip-placement='auto top-right' tooltip-popup-delay='500')
-          input.form-control.input-sm(size='30' type='text' placeholder='M/d/yy h:mm:ss a' ng-model='dateFormat')
-
+          input.form-control.input-sm(size='30' type='text' placeholder='M/d/yy h:mm:ss a' ng-model='dateFormat' ng-keypress='validateInput($event)')

@@ -12,12 +12,17 @@ module.exports = function generateAccessTokenDirective() {
       }
 
       $scope.generateToken = function() {
+        if (!$scope.generateForm.title) {
+          return
+        }
+
         AccessTokenService.generateAccessToken($scope.generateForm.title)
         $scope.closeGenerateToken()
       }
 
       $scope.closeGenerateToken = function() {
         $scope.title = ''
+        $scope.generateForm.title = ''
         $scope.showGenerate = false
       }
     }

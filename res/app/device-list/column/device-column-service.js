@@ -199,7 +199,7 @@ module.exports = function DeviceColumnService($filter, gettext, SettingsService,
         return (device.network.type || '').toUpperCase()
       }
     })
-  , display: TextCell({
+  , display: ScreenCell({
       title: gettext('Screen')
     , defaultOrder: 'desc'
     , value: function(device) {
@@ -404,6 +404,30 @@ function TextCell(options) {
   , build: function() {
       var td = document.createElement('td')
       td.appendChild(document.createTextNode(''))
+      return td
+    }
+  , update: function(td, item) {
+      var t = td.firstChild
+      t.nodeValue = options.value(item)
+      return td
+    }
+  , compare: function(a, b) {
+      return compareIgnoreCase(options.value(a), options.value(b))
+    }
+  , filter: function(item, filter) {
+      return filterIgnoreCase(options.value(item), filter.query)
+    }
+  })
+}
+
+function ScreenCell(options) {
+  return _.defaults(options, {
+    title: options.title
+  , defaultOrder: 'asc'
+  , build: function() {
+      var td = document.createElement('td')
+      td.appendChild(document.createTextNode(''))
+      td.id = 'device-screen'
       return td
     }
   , update: function(td, item) {

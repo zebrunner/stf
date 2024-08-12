@@ -92,18 +92,12 @@ module.exports = function DeviceControlCtrl($scope, DeviceService, GroupService,
     if (rotation === 'portrait') {
       $scope.control.rotate(0)
       $timeout(function() {
-        if (isLandscape()) {
-          console.log('tryToRotate is Landscape')
-          $scope.currentRotation = 'landscape'
-        }
+        isLandscape() ? $scope.currentRotation = 'landscape' : $scope.currentRotation = 'portrait'
       }, 400)
     } else if (rotation === 'landscape') {
       $scope.control.rotate(90)
       $timeout(function() {
-        if (isPortrait()) {
-          console.log('tryToRotate but it still porttrait')
-          $scope.currentRotation = 'portrait'
-        }
+        isPortrait() ? $scope.currentRotation = 'portrait' : $scope.currentRotation = 'landscape'
       }, 400)
     }
   }
@@ -111,10 +105,15 @@ module.exports = function DeviceControlCtrl($scope, DeviceService, GroupService,
   $scope.currentRotation = 'portrait'
 
   $scope.$watch('device.display.rotation', function(newValue) {
+    $scope.currentRotation = 'rotating'
     if (isPortrait(newValue)) {
-      $scope.currentRotation = 'portrait'
+      $timeout(function() {
+        isLandscape() ? $scope.currentRotation = 'landscape' : $scope.currentRotation = 'portrait'
+      }, 400)    
     } else if (isLandscape(newValue)) {
-      $scope.currentRotation = 'landscape'
+      $timeout(function() {
+        isPortrait() ? $scope.currentRotation = 'portrait' : $scope.currentRotation = 'landscape'
+      }, 400)    
     }
   })
 
