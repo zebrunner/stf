@@ -750,6 +750,12 @@ module.exports = function DeviceScreenDirective(
           $document.bind('mouseup', mouseUpListener)
           $document.bind('mouseleave', mouseUpListener)
 
+          if (!$rootScope.basicMode) {
+            $element.bind('touchmove', mouseMoveListener)
+            $document.bind('touchend', mouseUpListener)
+            $document.bind('touchcancel', mouseUpListener)
+          }
+
           if (lastPossiblyBuggyMouseUpEvent
             && lastPossiblyBuggyMouseUpEvent.timeStamp > e.timeStamp) {
             // We got mouseup before mousedown. See mouseUpBugWorkaroundListener
@@ -938,6 +944,13 @@ module.exports = function DeviceScreenDirective(
         }
 
         function stopMousing() {
+
+          if (!$rootScope.basicMode) {
+            $element.unbind('touchmove', mouseMoveListener)
+            $document.unbind('touchend', mouseUpListener)
+            $document.unbind('touchcancel', mouseUpListener)
+          }
+
           $element.unbind('mousemove', mouseMoveListener)
           $document.unbind('mouseup', mouseUpListener)
           $document.unbind('mouseleave', mouseUpListener)
@@ -1013,9 +1026,12 @@ module.exports = function DeviceScreenDirective(
             activateFinger(slot, x, y, pressure)
           }
 
-          $element.bind('touchmove', touchMoveListener)
-          $document.bind('touchend', touchEndListener)
-          $document.bind('touchleave', touchEndListener)
+          
+          if ($rootScope.basicMode) {
+            $element.bind('touchmove', touchMoveListener)
+            $document.bind('touchend', touchEndListener)
+            $document.bind('touchleave', touchEndListener)
+          }
 
           $scope.control.touchCommit(nextSeq())
         }
@@ -1096,7 +1112,12 @@ module.exports = function DeviceScreenDirective(
           $scope.control.gestureStop(nextSeq())
         }
 
-        $element.on('touchstart', touchStartListener)
+        $element.on('touchstart', (e) => {
+          if (!$rootScope.basicMode) {
+            return mouseDownListener(e)
+          }
+          touchStartListener(e)
+        })  
         $element.on('mousedown', mouseDownListener)
         $element.on('mouseup', mouseUpBugWorkaroundListener)
 
