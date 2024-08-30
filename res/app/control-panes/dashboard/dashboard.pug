@@ -13,4 +13,4 @@
   .col-md-6
     div(ng-include='"control-panes/dashboard/apps/apps.pug"')
   .col-md-6
-    div(ng-include='"control-panes/advanced/remote-debug/remote-debug.pug"')
+    div(ng-include='"control-panes/advanced/remote-debug/remote-debug.pug"', style='{{$root.basicMode ? "height: 150px" : "height: auto;" }}')
