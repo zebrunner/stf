@@ -1107,4 +1107,15 @@ input[type="range"] {
     }
   }
 
+  .btn-primary-outline {
+    &:hover {
+      background: none;
+      color: $main;
+      
+      .caret {
+        border-top-color: $main;
+      }
+    }
+  }
+
 }
