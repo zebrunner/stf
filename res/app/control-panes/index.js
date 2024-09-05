@@ -1,3 +1,5 @@
+require('./control-panes.css')
+
 module.exports = angular.module('control-panes', [
   require('stf/common-ui/nice-tabs').name,
   require('stf/device').name,
