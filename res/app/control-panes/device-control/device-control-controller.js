@@ -3,6 +3,11 @@ var _ = require('lodash')
 module.exports = function DeviceControlCtrl($scope, DeviceService, GroupService,
   $location, $timeout, $window, $rootScope, LogcatService, $route) {
 
+  if ($rootScope.basicMode) {
+    let scrollbarDiv = document.getElementsByClassName('pane-center fill-height ng-scope fa-pane-scroller')[0]
+    scrollbarDiv.scroll(0, 0)
+  }
+
   $scope.showScreen = true
 
   $scope.groupTracker = DeviceService.trackGroup($scope)
