@@ -51,3 +51,9 @@ a uib-tab-heading i + span {
 table.table .btn {
     margin: 0;
 }
+
+@media (max-width: 600px) {
+    .btn-sm, .btn-group-sm > .btn {
+        padding: 5px 0;
+    }
+}
