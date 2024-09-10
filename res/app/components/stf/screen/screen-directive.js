@@ -106,6 +106,12 @@ module.exports = function DeviceScreenDirective(
       function handleScreen() {
         let ws, adjustedBoundSize
         const canvas = element.querySelector('.screen__canvas')
+
+        if ($rootScope.basicMode && canvas.width * canvas.height >= 16777216) {
+          canvas.width = currentWidth * 0.80;
+          canvas.height = currentHeight * 0.80;
+        }
+
         const g = canvas.getContext('2d')
         // const positioner = element.querySelector('div.positioner')
         const devicePixelRatio = window.devicePixelRatio || 1
