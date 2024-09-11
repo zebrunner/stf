@@ -107,11 +107,6 @@ module.exports = function DeviceScreenDirective(
         let ws, adjustedBoundSize
         const canvas = element.querySelector('.screen__canvas')
 
-        if ($rootScope.basicMode && canvas.width * canvas.height >= 16777216) {
-          canvas.width = currentWidth * 0.80;
-          canvas.height = currentHeight * 0.80;
-        }
-
         const g = canvas.getContext('2d')
         // const positioner = element.querySelector('div.positioner')
         const devicePixelRatio = window.devicePixelRatio || 1
@@ -469,6 +464,14 @@ module.exports = function DeviceScreenDirective(
           } else {
             canvas.width = cachedImageWidth
             canvas.height = cachedImageHeight
+          }
+
+          if ($rootScope.basicMode && canvas.width * canvas.height >= 16777216) {
+            console.log('exceeded canvas size limit, reducing size');
+            const newWidth = canvas.width * 0.70;
+            const newHeight = canvas.height * 0.70;
+            canvas.width = newWidth;
+            canvas.height = newHeight;
           }
 
           cssRotation += rotator(cachedScreen.rotation, screen.rotation)
