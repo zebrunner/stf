@@ -273,23 +273,9 @@ module.exports = function DeviceScreenDirective(
 
               img.onload = function() {
                 updateImageArea(this)
-                g.drawImage(img, 0, 0, img.width, img.height)
-
                 if (canvasSizeExceeded()) {
-                  const aspectRatio = img.width / img.height;
-
-                  let newWidth = canvas.width;
-                  let newHeight = canvas.width / aspectRatio;
-                  
-                  if (newHeight > canvas.height) {
-                    newHeight = canvas.height;
-                    newWidth = canvas.height * aspectRatio;
-                  }
-                  
-                  const offsetX = (canvas.width - newWidth) / 2;
-                  const offsetY = (canvas.height - newHeight) / 2;
-                  
-                  g.drawImage(img, offsetX, offsetY, newWidth, newHeight);
+                  g.drawImage(img, 0, 0, canvas.width, canvas.height)
+                  return cleanData()
                 }
 
                 // Try to forcefully clean everything to get rid of memory
@@ -297,6 +283,7 @@ module.exports = function DeviceScreenDirective(
                 // leak huge amounts of memory when the developer tools are
                 // open, probably to save the resources for inspection. When
                 // the developer tools are closed no memory is leaked.
+                g.drawImage(img, 0, 0, img.width, img.height)
                 cleanData()
               }
 
