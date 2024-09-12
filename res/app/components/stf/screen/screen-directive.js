@@ -467,9 +467,9 @@ module.exports = function DeviceScreenDirective(
           }
 
           if ($rootScope.basicMode && canvas.width * canvas.height >= 16777216) {
-            console.log('exceeded canvas size limit, reducing size');
-            const newWidth = canvas.width * 0.70;
-            const newHeight = canvas.height * 0.70;
+            console.log(`exceeded canvas size limit, reducing previous size: ${canvas.width}x${canvas.height}`);
+            const newWidth = canvas.width * 0.95;
+            const newHeight = canvas.height * 0.95;
             canvas.width = newWidth;
             canvas.height = newHeight;
           }
