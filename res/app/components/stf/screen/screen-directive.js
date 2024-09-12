@@ -275,6 +275,23 @@ module.exports = function DeviceScreenDirective(
                 updateImageArea(this)
                 g.drawImage(img, 0, 0, img.width, img.height)
 
+                if (canvasSizeExceeded()) {
+                  const aspectRatio = img.width / img.height;
+
+                  let newWidth = canvas.width;
+                  let newHeight = canvas.width / aspectRatio;
+                  
+                  if (newHeight > canvas.height) {
+                    newHeight = canvas.height;
+                    newWidth = canvas.height * aspectRatio;
+                  }
+                  
+                  const offsetX = (canvas.width - newWidth) / 2;
+                  const offsetY = (canvas.height - newHeight) / 2;
+                  
+                  g.drawImage(img, offsetX, offsetY, newWidth, newHeight);
+                }
+
                 // Try to forcefully clean everything to get rid of memory
                 // leaks. Note that despite this effort, Chrome will still
                 // leak huge amounts of memory when the developer tools are
@@ -449,6 +466,10 @@ module.exports = function DeviceScreenDirective(
           return screen.rotation === 90 || screen.rotation === 270
         }
 
+        function canvasSizeExceeded() {
+          return $rootScope.basicMode && canvas.width * canvas.height >= 16777216
+        }
+
         function updateImageArea(img) {
           if (!hasImageAreaChanged(img)) {
             return
@@ -466,12 +487,10 @@ module.exports = function DeviceScreenDirective(
             canvas.height = cachedImageHeight
           }
 
-          if ($rootScope.basicMode && canvas.width * canvas.height >= 16777216) {
+          if (canvasSizeExceeded()) {
             console.log(`exceeded canvas size limit, reducing previous size: ${canvas.width}x${canvas.height}`);
-            const newWidth = canvas.width * 0.95;
-            const newHeight = canvas.height * 0.95;
-            canvas.width = newWidth;
-            canvas.height = newHeight;
+            canvas.width = 2484;
+            canvas.height = 5376;
           }
 
           cssRotation += rotator(cachedScreen.rotation, screen.rotation)
