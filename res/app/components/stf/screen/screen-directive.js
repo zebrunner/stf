@@ -274,7 +274,31 @@ module.exports = function DeviceScreenDirective(
               img.onload = function() {
                 updateImageArea(this)
                 if (canvasSizeExceeded()) {
-                  g.drawImage(img, 0, 0, canvas.width, canvas.height)
+                  console.log('Redrawing canvas image')
+
+                  const canvas = document.querySelector('canvas');
+                  const ctx = canvas.getContext('2d');
+
+                  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+                  const tempCanvas = document.createElement('canvas');
+                  const tempCtx = tempCanvas.getContext('2d');
+
+                  tempCanvas.width = canvas.width;
+                  tempCanvas.height = canvas.height;
+
+                  tempCtx.putImageData(imageData, 0, 0);
+
+                  const newWidth = canvas.width * 0.47; 
+                  const newHeight = canvas.height * 0.47;
+
+                  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                  canvas.width = newWidth;
+                  canvas.height = newHeight;
+
+                  ctx.drawImage(tempCanvas, 0, 0, imageData.width, imageData.height, 0, 0, newWidth, newHeight); 
+
                   return cleanData()
                 }
 
