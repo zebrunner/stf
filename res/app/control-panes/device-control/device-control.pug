@@ -6,11 +6,11 @@
           .stf-vnc-right-buttons.pull-right
             .btn-group
               label.btn-sm.btn-primary-outline(type='button', ng-click='tryToRotate("portrait")', ng-hide='device.platform === "tvOS"',
-              ng-model='currentRotation', uib-btn-radio='"portrait"',
+              ng-model='currentRotation', uib-btn-radio='"portrait"', id='portrait-label',
               uib-tooltip='{{ "Portrait" | translate }} ({{ "Current rotation:" | translate }} {{ device.display.rotation }}°)', tooltip-placement='bottom').pointer
                 i.fa.fa-mobile
               label.btn-sm.btn-primary-outline(type='button', ng-click='tryToRotate("landscape")', ng-hide='device.platform === "tvOS"',
-                ng-model='currentRotation', uib-btn-radio='"landscape"',
+                ng-model='currentRotation', uib-btn-radio='"landscape"', id='landscape-label',
               uib-tooltip='{{ "Landscape" | translate }} ({{ "Current rotation:" | translate }} {{ device.display.rotation }}°)', tooltip-placement='bottom').pointer
                 i.fa.fa-mobile.fa-rotate-90
             .button-spacer

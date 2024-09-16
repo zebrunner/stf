@@ -1118,4 +1118,18 @@ input[type="range"] {
     }
   }
 
+  #portrait-label {
+    &:hover {
+      background: $main;
+      color: #fff
+    }
+  }
+
+  #landscape-label {
+    &:hover {
+      background: $main;
+      color: #fff
+    }
+  }
+
 }
