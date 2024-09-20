@@ -474,7 +474,7 @@ module.exports = function DeviceScreenDirective(
             canvas.height = cachedImageHeight
           }
 
-          if (canvasSizeExceeded()) {
+          if (canvasSizeExceeded() && $scope.device.version !== '18.0') {
             console.log(`exceeded canvas size limit, reducing previous size: ${canvas.width}x${canvas.height}`);
             if ($scope.device.display.rotation === 90) {
               canvas.width = 5376;
