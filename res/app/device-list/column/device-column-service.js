@@ -80,17 +80,13 @@ module.exports = function DeviceColumnService($filter, gettext, SettingsService,
   , model: DeviceModelCell({
       title: gettext('Model')
     , value: function(device) {
-        const modelText = (device.name || device.model || device.serial).replace(/\s+/g, '_');
-        
-        return modelText
+        return device.name || device.model || device.serial
       }
     })
   , name: DeviceNameCell({
       title: gettext('Product')
     , value: function(device) {
-        const productText = (device.name || device.model || device.serial).replace(/\s+/g, '_');
-
-        return productText
+        return device.name || device.model || device.serial
       }
     }, AppState.user.email)
   , platform: TextCell({
