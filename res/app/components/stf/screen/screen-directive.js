@@ -1079,9 +1079,13 @@ module.exports = function DeviceScreenDirective(
               $scope.device.ios
             )
 
-            $scope.control.touchMove(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
-            //$scope.control.touchMoveIos(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
-            activateFinger(slot, x, y, pressure)
+            if ($scope.device.ios) {
+              const touchev = e.touches[0];
+
+              $scope.control.touchMoveIos(touchev.pageX, touchev.pageY, scaled.xP, scaled.yP, 0.5);
+            
+              activateFinger(slot, x, y, pressure);
+            }
           }
 
           $scope.control.touchCommit(nextSeq())
