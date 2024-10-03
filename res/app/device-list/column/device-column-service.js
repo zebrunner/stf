@@ -80,13 +80,13 @@ module.exports = function DeviceColumnService($filter, gettext, SettingsService,
   , model: DeviceModelCell({
       title: gettext('Model')
     , value: function(device) {
-        return device.name || device.model || device.serial
+        return device.enhancedName
       }
     })
   , name: DeviceNameCell({
       title: gettext('Product')
     , value: function(device) {
-        return device.name || device.model || device.serial
+        return device.enhancedName
       }
     }, AppState.user.email)
   , platform: TextCell({
