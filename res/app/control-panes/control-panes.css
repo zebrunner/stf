@@ -1,0 +1,5 @@
+@media (max-width: 400px) {
+  .pane-bottom-p.fa-pane.pane-fa-pane.fa-pane-orientation-vertical {
+    display: none;
+  }
+}

@@ -35,9 +35,9 @@
 .stf-menu .stf-nav > li > a {
   display: inline-block;
   text-align: left;
-  padding: 0 !important;
-  padding-right: 18px !important;
-  padding-left: 14px !important;
+  padding: 0;
+  padding-right: 18px;
+  padding-left: 14px;
   font-size: 15px;
   line-height: 44px;
   color: #777777;
@@ -67,8 +67,19 @@
   background-color: white;
 }
 
-@media (min-width: 600px) {
+@media (max-width: 600px) {
   .stf-menu .stf-nav > li {
     padding: 0;
   }
+  .stf-menu .stf-nav > li > a {
+    padding-left: 0;
+    padding-right: 10px;
+  }
+
+  .stf-menu .stf-nav > li > a > span.fa {
+    display: inline-block;
+    float: left;
+    margin: 8px 3px 0 0;
+    font-size: 28px;
+  }  
 }

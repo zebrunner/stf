@@ -5,12 +5,6 @@ module.exports =
       link: function(scope) {
         var body = angular.element($document[0].body)
 
-        if (typeof $window.orientation !== 'undefined') {
-          if ($window.orientation !== 0) {
-            rotateGuest(false)
-          }
-        }
-
         function rotateGuest(portrait) {
           if (portrait) {
             body.addClass('guest-portrait')
@@ -31,20 +25,7 @@ module.exports =
           var isPortrait = (window.innerHeight > window.innerWidth)
           rotateGuest(isPortrait)
         }
-
-        if (BrowserInfo.deviceorientation) {
-          window.addEventListener('orientationchange', guestDisplayRotated,
-            true)
-        }
-
-        function off() {
-          if (BrowserInfo.deviceorientation) {
-            window.removeEventListener('orientationchange',
-              guestDisplayRotated)
-          }
-        }
-
-        scope.$on('$destroy', off)
+        
       }
     }
   }

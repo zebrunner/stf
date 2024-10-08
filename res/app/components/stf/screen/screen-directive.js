@@ -106,6 +106,7 @@ module.exports = function DeviceScreenDirective(
       function handleScreen() {
         let ws, adjustedBoundSize
         const canvas = element.querySelector('.screen__canvas')
+
         const g = canvas.getContext('2d')
         // const positioner = element.querySelector('div.positioner')
         const devicePixelRatio = window.devicePixelRatio || 1
@@ -272,13 +273,17 @@ module.exports = function DeviceScreenDirective(
 
               img.onload = function() {
                 updateImageArea(this)
-                g.drawImage(img, 0, 0, img.width, img.height)
+                if (canvas.width === 2484 && canvas.height === 5376) {
+                  g.drawImage(img, 0, 0, canvas.width, canvas.height)
+                  return cleanData()
+                }
 
                 // Try to forcefully clean everything to get rid of memory
                 // leaks. Note that despite this effort, Chrome will still
                 // leak huge amounts of memory when the developer tools are
                 // open, probably to save the resources for inspection. When
                 // the developer tools are closed no memory is leaked.
+                g.drawImage(img, 0, 0, img.width, img.height)
                 cleanData()
               }
 
@@ -448,6 +453,10 @@ module.exports = function DeviceScreenDirective(
           return screen.rotation === 90 || screen.rotation === 270
         }
 
+        function canvasSizeExceeded() {
+          return $rootScope.basicMode && canvas.width * canvas.height >= 16777216
+        }
+
         function updateImageArea(img) {
           if (!hasImageAreaChanged(img)) {
             return
@@ -463,6 +472,17 @@ module.exports = function DeviceScreenDirective(
           } else {
             canvas.width = cachedImageWidth
             canvas.height = cachedImageHeight
+          }
+
+          if (canvasSizeExceeded() && $scope.device.version !== '18.0') {
+            console.log(`exceeded canvas size limit, reducing previous size: ${canvas.width}x${canvas.height}`);
+            if ($scope.device.display.rotation === 90) {
+              canvas.width = 5376;
+              canvas.height = 2484;
+              return
+            }
+            canvas.width = 2484;
+            canvas.height = 5376;
           }
 
           cssRotation += rotator(cachedScreen.rotation, screen.rotation)
@@ -750,6 +770,12 @@ module.exports = function DeviceScreenDirective(
           $document.bind('mouseup', mouseUpListener)
           $document.bind('mouseleave', mouseUpListener)
 
+          if (!$rootScope.basicMode) {
+            $element.bind('touchmove', mouseMoveListener)
+            $document.bind('touchend', mouseUpListener)
+            $document.bind('touchcancel', mouseUpListener)
+          }
+
           if (lastPossiblyBuggyMouseUpEvent
             && lastPossiblyBuggyMouseUpEvent.timeStamp > e.timeStamp) {
             // We got mouseup before mousedown. See mouseUpBugWorkaroundListener
@@ -938,6 +964,13 @@ module.exports = function DeviceScreenDirective(
         }
 
         function stopMousing() {
+
+          if (!$rootScope.basicMode) {
+            $element.unbind('touchmove', mouseMoveListener)
+            $document.unbind('touchend', mouseUpListener)
+            $document.unbind('touchcancel', mouseUpListener)
+          }
+
           $element.unbind('mousemove', mouseMoveListener)
           $document.unbind('mouseup', mouseUpListener)
           $document.unbind('mouseleave', mouseUpListener)
@@ -1013,9 +1046,12 @@ module.exports = function DeviceScreenDirective(
             activateFinger(slot, x, y, pressure)
           }
 
-          $element.bind('touchmove', touchMoveListener)
-          $document.bind('touchend', touchEndListener)
-          $document.bind('touchleave', touchEndListener)
+          
+          if ($rootScope.basicMode) {
+            $element.bind('touchmove', touchMoveListener)
+            $document.bind('touchend', touchEndListener)
+            $document.bind('touchleave', touchEndListener)
+          }
 
           $scope.control.touchCommit(nextSeq())
         }
@@ -1043,9 +1079,13 @@ module.exports = function DeviceScreenDirective(
               $scope.device.ios
             )
 
-            $scope.control.touchMove(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
-            //$scope.control.touchMoveIos(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
-            activateFinger(slot, x, y, pressure)
+            if ($scope.device.ios) {
+              const touchev = e.touches[0];
+
+              $scope.control.touchMoveIos(touchev.pageX, touchev.pageY, scaled.xP, scaled.yP, 0.5);
+            
+              activateFinger(slot, x, y, pressure);
+            }
           }
 
           $scope.control.touchCommit(nextSeq())
@@ -1096,7 +1136,12 @@ module.exports = function DeviceScreenDirective(
           $scope.control.gestureStop(nextSeq())
         }
 
-        $element.on('touchstart', touchStartListener)
+        $element.on('touchstart', (e) => {
+          if (!$rootScope.basicMode) {
+            return mouseDownListener(e)
+          }
+          touchStartListener(e)
+        })  
         $element.on('mousedown', mouseDownListener)
         $element.on('mouseup', mouseUpBugWorkaroundListener)
 

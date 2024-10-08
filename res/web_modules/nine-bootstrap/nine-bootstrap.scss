@@ -1107,4 +1107,29 @@ input[type="range"] {
     }
   }
 
+  .btn-primary-outline {
+    &:hover {
+      background: none;
+      color: $main;
+      
+      .caret {
+        border-top-color: $main;
+      }
+    }
+  }
+
+  #portrait-label {
+    &:hover {
+      background: $main;
+      color: #fff
+    }
+  }
+
+  #landscape-label {
+    &:hover {
+      background: $main;
+      color: #fff
+    }
+  }
+
 }

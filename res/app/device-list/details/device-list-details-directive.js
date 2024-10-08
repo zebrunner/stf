@@ -825,18 +825,24 @@ module.exports = function DeviceListDetailsDirective(
       });
 
       document.addEventListener('DOMContentLoaded', function() {
+        if ($rootScope.basicMode) {
+          scrollbarDiv.scroll(0, 0)
+        }
         if (storedScrollPosition) {
           scrollbarDiv.scroll(0, parseInt(storedScrollPosition))
         }  
       })
 
       window.addEventListener('load', function() {
+        if ($rootScope.basicMode) {
+          scrollbarDiv.scroll(0, 0)
+        }
         if (storedScrollPosition) {
           scrollbarDiv.scroll(0, parseInt(storedScrollPosition))
         }  
       })
 
-      if (storedScrollPosition) {
+      if (storedScrollPosition && !$rootScope.basicMode) {
         scrollbarDiv.scroll(0, parseInt(storedScrollPosition))
       }  
     }

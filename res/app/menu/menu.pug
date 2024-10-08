@@ -3,9 +3,9 @@
 //
 
 .navbar.stf-menu(ng-controller='MenuCtrl')
-  .container-fluid.stf-top-bar
+  .container-fluid.stf-top-bar(style='{{$root.basicMode ? "padding: 0 10px" : "padding: 0 10px;"}}')
     a.stf-logo(ng-href="/stf#!/devices") STF
-    ul.nav.stf-nav(nav-menu='current').unselectable
+    ul.nav.stf-nav(nav-menu='current', ng-if='!$root.basicMode').unselectable
       li(ng-cloak)
         a(ng-href='/stf#!/control/{{lastUsedDevice}}', ng-show='lastUsedDevice')
           span.fa.fa-mobile
@@ -25,21 +25,38 @@
           button(type='button', ng-model='$root.platform', uib-btn-radio="'web'", translate).btn.btn-sm.btn-default-outline Web
           button(type='button', ng-model='$root.platform', uib-btn-radio="'native'", translate).btn.btn-sm.btn-default-outline Native
 
-      li.stf-nav-web-native-button()
+      li.stf-nav-web-native-button(style="padding: 0")
        button.btn.btn-sm.btn-default-outline(
+        style='{{$root.basicMode ? "padding: 5px 0" : "padding: 5px 10px;" }}'
         type='button'
         ng-click='mailToSupport()')
           i.fa.fa-envelope-o
           span(translate) Contact Support 
 
-      li.stf-nav-web-native-button()
+      li.stf-nav-web-native-button(style="padding: 0")
        button.btn.btn-sm.btn-default-outline(
+        style='{{$root.basicMode ? "padding: 5px 0" : "padding: 5px 10px;" }}'
         type='button'
         ng-click='logout()')
           i.fa.fa-sign-out
           span(translate) Logout 
 
-      li()
+      li(style="padding: 0")
         a(ng-href='/stf#!/help', accesskey='6')
           i.fa.fa-question-circle.fa-fw
           | {{ "Help" | translate }}
+          
+    ul.nav.stf-nav(nav-menu='current', style='padding: 0; width: 100%', ng-if='$root.basicMode').unselectable
+      li(ng-cloak, style='width: 100%; margin-left: 10px')
+        a(ng-href='/stf#!/control/{{lastUsedDevice}}', ng-show='lastUsedDevice', style="padding-left: 0px; font-size: 10px")
+          span.fa.fa-mobile
+          span(translate) Control
+        a(accesskey='1', ng-click='scrollToStoredPosition()', style='cursor: pointer; padding-left: 0px; font-size: 10px')
+          span.fa.fa-sitemap
+          span(translate) Devices
+        a(ng-href='/stf#!/groups', , style="padding-left: 0px; font-size: 10px")
+          span.fa.fa-object-group
+          span(translate) Groups
+        a(ng-href='/stf#!/settings', style="padding-left: 0px; font-size: 10px")
+          span.fa.fa-gears
+          span(translate) Settings
