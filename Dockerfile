@@ -150,15 +150,15 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     rm -rf /tmp/go-ios-linux.zip /tmp/go-ios; \
   fi
 
-RUN cp ./icon/x120/iOS.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/iOS && \
-    cp ./icon/x24/iOS.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/iOS && \
-    cp ./icon/x120/Android.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/Android && \
-    cp ./icon/x24/Android.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/Android && \
-    cp ./icon/x24/tvOS.png /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/tvOS && \
-    cp ./icon/x120/tvOS.png /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/tvOS
+RUN cp ./icon/x120/iOS.jpg /app/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/iOS && \
+    cp ./icon/x24/iOS.jpg /app/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/iOS && \
+    cp ./icon/x120/Android.jpg /app/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/Android && \
+    cp ./icon/x24/Android.jpg /app/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/Android && \
+    cp ./icon/x24/tvOS.png /app/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/tvOS && \
+    cp ./icon/x120/tvOS.png /app/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/tvOS
 
 #951 bump up Pixel 7 on Andoroid 14
-COPY files/STFService.apk /opt/vendor/STFService
+COPY files/STFService.apk /app/vendor/STFService
 
 # Switch to the app user.
 USER stf
