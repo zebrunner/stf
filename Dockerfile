@@ -77,7 +77,7 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
       .eslintrc .nvmrc .tool-versions res/.eslintrc && \
     cd && \
     rm -rf .npm .cache .config .local && \
-    cd /app; && \
+    cd /app && \
     echo '--- Installing go-ios' && \
     # go-ios utility to manage iOS devices connected to Linux provider host
     wget --no-cache -O /tmp/go-ios-linux.zip https://github.com/danielpaulus/go-ios/releases/download/v1.0.182/go-ios-linux.zip && \
@@ -140,7 +140,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     cd /app && \
     rm -rf doc .github .tx .semaphore *.md *.yaml LICENSE Dockerfile* \
       .eslintrc .nvmrc .tool-versions res/.eslintrc && \
-    rm -rf /tmp/*; \
+    rm -rf /tmp/* \
     echo '--- Installing go-ios' && \
     # go-ios utility to manage iOS devices connected to Linux provider host
     wget --no-cache -O /tmp/go-ios-linux.zip https://github.com/danielpaulus/go-ios/releases/download/v1.0.182/go-ios-linux.zip && \
