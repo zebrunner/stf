@@ -375,20 +375,6 @@ message InitializeIosDeviceState {
   required UpdateIosDevice options = 5;
 }
 
-message DeviceIosIntroductionMessage {
-  required string serial = 1;
-  required DeviceStatus status = 2;
-  required ProviderMessage provider = 3;
-}
-
-message InitializeIosDeviceState {
-  required string serial = 1;
-  required DeviceStatus status = 2;
-  required ProviderIosMessage provider = 3;
-  required IosDevicePorts ports = 4;
-  required UpdateIosDevice options = 5;
-}
-
 message DeviceRegisteredMessage {
   required string serial = 1;
 }
@@ -424,11 +410,6 @@ message DeviceStatusMessage {
   required string serial = 1;
   required DeviceStatus status = 2;
   required double statusTimeStamp = 3;
-}
-
-message DeviceTypeMessage {
-  required string serial = 1;
-  required string type = 2;
 }
 
 message DeviceTypeMessage {
