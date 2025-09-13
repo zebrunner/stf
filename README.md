@@ -27,7 +27,7 @@ Thank you to all the people who have already contributed to STF!
 
 * OS support
   - Android
-    * Supports versions 2.3.3 (SDK level 10) to 12 (SDK level 32)
+    * Supports versions 2.3.3 (SDK level 10) to 15 (SDK level 35)
     * Supports Wear 5.1 (but not 5.0 due to missing permissions)
     * Supports Fire OS, CyanogenMod, and other heavily Android based distributions
     * `root` is **not** required for any current functionality
@@ -202,6 +202,20 @@ Of course, you can override the default values of these built-in objects by sett
 -	administrator user email: `STF_ADMIN_EMAIL`
 
 You're now ready to start up STF itself:
+
+```bash
+stf local
+```
+
+Later, if you want to change the values of these built-in objects, for example to change the identity of the administrator user, you must follow the below instructions or you are likely to encounter data inconsistency issues:
+1. stop the STF server (without stop the RethinkDB database)
+2. It is recommended to make a backup of the database (in case of inconsistency problem during migration)
+3. set environment variables to new desired values for built-in objects
+4. if you change the administrator identity, make sure the user does not exist in the database yet, if it does you need to delete it first via the UI or RestFul API
+5. run the `stf migrate` command
+   * If you get an STF error like `ERR/db:api..` (e.g. you tried to change the name of the current administrator or the new administrator already exists in the database), it means that no changes have been made to the database that remain consistent
+   * otherwise you get a STF message telling you the built-in objects have been updated successfully
+6. Finally if all went well you are now ready to start STF itself:
 
 ```bash
 stf local

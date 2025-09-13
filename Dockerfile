@@ -1,14 +1,15 @@
 #
-# Copyright © 2022 contains code contributed by Orange SA, authors: Denis Barbaron - Licensed under the Apache license 2.0
+# Copyright © 2022-2024 contains code contributed by Orange SA, authors: Denis Barbaron - Licensed under the Apache license 2.0
 #
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 # Sneak the stf executable into $PATH.
-ENV PATH=/opt/bin:$PATH
+ENV PATH=/app/bin:$PATH
 
 # Work in app dir by default.
-WORKDIR /opt
+WORKDIR /app
+COPY . /tmp/build/
 
 # Export default app port
 EXPOSE 3000
@@ -22,15 +23,11 @@ RUN apt-get update && \
 # jq - jquery command line to operate with go-ios utility
 # libplist-utils - plistutil to convert binary Info.plist into the xml
 
-# go-ios utility to manage iOS devices connected to Linux provider host
-#Grab gidevice from github and extract it in a folder
-RUN wget https://github.com/danielpaulus/go-ios/releases/download/v1.0.120/go-ios-linux.zip && unzip go-ios-linux.zip -d /usr/local/bin && rm go-ios-linux.zip
+ARG TARGETARCH
 
-# Install app requirements. Trying to optimize push speed for dependant apps
-# by reducing layers as much as possible. Note that one of the final steps
-# installs development files for node-gyp so that npm install won't have to
-# wait for them on the first native module installation.
-RUN useradd --system \
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+    export DEBIAN_FRONTEND=noninteractive && \
+    useradd --system \
       --create-home \
       --shell /usr/sbin/nologin \
       stf-build && \
@@ -39,54 +36,119 @@ RUN useradd --system \
       --shell /usr/sbin/nologin \
       stf && \
     sed -i'' 's@http://archive.ubuntu.com/ubuntu/@mirror://mirrors.ubuntu.com/mirrors.txt@' /etc/apt/sources.list && \
+    echo '--- Updating repositories' && \
     apt-get update && \
+    echo '--- Upgrading repositories' && \
+    apt-get -y dist-upgrade && \
     apt-get -y install wget python3 build-essential && \
     cd /tmp && \
     wget --progress=dot:mega \
-      https://nodejs.org/dist/v17.9.0/node-v17.9.0-linux-x64.tar.xz && \
+      https://nodejs.org/dist/v22.11.0/node-v22.11.0-linux-x64.tar.xz && \
     tar -xJf node-v*.tar.xz --strip-components 1 -C /usr/local && \
     rm node-v*.tar.xz && \
     su stf-build -s /bin/bash -c '/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js install' && \
-    apt-get -y install libzmq3-dev libprotobuf-dev git graphicsmagick openjdk-8-jdk yasm cmake && \
+    apt-get -y install --no-install-recommends libzmq3-dev libprotobuf-dev git graphicsmagick openjdk-8-jdk yasm cmake && \
     apt-get clean && \
     rm -rf /var/cache/apt/* /var/lib/apt/lists/* && \
     mkdir /tmp/bundletool && \
     cd /tmp/bundletool && \
     wget --progress=dot:mega \
       https://github.com/google/bundletool/releases/download/1.2.0/bundletool-all-1.2.0.jar && \
-    mv bundletool-all-1.2.0.jar bundletool.jar
-
-# Copy app source.
-COPY . /tmp/build/
-
-# Give permissions to our build user.
-RUN mkdir -p /opt && \
-    mkdir -p /data && \
-    chown -R stf-build:stf-build /tmp/build /tmp/bundletool /opt && \
-    chown -R stf:stf /data
-
-RUN mkdir data &&\
-    chown stf-build: data
-
-RUN ln -s /opt /app
-# Switch over to the build user.
-USER stf-build
-
-# Run the build.
-RUN set -x && \
+    mv bundletool-all-1.2.0.jar bundletool.jar && \
+    mkdir -p /app && \
+    chown -R stf:stf /tmp/build /tmp/bundletool /app && \
+    set -x && \
+    echo '--- Building app' && \
     cd /tmp/build && \
     export PATH=$PWD/node_modules/.bin:$PATH && \
-    npm install --python="/usr/bin/python3"  --loglevel http && \
-    npm pack && \
-    tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /opt && \
-    bower cache clean && \
-    npm prune --production && \
-    mv node_modules /opt && \
+    echo 'npm install --python="/usr/bin/python3" --omit=optional --loglevel http' | su stf -s /bin/bash && \
+    echo '--- Assembling app' && \
+    echo 'npm pack' | su stf -s /bin/bash && \
+    tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /app && \
+    echo '/tmp/build/node_modules/.bin/bower cache clean' | su stf -s /bin/bash && \
+    npm prune --omit=dev && \
+    mv node_modules /app && \
     rm -rf ~/.node-gyp && \
-    mkdir /opt/bundletool && \
-    mv /tmp/bundletool/* /opt/bundletool && \
-    cd /opt && \
-    find /tmp -mindepth 1 ! -regex '^/tmp/hsperfdata_root\(/.*\)?' -delete
+    mkdir /app/bundletool && \
+    mv /tmp/bundletool/* /app/bundletool && \
+    cd /app && \
+    find /tmp -mindepth 1 ! -regex '^/tmp/hsperfdata_root\(/.*\)?' -delete && \
+    rm -rf doc .github .tx .semaphore *.md *.yaml LICENSE Dockerfile* \
+      .eslintrc .nvmrc .tool-versions res/.eslintrc && \
+    cd && \
+    rm -rf .npm .cache .config .local && \
+    cd /app; && \
+    echo '--- Installing go-ios' && \
+    # go-ios utility to manage iOS devices connected to Linux provider host
+    wget --no-cache -O /tmp/go-ios-linux.zip https://github.com/danielpaulus/go-ios/releases/download/v1.0.182/go-ios-linux.zip && \
+    unzip /tmp/go-ios-linux.zip -d /tmp/go-ios && \
+    cp /tmp/go-ios/ios-amd64 /usr/local/bin/ios && \
+    ios --version && \
+    rm -rf /tmp/go-ios-linux.zip /tmp/go-ios \
+  fi
+  
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+    export DEBIAN_FRONTEND=noninteractive && \
+    echo '--- Updating repositories' && \
+    apt-get update && \
+    echo '--- Upgrading repositories' && \
+    apt-get -y dist-upgrade && \
+    echo '--- Building node' && \
+    apt-get -y install pkg-config curl zip unzip wget python3 build-essential cmake ninja-build && \
+    cd /tmp && \
+    wget --progress=dot:mega \
+      https://nodejs.org/dist/v22.11.0/node-v22.11.0-linux-arm64.tar.xz && \
+    tar -xJf node-v*.tar.xz --strip-components 1 -C /usr/local && \
+    rm node-v*.tar.xz && \
+    useradd --system \
+      --create-home \
+      --shell /usr/sbin/nologin \
+      stf && \
+    su stf -s /bin/bash -c '/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js install' && \
+    apt-get -y install --no-install-recommends musl-dev libzmq3-dev libprotobuf-dev git graphicsmagick yasm && \
+    ln -s /usr/lib/aarch64-linux-musl/libc.so /lib/libc.musl-aarch64.so.1 && \
+    echo '--- Building app' && \
+    mkdir -p /app && \
+    chown -R stf:stf /tmp/build && \
+    set -x && \
+    cd /tmp/build && \
+    export PATH=$PWD/node_modules/.bin:$PATH && \
+    sed -i'' -e '/phantomjs/d' package.json && \
+    export VCPKG_FORCE_SYSTEM_BINARIES="arm" && \
+    echo 'npm install --save-dev pnpm' | su stf -s /bin/bash && \
+    echo 'npm install --python="/usr/bin/python3" --omit=optional --loglevel http' | su stf -s /bin/bash && \
+    echo '--- Assembling app' && \
+    echo 'npm pack' | su stf -s /bin/bash && \
+    tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /app && \
+    echo '/tmp/build/node_modules/.bin/bower cache clean' | su stf -s /bin/bash && \
+    echo 'npm prune --omit=dev' | su stf -s /bin/bash && \
+    wget --progress=dot:mega \
+      https://github.com/google/bundletool/releases/download/1.2.0/bundletool-all-1.2.0.jar && \
+    mkdir -p /app/bundletool && \
+    mv bundletool-all-1.2.0.jar /app/bundletool/bundletool.jar && \
+    mv node_modules /app && \
+    chown -R root:root /app && \
+    echo '--- Cleaning up' && \
+    echo 'npm cache clean --force' | su stf -s /bin/bash && \
+    rm -rf ~/.node-gyp && \
+    apt-get -y purge pkg-config curl zip unzip wget python3 build-essential cmake ninja-build && \
+    apt-get -y clean && \
+    apt-get -y autoremove && \
+    cd /home/stf && \
+    rm -rf vcpkg .npm .cache .cmake-ts .config .local && \
+    rm -rf /var/cache/apt/* /var/lib/apt/lists/* && \
+    cd /app && \
+    rm -rf doc .github .tx .semaphore *.md *.yaml LICENSE Dockerfile* \
+      .eslintrc .nvmrc .tool-versions res/.eslintrc && \
+    rm -rf /tmp/*; \
+    echo '--- Installing go-ios' && \
+    # go-ios utility to manage iOS devices connected to Linux provider host
+    wget --no-cache -O /tmp/go-ios-linux.zip https://github.com/danielpaulus/go-ios/releases/download/v1.0.182/go-ios-linux.zip && \
+    unzip /tmp/go-ios-linux.zip -d /tmp/go-ios && \
+    cp /tmp/go-ios/ios-arm64 /usr/local/bin/ios && \
+    ios --version && \
+    rm -rf /tmp/go-ios-linux.zip /tmp/go-ios \
+  fi
 
 RUN cp ./icon/x120/iOS.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/iOS && \
     cp ./icon/x24/iOS.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/iOS && \
@@ -104,4 +166,4 @@ USER stf
 #USER root
 
 # Show help by default.
-CMD stf --help
+CMD ["stf", "--help"]

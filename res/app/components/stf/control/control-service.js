@@ -348,6 +348,20 @@ module.exports = function ControlServiceFactory(
       return sendTwoWay('wifi.get')
     }
 
+    this.setBluetoothEnabled = function(enabled) {
+      return sendTwoWay('bluetooth.set', {
+        enabled: enabled
+      })
+    }
+
+    this.getBluetoothStatus = function() {
+      return sendTwoWay('bluetooth.get')
+    }
+
+    this.cleanBluetoothBondedDevices = function() {
+      return sendTwoWay('bluetooth.cleanBonds')
+    }
+
     window.cc = this
   }
 
