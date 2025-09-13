@@ -84,7 +84,7 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
     unzip /tmp/go-ios-linux.zip -d /tmp/go-ios && \
     cp /tmp/go-ios/ios-amd64 /usr/local/bin/ios && \
     ios --version && \
-    rm -rf /tmp/go-ios-linux.zip /tmp/go-ios \
+    rm -rf /tmp/go-ios-linux.zip /tmp/go-ios; \
   fi
   
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
@@ -147,7 +147,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     unzip /tmp/go-ios-linux.zip -d /tmp/go-ios && \
     cp /tmp/go-ios/ios-arm64 /usr/local/bin/ios && \
     ios --version && \
-    rm -rf /tmp/go-ios-linux.zip /tmp/go-ios \
+    rm -rf /tmp/go-ios-linux.zip /tmp/go-ios; \
   fi
 
 RUN cp ./icon/x120/iOS.jpg /opt/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/iOS && \
