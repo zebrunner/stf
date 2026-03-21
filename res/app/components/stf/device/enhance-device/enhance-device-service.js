@@ -50,6 +50,16 @@ module.exports = function EnhanceDeviceServiceFactory($filter, AppState) {
     device.enhancedModel = device.model || 'Unknown'
     device.enhancedImage120 = '/static/app/devices/icon/x120/' + (device.platform || device.image || '_default.jpg')
     device.enhancedImage24 = '/static/app/devices/icon/x24/' + (device.platform || device.image || '_default.jpg')
+    if (device.status === 5) {
+      device.enhancedStateAction = $filter('statusNameAction')('unauthorized')
+      device.enhancedStatePassive = $filter('statusNamePassive')('unauthorized')
+      return
+    }
+    if (device.using && device.owner) {
+      device.enhancedStateAction = $filter('statusNameAction')('using')
+      device.enhancedStatePassive = $filter('statusNamePassive')('using')
+      return
+    } 
     if (device.ios && device.state === "available" && !device.using) {
       device.enhancedStateAction = $filter('statusNameAction')('available')
       device.enhancedStatePassive = $filter('statusNamePassive')('available')
