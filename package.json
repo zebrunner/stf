@@ -144,7 +144,7 @@
     "karma-webpack": "^3.0.5",
     "less": "^2.4.0",
     "less-loader": "^2.2.2",
-    "memory-fs": "^0.3.0",
+    "memory-fs": "^0.5.0",
     "node-libs-browser": "^1.0.0",
     "phantomjs-prebuilt": "^2.1.11",
     "protractor": "^5.4.1",
