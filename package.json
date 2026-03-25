@@ -112,7 +112,7 @@
     "chai": "^3.4.1",
     "consolidate": "^0.14.0",
     "css-loader": "^0.28.11",
-    "del": "^2.0.1",
+    "del": "^7.0.0",
     "eslint": "^4.19.1",
     "event-stream": "^3.3.2",
     "exports-loader": "^0.7.0",
