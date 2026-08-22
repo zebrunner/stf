@@ -49,7 +49,10 @@ module.exports = function MenuCtrl(
           $cookies.remove(key, {path: '/'})
         }
       }
-      $window.location = '/stf'
+      // Assigning '/stf' from '/stf#!/devices' only changes the fragment, which
+      // never reloads the document, so force a full load to hit the auth gate.
+      $window.location.href = '/stf'
+      $window.location.reload()
       setTimeout(function() {
         socket.disconnect()
       }, 100)
