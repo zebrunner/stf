@@ -40,16 +40,19 @@ module.exports = function MenuCtrl(
   })
 
   $scope.logout = function() {
-    const cookies = $cookies.getAll()
-    for (const key in cookies) {
-      if (cookies.hasOwnProperty(key)) {
-        $cookies.remove(key, {path: '/'})
+    $http.post('/app/api/v1/logout').finally(function() {
+      const cookies = $cookies.getAll()
+      for (const key in cookies) {
+        if (cookies.hasOwnProperty(key)) {
+          $cookies.remove(key, {path: '/'})
+        }
       }
-    }
-    $window.location = '/stf'
-    setTimeout(function() {
-      socket.disconnect()
-    }, 100)
+      $window.location.href = '/stf'
+      $window.location.reload()
+      setTimeout(function() {
+        socket.disconnect()
+      }, 100)
+    })
   }
 
   $scope.scrollToStoredPosition = function() {
