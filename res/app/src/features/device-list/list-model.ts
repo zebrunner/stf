@@ -18,7 +18,7 @@ export interface ActiveTabs {
 }
 
 export const defaultSort: SortSetting = {
-  fixed: [{name: 'state', order: 'asc'}]
+  fixed: []
   , user: [{name: 'name', order: 'asc'}]
 }
 

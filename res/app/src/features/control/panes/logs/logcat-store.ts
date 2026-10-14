@@ -4,6 +4,7 @@ import {onSocket} from '@/core/socket'
 import {
   defaultFilters
   , enhanceEntry
+  , priorityLabels
   , sanitizePid
   , sanitizeTid
   , type LogcatMessage
@@ -90,11 +91,11 @@ window.addEventListener('beforeunload', () => {
   })
 })
 
-export async function startLogcat(serial: string, control: Control): Promise<void> {
+export async function startLogcat(serial: string, control: Control, filters?: LogFilters): Promise<void> {
   runningControls.set(serial, control)
   updateDevice(serial, () => ({started: true}))
   try {
-    await control.startLogcat([])
+    await control.startLogcat(filters ? [priorityLabels[filters.priority]] : [])
   }
   catch (error) {
     runningControls.delete(serial)

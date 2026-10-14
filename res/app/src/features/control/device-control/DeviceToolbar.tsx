@@ -78,7 +78,7 @@ export function DeviceToolbar({device, actions, showScreen, onToggleScreen}: {
     <div className={`${classes.toolbar} stf-vnc-navbar`}>
       <DeviceNameMenu device={device} actions={actions} />
       <Group gap={6} wrap='nowrap' className={`${classes.rightButtons} stf-vnc-right-buttons`}>
-        <ActionIcon.Group>
+        {device.platform !== 'tvOS' && <ActionIcon.Group>
           <Tooltip label={`${t('Portrait')} ${rotationSuffix}`} position='bottom'>
             <ActionIcon
               size='md'
@@ -101,8 +101,8 @@ export function DeviceToolbar({device, actions, showScreen, onToggleScreen}: {
               <IconDeviceMobileRotated size={16} />
             </ActionIcon>
           </Tooltip>
-        </ActionIcon.Group>
-        <ActionIcon.Group>
+        </ActionIcon.Group>}
+        {device.platform !== 'tvOS' && <ActionIcon.Group>
           <Tooltip label={t('Rotate Left')} position='bottom'>
             <ActionIcon
               size='md'
@@ -123,7 +123,7 @@ export function DeviceToolbar({device, actions, showScreen, onToggleScreen}: {
               <IconRotateClockwise size={16} />
             </ActionIcon>
           </Tooltip>
-        </ActionIcon.Group>
+        </ActionIcon.Group>}
         <Divider orientation='vertical' />
         <Tooltip label={showScreen ? t('Hide Screen') : t('Show Screen')} position='bottom'>
           <ActionIcon

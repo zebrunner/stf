@@ -131,6 +131,17 @@
   color: rgba(255, 255, 255, 0.45);
 }
 
+.device-screen .lds-roller {
+  z-index: 1;
+  backdrop-filter: blur(3px);
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.device-screen .swipe-loader {
+  backdrop-filter: none;
+  background-color: transparent;
+}
+
 .device-screen .screen-error {
   position: absolute;
   inset: 0;

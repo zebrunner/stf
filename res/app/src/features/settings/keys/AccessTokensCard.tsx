@@ -30,11 +30,16 @@ interface GeneratedToken {
   tokenId: string
 }
 
+interface AccessToken {
+  id: string
+  title: string
+}
+
 const accessTokensQueryKey = ['user', 'accessTokens']
 
-function fetchAccessTokenTitles(): Promise<string[]> {
-  return api.get<{titles?: string[]}>('/api/v1/user/accessTokens')
-    .then((response) => response.titles || [])
+function fetchAccessTokens(): Promise<AccessToken[]> {
+  return api.get<{tokens?: AccessToken[], titles?: string[]}>('/api/v1/user/fullAccessTokens')
+    .then((response) => response.tokens || (response.titles || []).map((title) => ({id: title, title})))
 }
 
 function GenerateAccessTokenForm({onClose}: {onClose: () => void}) {
@@ -122,10 +127,10 @@ export function AccessTokensCard() {
   const [generated, setGenerated] = useState<GeneratedToken | null>(null)
   const tokens = useQuery({
     queryKey: accessTokensQueryKey
-    , queryFn: fetchAccessTokenTitles
+    , queryFn: fetchAccessTokens
     , staleTime: 0
   })
-  const titles = tokens.data || []
+  const accessTokens = tokens.data || []
 
   function refresh() {
     queryClient.invalidateQueries({queryKey: accessTokensQueryKey}).catch(() => undefined)
@@ -187,18 +192,18 @@ export function AccessTokensCard() {
       {tokens.isError && (
         <Alert variant='light' color='red' p='xs'>{errorMessage(tokens.error)}</Alert>
       )}
-      {tokens.isSuccess && !titles.length && !showGenerate && !generated && (
+      {tokens.isSuccess && !accessTokens.length && !showGenerate && !generated && (
         <NothingToShow icon={<IconKey size={30} />} message={t('No access tokens')} />
       )}
-      {titles.length > 0 && (
+      {accessTokens.length > 0 && (
         <ul className={`key-list ${classes.list}`}>
-          {titles.map((title, index) => (
-            <li key={`${index}-${title}`} className={classes.item}>
+          {accessTokens.map((token) => (
+            <li key={token.id} className={classes.item}>
               <ThemeIcon variant='light' color='gray' size={36} radius='md'>
                 <IconKey size={18} />
               </ThemeIcon>
               <div className={`key-list-details selectable ${classes.itemDetails}`}>
-                <Text className='key-list-title' fw={500} size='sm' truncate>{title}</Text>
+                <Text className='key-list-title' fw={500} size='sm' truncate>{token.title}</Text>
               </div>
               <Button
                 className='key-list-remove'
@@ -206,7 +211,7 @@ export function AccessTokensCard() {
                 variant='light'
                 color='red'
                 leftSection={<IconTrash size={14} />}
-                onClick={() => emit('user.keys.accessToken.remove', {title})}
+                onClick={() => emit('user.keys.accessToken.remove', {id: token.id})}
               >
                 {t('Remove')}
               </Button>

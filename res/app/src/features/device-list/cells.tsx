@@ -152,7 +152,6 @@ export function NoteCell({device}: {device: Device}) {
 
   return (
     <Group gap={6} wrap='nowrap' className={`device-note ${classes.note}`}>
-      <span>{device.notes || ''}</span>
       <ActionIcon
         size='xs'
         variant='subtle'
@@ -163,6 +162,7 @@ export function NoteCell({device}: {device: Device}) {
       >
         <IconPencil size={12} />
       </ActionIcon>
+      <span>{device.notes || ''}</span>
     </Group>
   )
 }

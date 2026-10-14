@@ -14,6 +14,7 @@ export interface ScreenTouchOptions {
 const SEQ_CYCLE = 100
 const MOUSE_PRESSURE = 0.5
 const SECONDARY_BUTTON = 3
+const IOS_SWIPE_THRESHOLD = 0.1
 
 export function bindScreenTouch(options: ScreenTouchOptions): () => void {
   const {root, input, fingers, screen, scaler, control} = options
@@ -22,6 +23,7 @@ export function bindScreenTouch(options: ScreenTouchOptions): () => void {
   let seq = -1
   let fakePinch = false
   let lastPossiblyBuggyMouseUpEvent: MouseEvent | null = null
+  let previousCoords = {x: 0, y: 0}
 
   function nextSeq(): number {
     seq += 1
@@ -62,7 +64,16 @@ export function bindScreenTouch(options: ScreenTouchOptions): () => void {
   }
 
   function scale(x: number, y: number) {
-    return scaler.coords(screen.bounds.w, screen.bounds.h, x, y, screen.rotation)
+    return scaler.coords(screen.bounds.w, screen.bounds.h, x, y, screen.rotation, Boolean(control.target.ios))
+  }
+
+  function touchDown(seqValue: number, contact: number, x: number, y: number, pressure: number) {
+    if (control.target.ios) {
+      control.touchDownIos(seqValue, contact, x, y, pressure)
+    }
+    else {
+      control.touchDown(seqValue, contact, x, y, pressure)
+    }
   }
 
   function mouseMoveListener(e: MouseEvent) {
@@ -83,7 +94,7 @@ export function bindScreenTouch(options: ScreenTouchOptions): () => void {
     control.touchMove(nextSeq(), 0, scaled.xP, scaled.yP, MOUSE_PRESSURE)
 
     if (addGhostFinger) {
-      control.touchDown(nextSeq(), 1, 1 - scaled.xP, 1 - scaled.yP, MOUSE_PRESSURE)
+      touchDown(nextSeq(), 1, 1 - scaled.xP, 1 - scaled.yP, MOUSE_PRESSURE)
     }
     else if (deleteGhostFinger) {
       control.touchUp(nextSeq(), 1)
@@ -118,6 +129,26 @@ export function bindScreenTouch(options: ScreenTouchOptions): () => void {
       return
     }
     e.preventDefault()
+
+    const x = e.pageX - screen.bounds.x
+    const y = e.pageY - screen.bounds.y
+    const pressure = MOUSE_PRESSURE
+    const scaled = scale(x, y)
+
+    if (control.target.ios && (
+      Math.abs(previousCoords.x - scaled.xP) >= IOS_SWIPE_THRESHOLD ||
+      Math.abs(previousCoords.y - scaled.yP) >= IOS_SWIPE_THRESHOLD
+    )) {
+      control.touchMoveIos(
+        scaled.xP
+        , scaled.yP
+        , previousCoords.x
+        , previousCoords.y
+        , pressure
+        , 0
+        , nextSeq()
+      )
+    }
 
     control.touchUp(nextSeq(), 0)
 
@@ -155,11 +186,12 @@ export function bindScreenTouch(options: ScreenTouchOptions): () => void {
     const x = e.pageX - screen.bounds.x
     const y = e.pageY - screen.bounds.y
     const scaled = scale(x, y)
+    previousCoords = {x: scaled.xP, y: scaled.yP}
 
-    control.touchDown(nextSeq(), 0, scaled.xP, scaled.yP, MOUSE_PRESSURE)
+    touchDown(nextSeq(), 0, scaled.xP, scaled.yP, MOUSE_PRESSURE)
 
     if (fakePinch) {
-      control.touchDown(nextSeq(), 1, 1 - scaled.xP, 1 - scaled.yP, MOUSE_PRESSURE)
+      touchDown(nextSeq(), 1, 1 - scaled.xP, 1 - scaled.yP, MOUSE_PRESSURE)
     }
 
     control.touchCommit(nextSeq())
@@ -198,7 +230,12 @@ export function bindScreenTouch(options: ScreenTouchOptions): () => void {
         const pressure = touch.force || 0.5
         const scaled = scale(x, y)
 
-        control.touchMove(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
+        if (control.target.ios) {
+          control.touchMoveIosPoint(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
+        }
+        else {
+          control.touchMove(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
+        }
         activateFinger(slot, x, y, pressure)
       }
     }
@@ -277,7 +314,7 @@ export function bindScreenTouch(options: ScreenTouchOptions): () => void {
       const scaled = scale(x, y)
 
       slotted[touch.identifier] = slot
-      control.touchDown(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
+      touchDown(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
       activateFinger(slot, x, y, pressure)
     }
 

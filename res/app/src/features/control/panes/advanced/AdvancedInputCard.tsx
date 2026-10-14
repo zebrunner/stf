@@ -1,3 +1,4 @@
+import {useState} from 'react'
 import type {ComponentType} from 'react'
 import {ActionIcon, Stack, Text, Tooltip, type MantineColor} from '@mantine/core'
 import {
@@ -60,6 +61,29 @@ const keyGroups: Array<{title: string, keys: SpecialKey[]}> = [
 
 export function AdvancedInputCard({control}: Pick<PaneProps, 'control'>) {
   const {t} = useTranslation()
+  const [disabledKeys, setDisabledKeys] = useState<Set<string>>(() => new Set())
+
+  function press(key: string) {
+    control.keyPress(key)
+    let delay = 0
+    if (key === 'mute') {
+      delay = 16000
+    }
+    else if (key === 'camera') {
+      delay = 3000
+    }
+    if (delay) {
+      setDisabledKeys((current) => new Set(current).add(key))
+      window.setTimeout(() => {
+        setDisabledKeys((current) => {
+          const next = new Set(current)
+          next.delete(key)
+          return next
+        })
+      }, delay)
+    }
+  }
+
   return (
     <WidgetCard title={t('Advanced Input')} icon={IconSettings} color='pink' className='stf-advanced-input'>
       <Stack gap='md'>
@@ -73,7 +97,8 @@ export function AdvancedInputCard({control}: Pick<PaneProps, 'control'>) {
                     variant='default'
                     size='lg'
                     {...(color ? {c: `${color}.6`} : {})}
-                    onClick={() => control.keyPress(key)}
+                    disabled={disabledKeys.has(key)}
+                    onClick={() => press(key)}
                     aria-label={t(label)}
                     data-key={key}
                   >

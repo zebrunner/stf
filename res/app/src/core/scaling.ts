@@ -12,7 +12,14 @@ export function scalingCoordinator(realWidth: number, realHeight: number) {
   const realRatio = realWidth / realHeight
 
   return {
-    coords(boundingW: number, boundingH: number, relX: number, relY: number, rotation: number): ScaledPoint {
+    coords(
+      boundingW: number
+      , boundingH: number
+      , relX: number
+      , relY: number
+      , rotation: number
+      , ios = false
+    ): ScaledPoint {
       let w = boundingW
       let h = boundingH
       let x = relX
@@ -24,6 +31,10 @@ export function scalingCoordinator(realWidth: number, realHeight: number) {
           h = boundingW
           x = boundingH - relY
           y = relX
+          if (ios) {
+            x = relY
+            y = relX
+          }
           break
         case 180:
           x = boundingW - relX

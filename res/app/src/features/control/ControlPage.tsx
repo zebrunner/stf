@@ -22,7 +22,6 @@ import {
   , IconInfoCircle
   , IconListDetails
   , IconRefresh
-  , IconRoute
   , IconSitemap
 } from '@tabler/icons-react'
 import {createControl, type Control} from '@/core/control'
@@ -32,6 +31,7 @@ import type {Device} from '@/core/devices/types'
 import {inviteDevice} from '@/core/group'
 import {gettext, useTranslation} from '@/core/i18n'
 import {setSetting, useSetting} from '@/core/settings'
+import {useSocketEvent} from '@/core/socket'
 import {basicMode, useStandalone} from '@/ui/modes'
 import {usePageTitle} from '@/ui/page-title'
 import {stateColor} from '@/ui/device-state'
@@ -67,12 +67,6 @@ export const panes: PaneDefinition[] = [
     , title: gettext('Screenshots')
     , icon: IconCamera
     , component: lazy(() => import('./panes/screenshots/ScreenshotsPane'))
-  }
-  , {
-    id: 'automation'
-    , title: gettext('Automation')
-    , icon: IconRoute
-    , component: lazy(() => import('./panes/automation/AutomationPane'))
   }
   , {
     id: 'advanced'
@@ -118,6 +112,37 @@ function DeviceLostModal({device, onReconnect, onLeave, onDismiss}: {
             {t('Try to reconnect')}
           </Button>
           <Button variant='default' leftSection={<IconSitemap size={16} />} onClick={onLeave}>
+            {t('Go to Device List')}
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  )
+}
+
+function TemporarilyUnavailableModal({message, onReconnect, onLeave, onDismiss}: {
+  message: string
+  onReconnect: () => void
+  onLeave: () => void
+  onDismiss: () => void
+}) {
+  const {t} = useTranslation()
+  return (
+    <Modal
+      opened
+      onClose={onDismiss}
+      centered
+      title={<Text fw={600} c='red'>{t('Disconnected')}</Text>}
+      classNames={{content: 'temporarily-unavailable-modal'}}
+    >
+      <Stack align='center' gap='md' id='temporarily-unavailable'>
+        <IconSitemap size={44} stroke={1.3} />
+        <Text ta='center'>{t(message)}</Text>
+        <Group justify='space-between' w='100%' mt='md'>
+          <Button leftSection={<IconRefresh size={16} />} onClick={onReconnect}>
+            {t('Try to reconnect')}
+          </Button>
+          <Button variant='light' color='green' leftSection={<IconSitemap size={16} />} onClick={onLeave}>
             {t('Go to Device List')}
           </Button>
         </Group>
@@ -222,6 +247,7 @@ function ControlSession() {
   const {device, loading, error} = useDevice(serial)
   const [joined, setJoined] = useState<Device | null>(null)
   const [lost, setLost] = useState(false)
+  const [unavailable, setUnavailable] = useState<string | null>(null)
   const previousState = useRef<string | null>(null)
   const loadedSerial = device?.serial
   const deviceState = device?.state
@@ -271,6 +297,18 @@ function ControlSession() {
     }
   }, [deviceState, joined])
 
+  useEffect(() => {
+    if (lost && (deviceState === 'available' || deviceState === 'using')) {
+      setLost(false)
+      previousState.current = null
+      setJoined(null)
+    }
+  }, [lost, deviceState])
+
+  useSocketEvent('temporarily-unavailable', () => {
+    setUnavailable('Service is currently unavailable! Try your attempt later.')
+  })
+
   const control: Control | null = useMemo(
     () => (joined ? createControl(joined, joined.channel) : null)
     , [joined]
@@ -291,13 +329,25 @@ function ControlSession() {
     )
   }
 
+  let content = <ControlWorkspace device={device} control={control} />
+  if (basicMode) {
+    content = (
+      <Box className='fill-height'>
+        <DeviceControlPanel device={device} control={control} />
+      </Box>
+    )
+  }
+  else if (standalone) {
+    content = (
+      <Box className='fill-height'>
+        <DeviceControlPanel device={device} control={control} standalone />
+      </Box>
+    )
+  }
+
   return (
     <>
-      {basicMode || standalone ?
-        <Box className='fill-height'>
-          <DeviceControlPanel device={device} control={control} standalone />
-        </Box> :
-        <ControlWorkspace device={device} control={control} />}
+      {content}
       {lost && (
         <DeviceLostModal
           device={device}
@@ -311,6 +361,20 @@ function ControlSession() {
             navigate('/devices')
           }}
           onDismiss={() => setLost(false)}
+        />
+      )}
+      {unavailable && (
+        <TemporarilyUnavailableModal
+          message={unavailable}
+          onReconnect={() => {
+            setUnavailable(null)
+            window.location.reload()
+          }}
+          onLeave={() => {
+            setUnavailable(null)
+            navigate('/devices')
+          }}
+          onDismiss={() => setUnavailable(null)}
         />
       )}
     </>

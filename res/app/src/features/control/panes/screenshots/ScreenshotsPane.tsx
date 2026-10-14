@@ -42,9 +42,12 @@ export default function ScreenshotsPane({device, control}: PaneProps) {
   const {size, setSize} = useScreenshotSize()
   const [requestedSize] = useDebouncedValue(size, 100)
   const [taking, setTaking] = useState(0)
+  const [cooldown, setCooldown] = useState(false)
   const empty = shots.length === 0
 
   function takeScreenShot() {
+    setCooldown(true)
+    window.setTimeout(() => setCooldown(false), 3000)
     setTaking((count) => count + 1)
     control.screenshot()
       .then((result) => {
@@ -70,6 +73,7 @@ export default function ScreenshotsPane({device, control}: PaneProps) {
                 variant='filled'
                 leftSection={<IconCamera size={16} />}
                 loading={taking > 0}
+                disabled={cooldown}
                 onClick={takeScreenShot}
               >
                 {t('Screenshot')}

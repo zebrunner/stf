@@ -60,7 +60,7 @@ const LogsToolbar = memo(function LogsToolbar({
     }
     else {
       onFollowChange(true)
-      withErrorModal(() => startLogcat(serial, control))
+      withErrorModal(() => startLogcat(serial, control, filters))
     }
   }
 

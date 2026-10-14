@@ -9,6 +9,7 @@ export type DeviceState =
   | 'busy'
   | 'available'
   | 'automation'
+  | 'unhealthy'
 
 export interface DeviceOwner {
   email: string
@@ -84,9 +85,12 @@ export interface Device {
   group: DeviceGroup
   channel: string
   platform?: string
+  ios?: boolean
+  deviceType?: string
   manufacturer?: string
   model?: string
   name?: string
+  product?: string
   marketName?: string
   image?: string
   version?: string

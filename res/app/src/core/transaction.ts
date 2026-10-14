@@ -173,10 +173,12 @@ function listen(
     }
   }
   socket.on('tx.done', done)
+  socket.on('tx.tree', done)
   socket.on('tx.progress', progress)
   socket.on('tx.cancel', cancel)
   return () => {
     socket.off('tx.done', done)
+    socket.off('tx.tree', done)
     socket.off('tx.progress', progress)
     socket.off('tx.cancel', cancel)
     emit('tx.cleanup', channel)

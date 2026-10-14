@@ -36,6 +36,9 @@ export function DeviceScreen({device, control, showScreen}: DeviceScreenProps) {
   const screenRef = useRef<ScreenGeometry>({rotation: 0, bounds: {x: 0, y: 0, w: 0, h: 0}})
   const [displayError, setDisplayError] = useState<DisplayError>(false)
   const [hasFrame, setHasFrame] = useState(false)
+  const [streamKey, setStreamKey] = useState(0)
+  const [swiping, setSwiping] = useState(false)
+  const swipeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const url = device.display?.url
   const displayWidth = device.display?.width || 0
@@ -58,6 +61,20 @@ export function DeviceScreen({device, control, showScreen}: DeviceScreenProps) {
       return undefined
     }
 
+    if (device.ios && device.present && (!displayWidth || !displayHeight)) {
+      const key = `attempts-${device.serial}`
+      const attempts = Number(window.localStorage.getItem(key) || '0')
+      if (attempts < 3) {
+        window.localStorage.setItem(key, String(attempts + 1))
+        const timer = window.setTimeout(() => window.location.reload(), 1000)
+        return () => clearTimeout(timer)
+      }
+      window.localStorage.removeItem(key)
+    }
+    else {
+      window.localStorage.removeItem(`attempts-${device.serial}`)
+    }
+
     const stream = startScreenStream({
       url
       , root
@@ -68,6 +85,13 @@ export function DeviceScreen({device, control, showScreen}: DeviceScreenProps) {
       , isShown: () => showScreenRef.current
       , onDisplayError: setDisplayError
       , onFirstFrame: () => setHasFrame(true)
+      , onSwipe: () => {
+        setSwiping(true)
+        if (swipeTimer.current) {
+          clearTimeout(swipeTimer.current)
+        }
+        swipeTimer.current = window.setTimeout(() => setSwiping(false), 1500)
+      }
     })
     streamRef.current = stream
 
@@ -91,8 +115,12 @@ export function DeviceScreen({device, control, showScreen}: DeviceScreenProps) {
       streamRef.current = null
       root.classList.remove('has-frame')
       setHasFrame(false)
+      if (swipeTimer.current) {
+        clearTimeout(swipeTimer.current)
+        swipeTimer.current = null
+      }
     }
-  }, [url])
+  }, [url, streamKey, device.ios, device.present, device.serial, displayWidth, displayHeight])
 
   useEffect(() => {
     streamRef.current?.checkEnabled()
@@ -125,6 +153,9 @@ export function DeviceScreen({device, control, showScreen}: DeviceScreenProps) {
     if (displayError === 'secure') {
       control.home()
     }
+    setDisplayError(false)
+    setHasFrame(false)
+    setStreamKey((value) => value + 1)
   }
 
   return (
@@ -134,7 +165,12 @@ export function DeviceScreen({device, control, showScreen}: DeviceScreenProps) {
         <canvas className='hacky-stretcher' width={1} height={1} />
       </div>
       {!hasFrame && showScreen && !displayError && (
-        <div className='screen-placeholder'>
+        <div className='screen-placeholder lds-roller'>
+          <Loader color='gray' type='dots' />
+        </div>
+      )}
+      {swiping && (
+        <div className='screen-placeholder lds-roller swipe-loader'>
           <Loader color='gray' type='dots' />
         </div>
       )}
@@ -161,6 +197,11 @@ export function DeviceScreen({device, control, showScreen}: DeviceScreenProps) {
             {displayError === 'secure' && (
               <div className='screen-error-alert'>
                 {t('The current view is marked secure and cannot be viewed remotely.')}
+              </div>
+            )}
+            {displayError === 'unavailable' && (
+              <div className='screen-error-alert'>
+                {t('Screen is temporarily unavailable. Please try again.')}
               </div>
             )}
             <Button fullWidth leftSection={<IconRefresh size={16} />} onClick={retryLoadingScreen}>

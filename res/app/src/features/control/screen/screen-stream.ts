@@ -1,4 +1,5 @@
 import type {Device} from '@/core/devices/types'
+import {basicMode} from '@/ui/modes'
 import {rotator} from './rotator'
 
 export interface ScreenBounds {
@@ -13,7 +14,7 @@ export interface ScreenGeometry {
   bounds: ScreenBounds
 }
 
-export type DisplayError = false | 'secure'
+export type DisplayError = false | 'secure' | 'unavailable'
 
 export interface ScreenStreamOptions {
   url: string
@@ -25,6 +26,7 @@ export interface ScreenStreamOptions {
   isShown: () => boolean
   onDisplayError: (error: DisplayError) => void
   onFirstFrame: () => void
+  onSwipe?: () => void
 }
 
 export interface ScreenStream {
@@ -43,6 +45,8 @@ const streamOptions = {
   , density: Math.max(1, Math.min(1.5, window.devicePixelRatio || 1))
   , minscale: 0.36
 }
+
+const maxCanvasArea = 16777216
 
 function vendorBackingStorePixelRatio(g: CanvasRenderingContext2D): number {
   const vendor = g as unknown as Record<string, number | undefined>
@@ -63,8 +67,10 @@ export function startScreenStream(options: ScreenStreamOptions): ScreenStream {
   const devicePixelRatio = window.devicePixelRatio || 1
   const frontBackRatio = devicePixelRatio / vendorBackingStorePixelRatio(g)
 
-  let ws: WebSocket | null = new WebSocket(options.url)
-  ws.binaryType = 'blob'
+  let ws: WebSocket | null = null
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  let reconnectAttempt = 0
+  let reconnecting = false
 
   let adjustedBoundSize: BoundSize | null = null
   let cachedEnabled = false
@@ -135,7 +141,7 @@ export function startScreenStream(options: ScreenStreamOptions): ScreenStream {
 
   function shouldUpdateScreen(): boolean {
     return options.isShown() &&
-      Boolean(getDevice().using) &&
+      (Boolean(getDevice().using) || Boolean(getDevice().ios)) &&
       !document.hidden &&
       isOpen()
   }
@@ -214,6 +220,17 @@ export function startScreenStream(options: ScreenStreamOptions): ScreenStream {
       canvas.height = cachedImageHeight
     }
 
+    if (basicMode && canvas.width * canvas.height >= maxCanvasArea && getDevice().version !== '18.0') {
+      if (getDevice().display?.rotation === 90) {
+        canvas.width = 5376
+        canvas.height = 2484
+      }
+      else {
+        canvas.width = 2484
+        canvas.height = 5376
+      }
+    }
+
     cssRotation += rotator(cachedScreen.rotation, screen.rotation)
     canvas.style.transform = `rotate(${cssRotation}deg)`
 
@@ -263,13 +280,24 @@ export function startScreenStream(options: ScreenStreamOptions): ScreenStream {
       .catch(() => undefined)
   }
 
-  ws.onmessage = (message: MessageEvent) => {
+  function onMessage(message: MessageEvent) {
     const display = getDevice().display
     screen.rotation = display ? display.rotation : 0
 
     if (message.data instanceof Blob) {
       if (shouldUpdateScreen()) {
         drawFrame(message.data)
+      }
+    }
+    else if (/^\s*\{/.test(message.data)) {
+      try {
+        const data = JSON.parse(message.data)
+        if (data.type === 'swiping') {
+          options.onSwipe?.()
+        }
+      }
+      catch {
+        // Ignore malformed stream control messages.
       }
     }
     else if (/^start /.test(message.data)) {
@@ -280,8 +308,45 @@ export function startScreenStream(options: ScreenStreamOptions): ScreenStream {
     }
   }
 
-  ws.onopen = () => {
+  function onOpen() {
+    reconnectAttempt = 0
+    reconnecting = false
+    setDisplayError(false)
     checkEnabled()
+  }
+
+  function reconnect() {
+    if (reconnecting || reconnectTimer || (ws &&
+      (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN))) {
+      return
+    }
+    reconnecting = true
+    reconnectAttempt += 1
+    closeSocket()
+    connect()
+  }
+
+  function onClose() {
+    reconnecting = false
+    if (reconnectAttempt < 3) {
+      reconnectTimer = window.setTimeout(() => {
+        reconnectTimer = null
+        reconnect()
+      }, 5000)
+    }
+    else {
+      setDisplayError('unavailable')
+    }
+  }
+
+  function connect() {
+    const socket = new WebSocket(options.url)
+    socket.binaryType = 'blob'
+    socket.onerror = () => undefined
+    socket.onclose = onClose
+    socket.onopen = onOpen
+    socket.onmessage = onMessage
+    ws = socket
   }
 
   function resize() {
@@ -289,7 +354,7 @@ export function startScreenStream(options: ScreenStreamOptions): ScreenStream {
     maybeFlipLetterbox()
   }
 
-  function stop() {
+  function closeSocket() {
     if (!ws) {
       return
     }
@@ -299,7 +364,16 @@ export function startScreenStream(options: ScreenStreamOptions): ScreenStream {
     socket.close()
   }
 
+  function stop() {
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer)
+      reconnectTimer = null
+    }
+    closeSocket()
+  }
+
   resize()
+  connect()
 
   return {checkEnabled, resize, stop}
 }

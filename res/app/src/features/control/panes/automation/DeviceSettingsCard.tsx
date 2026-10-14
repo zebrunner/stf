@@ -61,8 +61,9 @@ function StatusLoader() {
   return <Center w={42} h={24}><Loader size='xs' /></Center>
 }
 
-export function DeviceSettingsCard({control}: Pick<PaneProps, 'control'>) {
+export function DeviceSettingsCard({device, control}: Pick<PaneProps, 'device' | 'control'>) {
   const {t} = useTranslation()
+  const ios = Boolean(device.ios)
   const wifi = useDeviceValue(control, readWifi)
   const bluetooth = useDeviceValue(control, readBluetooth)
   const ringer = useDeviceValue(control, readRingerMode)
@@ -107,6 +108,7 @@ export function DeviceSettingsCard({control}: Pick<PaneProps, 'control'>) {
               size='xs'
               value={ringer.value || ''}
               onChange={changeRingerMode}
+              disabled={ios}
               className='stf-ringer-mode'
               data={ringerModes.map(({value, label, icon: Icon}) => ({
                 value
@@ -129,6 +131,7 @@ export function DeviceSettingsCard({control}: Pick<PaneProps, 'control'>) {
                 <Switch
                   size='md'
                   checked={Boolean(wifi.value)}
+                  disabled={ios}
                   onChange={(event) => toggleWifi(event.currentTarget.checked)}
                   className='stf-wifi-switch'
                   aria-label={t('WiFi')}

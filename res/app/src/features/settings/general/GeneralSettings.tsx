@@ -13,6 +13,7 @@ import classes from './GeneralSettings.module.css'
 
 const languageOptions = Object.entries(languages).map(([value, label]) => ({value, label}))
 const defaultEmailAddressSeparator = ','
+const validDateFormatChars = new Set('dmy/:has M'.split(''))
 
 function LanguageSetting() {
   const {language, t} = useTranslation()
@@ -50,6 +51,11 @@ function DateFormatSetting() {
         placeholder={defaultDateFormat}
         value={dateFormat}
         onCommit={setDateFormat}
+        onKeyPress={(event) => {
+          if (event.key.length === 1 && !validDateFormatChars.has(event.key)) {
+            event.preventDefault()
+          }
+        }}
         className={classes.mono}
         w={220}
       />

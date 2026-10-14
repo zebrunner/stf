@@ -13,6 +13,7 @@ const stateActions: Record<DeviceState, string> = {
   , busy: gettext('Busy')
   , available: gettext('Use')
   , automation: gettext('Stop Automation')
+  , unhealthy: gettext('Unhealthy')
 }
 
 const statePassives: Record<DeviceState, string> = {
@@ -26,6 +27,7 @@ const statePassives: Record<DeviceState, string> = {
   , busy: gettext('Busy')
   , available: gettext('Available')
   , automation: gettext('Automating')
+  , unhealthy: gettext('Unhealthy')
 }
 
 export const likelyLeaveReasons: Record<string, string> = {
@@ -110,11 +112,22 @@ export function computeState(device: Device): DeviceState {
   if (!device.present) {
     return 'absent'
   }
+  if (device.using && device.owner) {
+    return device.usage === 'automation' ? 'automation' : 'using'
+  }
+  if (device.ios && device.state === 'available') {
+    return device.using ? 'using' : 'available'
+  }
   switch (device.status) {
     case 1:
       return 'offline'
     case 2:
+    case 5:
       return 'unauthorized'
+    case 6:
+      return device.ios && device.state === 'present' ? 'available' : 'preparing'
+    case 7:
+      return 'unhealthy'
     case 3:
       if (!device.ready) {
         return 'preparing'
@@ -145,19 +158,23 @@ export function userProfileUrl(email?: string): string | undefined {
 }
 
 export function enhanceDevice(device: Device): Device {
-  device.usable = Boolean(device.present && device.status === 3 && device.ready &&
-    (!device.owner || device.using))
+  const state = computeState(device)
+  device.usable = Boolean(device.present && (
+    (device.status === 3 && device.ready && (!device.owner || device.using)) ||
+    (device.ios && state === 'available')
+  ))
 
   if (!device.usable || !device.owner) {
     device.using = false
   }
 
-  device.state = computeState(device)
-  device.enhancedName = device.marketName || device.name || device.model || device.serial ||
+  device.state = state
+  device.enhancedName = device.name || device.model || device.product || device.marketName || device.serial ||
     'Unknown'
-  device.enhancedModel = device.model || 'Unknown'
-  device.enhancedImage120 = `/static/app/devices/icon/x120/${device.image || '_default.jpg'}`
-  device.enhancedImage24 = `/static/app/devices/icon/x24/${device.image || '_default.jpg'}`
+  device.enhancedModel = device.enhancedName
+  const icon = device.platform || device.image || '_default.jpg'
+  device.enhancedImage120 = `/static/app/devices/icon/x120/${icon}`
+  device.enhancedImage24 = `/static/app/devices/icon/x24/${icon}`
   device.enhancedStateAction = statusNameAction(device.state)
   device.enhancedStatePassive = statusNamePassive(device.state)
 

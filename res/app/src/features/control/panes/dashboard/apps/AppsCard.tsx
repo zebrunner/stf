@@ -10,6 +10,7 @@ import {
 } from '@tabler/icons-react'
 import type {Control} from '@/core/control'
 import {gettext, useTranslation} from '@/core/i18n'
+import {emit} from '@/core/socket'
 import {notifyFailure} from '@/ui/notify'
 import {WidgetCard} from '@/ui/WidgetCard'
 import classes from '../Dashboard.module.css'
@@ -34,7 +35,11 @@ const shortcuts: AppShortcut[] = [
     title: gettext('Settings')
     , icon: IconSettings
     , color: 'gray'
-    , open: (control) => runActivity(control, 'am start -a android.intent.action.MAIN -n com.android.settings/.Settings')
+    , open: (control) => {
+      emit('openSettings', {data: 'somedate'})
+      control.openSettings()
+      return runActivity(control, 'am start -a android.intent.action.MAIN -n com.android.settings/.Settings')
+    }
   }
   , {
     title: gettext('App Store')
@@ -52,7 +57,10 @@ const shortcuts: AppShortcut[] = [
     title: gettext('Manage Apps')
     , icon: IconLayoutGrid
     , color: 'orange'
-    , open: (control) => runActivity(control, 'am start -a android.settings.APPLICATION_SETTINGS')
+    , open: (control) => {
+      emit('manageOptions', {data: 'manageOptions'})
+      return runActivity(control, 'am start -a android.settings.APPLICATION_SETTINGS')
+    }
   }
   , {
     title: gettext('Developer')
@@ -64,6 +72,7 @@ const shortcuts: AppShortcut[] = [
 
 export function AppsCard({control}: {control: Control}) {
   const {t} = useTranslation()
+  const ios = Boolean(control.target.ios)
 
   return (
     <WidgetCard className='stf-apps' icon={IconApps} color='grape' title={t('Apps')}>
@@ -72,6 +81,7 @@ export function AppsCard({control}: {control: Control}) {
           <UnstyledButton
             key={title}
             className={`${classes.appTile} icon-app`}
+            disabled={ios && (title === gettext('WiFi') || title === gettext('Manage Apps') || title === gettext('Developer'))}
             onClick={() => open(control).catch(notifyFailure)}
           >
             <ThemeIcon variant='light' color={color} size={40} radius='md'>

@@ -184,7 +184,19 @@ export default function InfoPane({device, control}: PaneProps) {
       , icon: IconMapPin
       , color: 'pink'
       , actions: (
-        <Button size='compact-xs' leftSection={<IconInfoCircle size={14} />} onClick={() => control.identify().catch(notifyFailure)}>
+        <Button
+          size='compact-xs'
+          leftSection={<IconInfoCircle size={14} />}
+          disabled={device.platform === 'tvOS'}
+          onClick={() => {
+            if (device.ios) {
+              control.keyPress('finder')
+            }
+            else {
+              control.identify().catch(notifyFailure)
+            }
+          }}
+        >
           {t('Find Device')}
         </Button>
       )
@@ -260,8 +272,9 @@ export default function InfoPane({device, control}: PaneProps) {
       , color: 'green'
       , rows: [
         {label: gettext('Manufacturer'), value: plain(device.manufacturer)}
-        , {label: gettext('Product'), value: plain(device.name)}
-        , {label: gettext('Model'), value: plain(device.model)}
+        , {label: gettext('Device Name'), value: plain(device.enhancedName)}
+        , {label: gettext('Product'), value: plain(device.enhancedName)}
+        , {label: gettext('Model'), value: plain(device.model || device.enhancedName)}
         , {label: gettext('Serial'), value: device.serial}
         , {label: gettext('Released'), value: releaseDate(device.releasedAt, language)}
       ]
@@ -273,6 +286,7 @@ export default function InfoPane({device, control}: PaneProps) {
       , color: 'cyan'
       , rows: [
         {label: gettext('OS'), value: plain(device.platform)}
+        , {label: gettext('Device Type'), value: plain(device.deviceType)}
         , {label: gettext('Version'), value: plain(device.version)}
         , {label: gettext('SDK'), value: plain(device.sdk)}
         , {label: gettext('ABI'), value: plain(device.abi)}

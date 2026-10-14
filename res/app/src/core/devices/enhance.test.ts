@@ -36,7 +36,7 @@ describe('enhanceDevice', () => {
     expect(stolen.state).toBe('busy')
 
     const named = enhanceDevice(device({marketName: 'Galaxy', model: 'SM-1', image: 'x.jpg'}))
-    expect(named.enhancedName).toBe('Galaxy')
+    expect(named.enhancedName).toBe('SM-1')
     expect(named.enhancedImage120).toBe('/static/app/devices/icon/x120/x.jpg')
     expect(named.enhancedStateAction).toBe('Use')
     expect(named.enhancedGroupOwnerProfileUrl).toBe('mailto:owner@example.com')
@@ -53,5 +53,27 @@ describe('enhanceDevice', () => {
 
   it('links non email owners to the user page', () => {
     expect(userProfileUrl('someone')).toBe('/#/user/someone')
+  })
+
+  it('applies fork naming and platform icon/status rules', () => {
+    const ios = enhanceDevice(device({
+      ios: true
+      , platform: 'iOS'
+      , name: 'Custom'
+      , model: 'iPhone'
+      , product: 'Product'
+      , marketName: 'Market'
+      , status: 6
+      , state: 'present'
+    }))
+    expect(ios.enhancedName).toBe('Custom')
+    expect(ios.enhancedModel).toBe('Custom')
+    expect(ios.enhancedImage24).toBe('/static/app/devices/icon/x24/iOS')
+    expect(ios.state).toBe('available')
+    expect(ios.enhancedStatePassive).toBe('Available')
+
+    const unhealthy = enhanceDevice(device({status: 7}))
+    expect(unhealthy.state).toBe('unhealthy')
+    expect(unhealthy.enhancedStatePassive).toBe('Unhealthy')
   })
 })

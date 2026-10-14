@@ -17,6 +17,7 @@ export var webpack: webpackModule.Configuration = {
         app: pathutil.resource('app/src/entries/app.tsx')
         , authldap: pathutil.resource('app/src/entries/auth-ldap.tsx')
         , authmock: pathutil.resource('app/src/entries/auth-mock.tsx')
+        , authzebrunner: pathutil.resource('app/src/entries/auth-zebrunner.tsx')
       }
     , output: {
         path: pathutil.resource('build')

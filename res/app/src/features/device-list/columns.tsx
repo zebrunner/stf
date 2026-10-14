@@ -155,6 +155,7 @@ const stateOrder: Record<DeviceState, number> = {
   , ready: 40
   , preparing: 50
   , unauthorized: 60
+  , unhealthy: 65
   , offline: 70
   , present: 80
   , absent: 90
@@ -222,11 +223,11 @@ function browserApps(device: Device) {
 }
 
 function modelValue(device: Device): string {
-  return device.model || device.serial
+  return device.enhancedName
 }
 
 function productValue(device: Device): string {
-  return device.name || device.model || device.serial
+  return device.enhancedName
 }
 
 function batteryLevel(device: Device): number | null {
@@ -270,6 +271,7 @@ const definitions: Record<string, DeviceColumn> = {
       />
     )
   })
+  , platform: textColumn(gettext('Platform'), (device) => device.platform || '')
   , operator: textColumn(gettext('Carrier'), (device) => device.operator || '')
   , releasedAt: dateColumn(gettext('Released'), (device) =>
     (device.releasedAt ? new Date(device.releasedAt) : null))
@@ -344,7 +346,6 @@ export interface ColumnSetting {
 
 const selectedByDefault = new Set([
   'state'
-  , 'model'
   , 'name'
   , 'operator'
   , 'releasedAt'
@@ -358,6 +359,7 @@ const defaultOrder = [
   'state'
   , 'model'
   , 'name'
+  , 'platform'
   , 'serial'
   , 'operator'
   , 'releasedAt'

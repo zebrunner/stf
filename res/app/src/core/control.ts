@@ -34,6 +34,12 @@ export function createControl(target: Device, channel: string) {
 
   function sendTwoWay(action: string, data?: unknown): TxPromise {
     const tx = createTransaction(target)
+    emit(target.ios ? `${action}Ios` : action, channel, tx.channel, data)
+    return tx.promise
+  }
+
+  function sendTwoWayRaw(action: string, data?: unknown): TxPromise {
+    const tx = createTransaction(target)
     emit(action, channel, tx.channel, data)
     return tx.promise
   }
@@ -59,8 +65,21 @@ export function createControl(target: Device, channel: string) {
     , gestureStop: (seq: number) => sendOneWay('input.gestureStop', {seq})
     , touchDown: (seq: number, contact: number, x: number, y: number, pressure?: number) =>
       sendOneWay('input.touchDown', {seq, contact, x, y, pressure})
+    , touchDownIos: (seq: number, contact: number, x: number, y: number, pressure?: number) =>
+      sendOneWay('input.touchDownIos', {seq, contact, x, y, pressure})
     , touchMove: (seq: number, contact: number, x: number, y: number, pressure?: number) =>
       sendOneWay('input.touchMove', {seq, contact, x, y, pressure})
+    , touchMoveIos: (
+      toX: number
+      , toY: number
+      , fromX: number
+      , fromY: number
+      , pressure?: number
+      , contact = 0
+      , seq = 0
+    ) => sendOneWay('input.touchMoveIos', {seq, contact, toX, toY, fromX, fromY, pressure})
+    , touchMoveIosPoint: (seq: number, contact: number, x: number, y: number, pressure?: number) =>
+      sendOneWay('input.touchMoveIos', {seq, contact, x, y, pressure})
     , touchUp: (seq: number, contact: number) => sendOneWay('input.touchUp', {seq, contact})
     , touchCommit: (seq: number) => sendOneWay('input.touchCommit', {seq})
     , touchReset: (seq: number) => sendOneWay('input.touchReset', {seq})
@@ -77,6 +96,9 @@ export function createControl(target: Device, channel: string) {
     , shell: (command: string) => sendTwoWay('shell.command', {command, timeout: 10000})
     , identify: () => sendTwoWay('device.identify')
     , install: (options: InstallOptions) => sendTwoWay('device.install', options)
+    , installIos: (options: InstallOptions) => sendTwoWayRaw('deviceIos.install', options)
+    , getTreeElements: () => sendTwoWay('getTreeElements')
+    , tapDeviceTreeElement: (label: string) => sendOneWay('tapDeviceTreeElement', {label})
     , uninstall: (packageName: string) => sendTwoWay('device.uninstall', {packageName})
     , reboot: () => sendTwoWay('device.reboot')
     , rebootAndKeep: () =>
@@ -100,8 +122,9 @@ export function createControl(target: Device, channel: string) {
     , stopRemoteConnect: () => sendTwoWay('connect.stop')
     , openBrowser: (url: string, browser?: Browser | null) =>
       sendTwoWay('browser.open', {url, browser: browser ? browser.id : null})
-    , clearBrowser: (browser: Browser) => sendTwoWay('browser.clear', {browser: browser.id})
+    , clearBrowser: (browser: Browser | null) => sendTwoWay('browser.clear', {browser: browser ? browser.id : null})
     , openStore: () => sendTwoWay('store.open')
+    , openSettings: () => sendOneWay('settings.open')
     , screenshot: () => sendTwoWay('screen.capture')
     , fsretrieve: (file: string) => sendTwoWay('fs.retrieve', {file})
     , fslist: (dir: string) => sendTwoWay('fs.list', {dir})

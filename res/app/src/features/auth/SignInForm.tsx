@@ -21,11 +21,31 @@ import {useContactEmail} from '@/core/contact'
 import {useTranslation} from '@/core/i18n'
 import classes from './SignInForm.module.css'
 
-type Mode = 'mock' | 'ldap'
+type Mode = 'mock' | 'ldap' | 'zebrunner'
 
 type SignInError = 'invalid' | 'incorrect' | 'server' | null
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function usernameLabel(mode: Mode): string {
+  if (mode === 'mock') {
+    return 'Name'
+  }
+  if (mode === 'zebrunner') {
+    return 'Username or email'
+  }
+  return 'LDAP Username'
+}
+
+function usernameRequiredMessage(mode: Mode): string {
+  if (mode === 'mock') {
+    return 'Please enter your name'
+  }
+  if (mode === 'zebrunner') {
+    return 'Please enter your username or email'
+  }
+  return 'Please enter your LDAP username'
+}
 
 export function SignInForm({mode}: {mode: Mode}) {
   const {t} = useTranslation()
@@ -36,9 +56,8 @@ export function SignInForm({mode}: {mode: Mode}) {
   const [submitting, setSubmitting] = useState(false)
   const contactEmail = useContactEmail()
 
-  const usernameError = touched.username && !username ?
-    t(mode === 'mock' ? 'Please enter your name' : 'Please enter your LDAP username') :
-    null
+  const userLabel = usernameLabel(mode)
+  const usernameError = touched.username && !username ? t(usernameRequiredMessage(mode)) : null
 
   let secretError: string | null = null
   if (touched.secret) {
@@ -83,7 +102,8 @@ export function SignInForm({mode}: {mode: Mode}) {
 
   const errorText = {
     invalid: t('Check errors below')
-    , incorrect: t('Incorrect login details')
+    , incorrect: mode === 'zebrunner' ?
+      t('Invalid credentials or user has been deactivated') : t('Incorrect login details')
     , server: t('Server error. Check log output.')
   }
 
@@ -107,8 +127,8 @@ export function SignInForm({mode}: {mode: Mode}) {
             )}
             <TextInput
               name='username'
-              label={mode === 'mock' ? t('Name') : t('LDAP Username')}
-              placeholder={mode === 'mock' ? t('Name') : t('LDAP Username')}
+              label={t(userLabel)}
+              placeholder={t(userLabel)}
               leftSection={<IconUser size={16} />}
               value={username}
               onChange={(event) => setUsername(event.currentTarget.value)}

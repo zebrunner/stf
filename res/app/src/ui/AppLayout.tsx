@@ -151,7 +151,7 @@ function logout() {
       document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`
     }
   }
-  window.location.href = '/'
+  window.location.href = window.location.pathname.startsWith('/stf') ? '/stf' : '/'
   setTimeout(() => getSocket().disconnect(), 100)
 }
 
@@ -185,7 +185,7 @@ export function AppLayout() {
   const {setColorScheme} = useMantineColorScheme()
   const colorScheme = useComputedColorScheme('light')
   const alertMessage = useAlertMessage()
-  const hideMenu = basicMode || standalone
+  const hideMenu = standalone
   const isControlRoute = location.pathname.startsWith('/control')
 
   useLanguageSync()
@@ -259,7 +259,7 @@ export function AppLayout() {
           )}
 
           <Group gap='xs' wrap='nowrap'>
-            {isControlRoute && (
+            {isControlRoute && !basicMode && (
               <SegmentedControl
                 size='xs'
                 className='stf-nav-web-native-button'

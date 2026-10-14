@@ -29,6 +29,7 @@ export function NavigationCard({device, control}: {device: Device, control: Cont
   const [textUrl, setTextUrl] = useState('')
   const [favicon, setFavicon] = useState<string | null>(null)
   const input = useRef<HTMLInputElement>(null)
+  const navigationEnabled = !device.ios || Number.parseFloat(device.version || '0') >= 17
 
   function openUrl() {
     if (!textUrl) {
@@ -41,9 +42,7 @@ export function NavigationCard({device, control}: {device: Device, control: Cont
   }
 
   function clearBrowser() {
-    if (browser) {
-      control.clearBrowser({...browser}).catch(notifyFailure)
-    }
+    control.clearBrowser(browser ? {...browser} : null).catch(notifyFailure)
   }
 
   return (
@@ -59,7 +58,7 @@ export function NavigationCard({device, control}: {device: Device, control: Cont
             color='red'
             variant='subtle'
             leftSection={<IconTrash size={14} />}
-            disabled={!browser}
+            disabled={device.ios || !browser}
             onClick={clearBrowser}
           >
             {t('Reset')}
@@ -79,6 +78,7 @@ export function NavigationCard({device, control}: {device: Device, control: Cont
             className={classes.grow}
             name='textURL'
             placeholder='http://...'
+            disabled={!navigationEnabled}
             value={textUrl}
             onChange={(event) => {
               setTextUrl(event.currentTarget.value)
@@ -94,7 +94,7 @@ export function NavigationCard({device, control}: {device: Device, control: Cont
             accessKey='N'
             tabIndex={10}
           />
-          <Button type='submit' variant='filled' disabled={!textUrl} leftSection={<IconExternalLink size={16} />}>
+          <Button type='submit' variant='filled' disabled={!navigationEnabled || !textUrl} leftSection={<IconExternalLink size={16} />}>
             {t('Open')}
           </Button>
         </Group>

@@ -130,10 +130,10 @@ export async function installFile(
 , onChange?: InstallationListener
 ): Promise<Installation> {
   const installation = startInstallation(control.target.serial, 'uploading', onChange)
-  const ios = control.target.platform === 'iOS'
+  const ios = Boolean(control.target.ios)
   try {
     const response = await storeFiles<{resources: {file: StoredResource}}>('apk', files, {
-      filter: (file) => (ios ? /\.(ipa)$/i : /\.(apk|aab)$/i).test(file.name)
+      filter: (file) => (ios ? /\.(ipa|app|zip)$/i : /\.(apk|aab)$/i).test(file.name)
       , onProgress: (progress) => installation.update(progress.loaded / progress.total * 100 / 2, 'uploading')
     })
     installation.update(100 / 2, 'processing')
