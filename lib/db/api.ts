@@ -230,7 +230,12 @@ interface DbApi {
   updateIosDevice(message: UpdateIosDeviceFields): Promise<r.WriteResult>
   setDeviceIosBattery(message: BatteryIosEventFields): Promise<r.WriteResult>
   setDeviceIosVersion(message: SdkIosVersionFields): Promise<void>
-  sizeIosDevice(serial: string, height: number, width: number, scale: number): Promise<r.WriteResult>
+  sizeIosDevice(
+    serial: string
+  , height: number
+  , width: number
+  , scale: number
+  ): Promise<r.WriteResult>
   getDeviceSize(serial: string): Promise<DeviceDocument['display'] | null>
   checkIosDeviceConnected(data: {id: string}): Promise<DeviceDocument | null>
   deleteIosDevice(data: {serial: string}): Promise<r.WriteResult>

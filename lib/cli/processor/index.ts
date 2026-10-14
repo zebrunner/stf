@@ -39,6 +39,12 @@ var builder = function(yargs: Argv) {
     , type: 'boolean'
     , default: false
     })
+    .option('public-ip', {
+      alias: 'pi'
+    , describe: 'The IP or hostname to use in iOS device screen URLs.'
+    , type: 'string'
+    , default: 'localhost'
+    })
     .epilog('Each option can be be overwritten with an environment variable ' +
       'by converting the option to uppercase, replacing dashes with ' +
       'underscores and prefixing it with `STF_PROCESSOR_` (e.g. ' +
@@ -53,6 +59,7 @@ var handler = function(argv: CommandArgv<typeof builder>) {
       appDealer: argv.connectAppDealer
     , devDealer: argv.connectDevDealer
     }
+  , publicIp: argv.publicIp
   })
 }
 

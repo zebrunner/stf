@@ -75,7 +75,7 @@ var builder = function(yargs: Argv) {
     .option('auth-type', {
       describe: 'The type of auth unit to start.'
     , type: 'string'
-    , choices: ['mock', 'ldap', 'oauth2', 'saml2', 'openid']
+    , choices: ['mock', 'ldap', 'oauth2', 'saml2', 'openid', 'zebrunner']
     , default: 'mock'
     })
     .option('auth-url', {
@@ -306,19 +306,12 @@ var handler = function(argv: CommandArgv<typeof builder>) {
         , '--bind-pull', argv.bindDevPull
         ])
 
-      // processor one
+      // processor one (fork: a single processor is enough for local use)
     , procutil.fork(path.resolve(import.meta.dirname, '..'), [
           'processor', 'proc001'
         , '--connect-app-dealer', argv.bindAppDealer
         , '--connect-dev-dealer', argv.bindDevDealer
-        ]
-        .concat(argv.autoRestoreOwner ? ['--auto-restore-owner'] : []))
-
-      // processor two
-    , procutil.fork(path.resolve(import.meta.dirname, '..'), [
-          'processor', 'proc002'
-        , '--connect-app-dealer', argv.bindAppDealer
-        , '--connect-dev-dealer', argv.bindDevDealer
+        , '--public-ip', argv.publicIp
         ]
         .concat(argv.autoRestoreOwner ? ['--auto-restore-owner'] : []))
 

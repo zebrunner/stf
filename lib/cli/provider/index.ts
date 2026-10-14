@@ -197,6 +197,23 @@ var builder = function(yargs: Argv) {
         return size
       }
     })
+    // Fork (Zebrunner): one provider runs per device container, so the VNC port is fixed
+    .option('vnc-port', {
+      describe: 'Port allocated to VNC connections.'
+    , type: 'number'
+    , demand: true
+    , default: 5900
+    })
+    .option('device-name', {
+      describe: 'Device name.'
+    , type: 'string'
+    })
+    .option('host', {
+      describe: 'Provider hostname.'
+    , type: 'string'
+    , demand: true
+    , default: '127.0.0.1'
+    })
     .epilog('Each option can be be overwritten with an environment variable ' +
       'by converting the option to uppercase, replacing dashes with ' +
       'underscores and prefixing it with `STF_PROVIDER_` (e.g. ' +
@@ -234,7 +251,7 @@ var handler = function(argv: CommandArgv<typeof builder, {serial: (string | numb
       , '--provider', argv.name
       , '--screen-port', ports.shift()
       , '--connect-port', ports.shift()
-      , '--vnc-port', ports.shift()
+      , '--vnc-port', argv.vncPort
       , '--public-ip', argv.publicIp
       , '--group-timeout', argv.groupTimeout
       , '--storage-url', argv.storageUrl
@@ -250,7 +267,9 @@ var handler = function(argv: CommandArgv<typeof builder, {serial: (string | numb
       , '--boot-complete-timeout', argv.bootCompleteTimeout
       , '--vnc-initial-size', argv.vncInitialSize.join('x')
       , '--mute-master', argv.muteMaster
+      , '--host', argv.host
       ]
+      .concat(argv.deviceName ? ['--device-name', argv.deviceName] : [])
       .concat(argv.connectSub.reduce<CliArg[]>(function(all, val) {
         return all.concat(['--connect-sub', val])
       }, []))

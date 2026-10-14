@@ -65,12 +65,15 @@ export default function(options: ProviderOptions) {
         delayedTotals()
       }
       else if (lists.ready.length < lists.all.length) {
-        log.info(
+        // Fork (Zebrunner): one provider serves one device, so a device that cannot be provided
+        // makes the whole provider exit and the container get restarted
+        log.fatal(
           'Providing all %d of %d device(s); ignoring "%s"'
         , lists.ready.length
         , lists.all.length
         , _.difference(lists.all, lists.ready).join('", "')
         )
+        lifecycle.fatal()
       }
       else {
         log.info(
@@ -214,6 +217,10 @@ export default function(options: ProviderOptions) {
           settle(false)
         }, registerTimeout)
       })
+        .catch(function(err) {
+          // #444 Exit process on EHOSTUNREACH
+          lifecycle.graceful(err)
+        })
 
 
       // Spawn a device worker
@@ -342,10 +349,19 @@ export default function(options: ProviderOptions) {
                 , device.id
                 , err.code
               )
-              log.info('Restarting device worker "%s"', device.id)
-              return Promise.delay(500)
+              // Fork (Zebrunner) #847: report the device as unhealthy and exit instead of
+              // restarting the worker, it has to be reviewed manually
+              push.send([
+                wireutil.global
+              , wireutil.envelope(new wire.DeviceStatusMessage(
+                  device.id
+                , wire.DeviceStatus.UNHEALTHY
+                , timeutil.now('nano')
+                ))
+              ])
+              return Promise.delay(3000)
                 .then(function() {
-                  return work()
+                  lifecycle.fatal(err)
                 })
             }
             return Promise.resolve()
@@ -481,6 +497,10 @@ export default function(options: ProviderOptions) {
 
     lifecycle.share('Tracker', tracker)
   })
+    .catch(function(err) {
+      log.fatal('Adb client error', err)
+      lifecycle.fatal()
+    })
 
   lifecycle.observe(function() {
     [push, sub].forEach(function(sock) {
