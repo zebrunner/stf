@@ -1,3 +1,7 @@
+/**
+* Copyright © 2024 contains code contributed by Orange SA, authors: Denis Barbaron - Licensed under the Apache license 2.0
+**/
+
 module.exports = function AccessTokensCtrl($scope, AccessTokenService) {
 
     $scope.accessTokens = []
@@ -5,8 +9,8 @@ module.exports = function AccessTokensCtrl($scope, AccessTokenService) {
 
     function updateTokens() {
       AccessTokenService.getAccessTokens()
-        .success(function(response) {
-          $scope.accessTokens = response.tokens || []
+        .then(function(response) {
+          $scope.accessTokenTitles = response.data.titles || []
         })
     }
 

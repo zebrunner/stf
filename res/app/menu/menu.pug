@@ -1,5 +1,5 @@
 //
-  Copyright © 2019 contains code contributed by Orange SA, authors: Denis Barbaron - Licensed under the Apache license 2.0
+  Copyright © 2019-2024 contains code contributed by Orange SA, authors: Denis Barbaron - Licensed under the Apache license 2.0
 //
 
 .navbar.stf-menu(ng-controller='MenuCtrl')
@@ -19,7 +19,11 @@
         a(ng-href='/stf#!/settings')
           span.fa.fa-gears
           span(ng-if='!$root.basicMode', translate) Settings
-    ul.nav.stf-nav.stf-feedback.pull-right(ng-cloak, nav-menu='current', style='padding: 0').unselectable
+    ul.nav.stf-nav(ng-if='isAlertMessageActive()', nav-menu='current').unselectable.col-xs-5
+      li.col-xs-12
+        .maintenance-banner(ng-class="{'information-level': isInformationAlert(), 'warning-level': isWarningAlert(), 'critical-level': isCriticalAlert()}")
+          p(translate) {{ alertMessage.data }}
+    ul.nav.stf-nav.stf-feedback.pull-right(ng-cloak, nav-menu='current').unselectable
       li.stf-nav-web-native-button(ng-if='!$root.basicMode && isControlRoute')
         .btn-group
           button(type='button', ng-model='$root.platform', uib-btn-radio="'web'", translate).btn.btn-sm.btn-default-outline Web
@@ -39,10 +43,13 @@
         type='button'
         ng-click='logout()')
           i.fa.fa-sign-out
-          span(translate) Logout 
+          span(translate) Logout
 
-      li(style="padding: 0")
-        a(ng-href='/stf#!/help', accesskey='6')
+      li
+        span.version-text v{{ $root.state.config.stfVersion }}
+
+      li(ng-show='!$root.basicMode')
+        a(ng-href='/#!/help', accesskey='6')
           i.fa.fa-question-circle.fa-fw
           | {{ "Help" | translate }}
           
