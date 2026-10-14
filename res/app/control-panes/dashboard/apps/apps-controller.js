@@ -1,5 +1,5 @@
 // See https://github.com/android/platform_packages_apps_settings/blob/master/AndroidManifest.xml
-var io = require('socket.io')
+var io = require('socket.io-client')
 
 module.exports = function ShellCtrl($scope, AppState) {
   var websocketUrl = AppState.config.websocketUrl || ''

@@ -128,6 +128,13 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     mv bundletool-all-1.2.0.jar /app/bundletool/bundletool.jar && \
     mv node_modules /app && \
     chown -R root:root /app && \
+    echo '--- Installing go-ios' && \
+    # go-ios utility to manage iOS devices connected to Linux provider host
+    wget --no-cache -O /tmp/go-ios-linux.zip https://github.com/danielpaulus/go-ios/releases/download/v1.0.182/go-ios-linux.zip && \
+    unzip /tmp/go-ios-linux.zip -d /tmp/go-ios && \
+    cp /tmp/go-ios/ios-arm64 /usr/local/bin/ios && \
+    ios --version && \
+    rm -rf /tmp/go-ios-linux.zip /tmp/go-ios && \
     echo '--- Cleaning up' && \
     echo 'npm cache clean --force' | su stf -s /bin/bash && \
     rm -rf ~/.node-gyp && \
@@ -140,14 +147,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     cd /app && \
     rm -rf doc .github .tx .semaphore *.md *.yaml LICENSE Dockerfile* \
       .eslintrc .nvmrc .tool-versions res/.eslintrc && \
-    rm -rf /tmp/* \
-    echo '--- Installing go-ios' && \
-    # go-ios utility to manage iOS devices connected to Linux provider host
-    wget --no-cache -O /tmp/go-ios-linux.zip https://github.com/danielpaulus/go-ios/releases/download/v1.0.182/go-ios-linux.zip && \
-    unzip /tmp/go-ios-linux.zip -d /tmp/go-ios && \
-    cp /tmp/go-ios/ios-arm64 /usr/local/bin/ios && \
-    ios --version && \
-    rm -rf /tmp/go-ios-linux.zip /tmp/go-ios; \
+    rm -rf /tmp/*; \
   fi
 
 RUN cp ./icon/x120/iOS.jpg /app/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/iOS && \
