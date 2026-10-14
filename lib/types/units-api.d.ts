@@ -8,6 +8,11 @@ export interface SwaggerParam<T> {
 
 export type DevicePayload = {
   note?: string
+  status?: string
+  owner?: {
+    name?: string
+    email?: string
+  }
 }
 
 export type AdbKeyPayload = {

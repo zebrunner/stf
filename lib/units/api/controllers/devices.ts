@@ -27,13 +27,16 @@ import type {
 } from '../../../types/units-api.js'
 
 type OriginGroupResult = {device?: unknown, devices?: unknown[]}
+type PublishedDevice = Partial<DeviceDocument> & {name?: string | null}
 
 /* ------------------------------------ PRIVATE FUNCTIONS ------------------------------- */
 
 function filterGenericDevices(req: ApiRequest, res: Response, devices: DeviceDocument[]) {
   apiutil.respond(res, 200, 'Devices Information', {
     devices: devices.map(function(device) {
-      return apiutil.filterDevice(req, device)
+      const filteredDevice = apiutil.filterDevice(req, device) as PublishedDevice
+      filteredDevice.name = device.model || null
+      return filteredDevice
     })
   })
 }
@@ -120,24 +123,29 @@ function removeDevice(serial: string, req: ApiRequest, res: Response) {
   const anyControllingState = typeof controllingState === 'undefined'
   const lock: ApiLock = {}
 
-  function deleteGroupDevice(email: string, id: string) {
-    const lock: ApiLock = {}
+  function deleteGroupDevice(id: string) {
+    const groupLock: ApiLock = {}
 
-    return dbapi.lockGroupByOwner(email, id).then(function(stats) {
-      if (!stats.replaced) {
-        return apiutil.lightComputeStats(res, stats)
+    return dbapi.adminLockGroup(id, groupLock).then(function(lockingSuccessed) {
+      if (!lockingSuccessed) {
+        apiutil.respond(res, 500, 'Group is busy. Try again later.')
       }
-      const group: GroupDocument = lock.group = stats.changes[0]!.new_val
 
-      if (group.devices.indexOf(serial) > -1) {
-        return apiutil.isOriginGroup(group.class) ?
-          dbapi.removeOriginGroupDevice(group, serial) :
-          dbapi.removeGroupDevices(group, [serial])
-      }
-      return group
+      return dbapi.getGroup(id).then(function(group) {
+        if (!group) {
+          return 'not found'
+        }
+        groupLock.group = group
+        if (group.devices.indexOf(serial) > -1) {
+          return apiutil.isOriginGroup(group.class) ?
+            dbapi.removeOriginGroupDevice(group, serial) :
+            dbapi.removeGroupDevices(group, [serial])
+        }
+        return group
+      })
     })
     .finally(function() {
-      lockutil.unlockGroup(lock)
+      dbapi.adminUnlockGroup(groupLock)
     })
   }
 
@@ -150,7 +158,7 @@ function removeDevice(serial: string, req: ApiRequest, res: Response) {
 
       return dbapi.loadDeviceBySerial(serial).then(function(device) {
         if (device && device.group.id === device.group.origin) {
-          return deleteGroupDevice(device.group.owner.email, device.group.id)
+          return deleteGroupDevice(device.group.id)
             .then<void | false>(function(group) {
               if (group !== 'not found') {
                 return dbapi.deleteDevice(serial).then(function() {
@@ -195,7 +203,7 @@ function removeDevice(serial: string, req: ApiRequest, res: Response) {
         return 'unchanged'
       }
       return Promise.each(groups, function(group) {
-        return deleteGroupDevice(group.owner.email, group.id)
+        return deleteGroupDevice(group.id)
       })
       .then(function() {
         if (!groups.length && !anyBookingState && bookingState) {
@@ -246,7 +254,8 @@ function getDeviceBySerial(req: ApiRequest, res: Response) {
           , description: 'Device not found'
           })
         }
-        let responseDevice: Partial<DeviceDocument> = apiutil.publishDevice(device, req.user)
+        let responseDevice: PublishedDevice = apiutil.publishDevice(device, req.user)
+        responseDevice.name = device.model || null
 
         if (fields) {
           responseDevice = _.pick(device, fields.split(','))
@@ -262,6 +271,22 @@ function getDeviceBySerial(req: ApiRequest, res: Response) {
       res.status(500).json({
         success: false
       })
+    })
+}
+
+function getDeviceSize(req: ApiRequest, res: Response) {
+  var serial = req.swagger.params.serial.value
+
+  dbapi.getDeviceSize(serial)
+    .then(function(display) {
+      if (!display) {
+        return res.status(200).json({height: 0, width: 0, scale: 0})
+      }
+      return res.status(200).json(display)
+    })
+    .catch(function(err) {
+      log.info('Failed to get device size: ', err.stack)
+      return res.status(200).json({height: 0, width: 0, scale: 0})
     })
 }
 
@@ -286,6 +311,40 @@ function getDeviceGroups(req: ApiRequest, res: Response) {
   .catch(function(err) {
     apiutil.internalError(res, 'Failed to get device groups: ', err.stack)
   })
+}
+
+function getDeviceOwner(req: ApiRequest, res: Response) {
+  var serial = req.swagger.params.serial.value
+
+  dbapi.getDeviceGroupOwner(serial)
+    .then(function(owner) {
+      if (!owner) {
+        return res.status(404).json({
+          success: false
+        , description: 'Device not found'
+        })
+      }
+      return res.status(200).json(owner)
+    })
+    .catch(function(err) {
+      log.info('Failed to get device owner: ', err.stack)
+      res.status(500).json({
+        success: false
+      })
+    })
+}
+
+function getDeviceType(req: ApiRequest, res: Response) {
+  var serial = req.swagger.params.serial.value
+
+  dbapi.getDeviceType(serial)
+    .then(function(deviceType) {
+      return res.status(200).json(deviceType)
+    })
+    .catch(function(err) {
+      log.info('Failed to get device type: ', err.stack)
+      return res.status(200).json({deviceType: null})
+    })
 }
 
 function getDeviceBookings(req: ApiRequest, res: Response) {
@@ -481,7 +540,7 @@ function removeOriginGroupDevice(req: ApiRequest<SerialsBody>, res: Response) {
 function putDeviceInfoBySerial(req: ApiRequest, res: Response) {
   const serial = req.swagger.params.serial.value
   const payload = req.swagger.params.device.value
-  const body = _.has(payload, 'note') ? payload : payload.device
+  const body = _.has(payload, 'note') || _.has(payload, 'status') ? payload : payload.device
   dbapi.loadDeviceBySerial(serial)
     .then<Responded>((data) => {
       if (!data) {
@@ -489,8 +548,49 @@ function putDeviceInfoBySerial(req: ApiRequest, res: Response) {
       }
       var updates: Promise<unknown>[] = []
       // Update fields based on given body
-      if (_.has(body, 'note')) {
-        updates.push(dbapi.setDeviceNote(serial, body!.note!))
+      if (typeof body?.note !== 'undefined') {
+        updates.push(dbapi.setDeviceNote(serial, body.note))
+      }
+      if (typeof body?.status === 'string') {
+        const status = body.status.trim().toLowerCase()
+        const statusTimeStamp = Date.now()
+
+        switch (status) {
+          case 'disconnected':
+            updates.push(dbapi.setDeviceAbsent(serial))
+            break
+          case 'offline':
+            updates.push(dbapi.saveDeviceStatus(serial, 1, statusTimeStamp))
+            break
+          case 'available':
+            updates.push(dbapi.saveDeviceStatus(serial, 3, statusTimeStamp))
+            updates.push(dbapi.unsetDeviceOwner(serial))
+            updates.push(dbapi.unmarkDeviceAsUsing(serial))
+            break
+          case 'unauthorized':
+            updates.push(dbapi.saveDeviceStatus(serial, 5, statusTimeStamp))
+            break
+          case 'preparing':
+            updates.push(dbapi.saveDeviceStatus(serial, 6, statusTimeStamp))
+            break
+          case 'unhealthy':
+            updates.push(dbapi.saveDeviceStatus(serial, 7, statusTimeStamp))
+            break
+          case 'busy':
+            if (typeof body.owner?.name !== 'string' || !body.owner.name.trim()) {
+              return apiutil.respond(res, 400, 'Missing owner.name for busy status')
+            }
+            updates.push(dbapi.saveDeviceStatus(serial, 3, statusTimeStamp))
+            updates.push(dbapi.setDeviceOwner(serial, {
+              name: body.owner.name
+            , email: body.owner.email || ''
+            , group: ''
+            }))
+            updates.push(dbapi.markDeviceAsUsing(serial))
+            break
+          default:
+            return apiutil.respond(res, 400, 'Unknown status requested')
+        }
       }
       if (updates.length === 0) {
         return apiutil.respond(res, 400, 'No content to update')
@@ -567,7 +667,10 @@ export {
   getDevices
 , putDeviceBySerial
 , getDeviceBySerial
+, getDeviceSize
+, getDeviceOwner
 , getDeviceGroups
+, getDeviceType
 , getDeviceBookings
 , addOriginGroupDevice
 , addOriginGroupDevices

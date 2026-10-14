@@ -1993,7 +1993,7 @@ paths:
         - name: device
           in: body
           description: >
-            Information to add for device. Supports only notes -field.
+            Information to add for device. Supports only notes-field and status change(Disconnected).
           required: true
           schema:
             $ref: "#/definitions/DevicePayload"
@@ -2015,6 +2015,32 @@ paths:
             $ref: "#/definitions/UnexpectedErrorResponse"
       security:
         - accessTokenAuth: [ ]
+  /devices/{serial}/size:
+    x-swagger-router-controller: devices
+    get:
+      summary: Gets the size of a device
+      description: Gets the size of a device
+      operationId: getDeviceSize
+      tags:
+        - user
+      parameters:
+        - name: serial
+          in: path
+          description: Device identifier (serial)
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Device size information
+          schema:
+            $ref: "#/definitions/SizeResponse"
+        default:
+          description: >
+            Unexpected Error:
+              * 404: Not Found => unknown device
+              * 500: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
   /devices/groups/{id}:
     x-swagger-router-controller: devices
     put:
@@ -2104,6 +2130,32 @@ paths:
             $ref: "#/definitions/UnexpectedErrorResponse"
       security:
         - accessTokenAuth: []
+  /devices/{serial}/owner:
+    x-swagger-router-controller: devices
+    get:
+      summary: Gets the group owner of a device
+      description: Gets the group owner of a device
+      operationId: getDeviceOwner
+      tags:
+        - user
+      parameters:
+        - name: serial
+          in: path
+          description: Device identifier (serial)
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Device size information
+          schema:
+            $ref: "#/definitions/OwnerResponse"
+        default:
+          description: >
+            Unexpected Error:
+              * 404: Not Found => unknown device
+              * 500: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
   /devices/{serial}/groups:
     x-swagger-router-controller: devices
     get:
@@ -2138,6 +2190,32 @@ paths:
             $ref: "#/definitions/UnexpectedErrorResponse"
       security:
         - accessTokenAuth: []
+  /devices/{serial}/type:
+    x-swagger-router-controller: devices
+    get:
+      summary: Gets the type of a device
+      description: Gets the type of a device
+      operationId: getDeviceType
+      tags:
+        - user
+      parameters:
+        - name: serial
+          in: path
+          description: Device identifier (serial)
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Device type information
+          schema:
+            $ref: "#/definitions/TypeResponse"
+        default:
+          description: >
+            Unexpected Error:
+              * 404: Not Found => unknown device
+              * 500: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
   /devices/{serial}/bookings:
     x-swagger-router-controller: devices
     get:
@@ -2500,6 +2578,30 @@ definitions:
         type: array
         items:
           type: object
+  SizeResponse:
+    required:
+      - height
+      - width
+    properties:
+      height:
+        type: integer
+      width:
+        type: integer
+  OwnerResponse:
+    required:
+      - email
+      - name
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+  TypeResponse:
+    required:
+      - type
+    properties:
+      type:
+        type: string
   DeviceResponse:
     required:
       - success
@@ -2594,6 +2696,11 @@ definitions:
       note:
         description: Device Note
         type: string
+      status:
+        description: Device status
+        type: string
+        enum:
+          - Disconnected
   DevicesPayload:
     description: Payload object for adding/removing devices
     properties:
