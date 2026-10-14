@@ -137,3 +137,57 @@
 .navMenuKey {
   color: #9aa1ab;
 }
+
+@media (max-width: 600px) {
+  .toolbar {
+    gap: 4px;
+    min-height: 40px;
+    padding: 4px 6px;
+  }
+
+  .deviceName {
+    flex: 1 1 112px;
+    max-width: none;
+    padding-right: 4px;
+  }
+
+  .rightButtons {
+    flex: 0 1 auto;
+    justify-content: flex-end;
+    gap: 4px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .rightButtons::-webkit-scrollbar {
+    display: none;
+  }
+
+  .stage {
+    padding: 8px;
+  }
+
+  .bottom {
+    padding: 4px 8px 8px;
+  }
+
+  .navPill {
+    gap: 8px;
+    padding: 3px 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .toolbar {
+    align-items: flex-start;
+  }
+
+  .stage {
+    padding: 6px;
+  }
+
+  .bottom {
+    padding-bottom: 6px;
+  }
+}

@@ -183,7 +183,7 @@ export function InstallCard({control}: {control: Control}) {
             <div>
               <Text size='sm' fw={500} className='drop-area-text'>{t('Drop file to upload')}</Text>
               <Text size='xs' c='dimmed'>
-                {control.target.ios ? '.ipa / .app / .zip' : '.apk / .aab'}
+                {control.target.ios ? '.ipa' : '.apk / .aab'}
               </Text>
             </div>
           </Group>

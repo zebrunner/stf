@@ -32,7 +32,7 @@ import {inviteDevice} from '@/core/group'
 import {gettext, useTranslation} from '@/core/i18n'
 import {setSetting, useSetting} from '@/core/settings'
 import {useSocketEvent} from '@/core/socket'
-import {basicMode, useStandalone} from '@/ui/modes'
+import {useStandalone} from '@/ui/modes'
 import {usePageTitle} from '@/ui/page-title'
 import {stateColor} from '@/ui/device-state'
 import {ControlRedirect} from './ControlRedirect'
@@ -329,21 +329,11 @@ function ControlSession() {
     )
   }
 
-  let content = <ControlWorkspace device={device} control={control} />
-  if (basicMode) {
-    content = (
-      <Box className='fill-height'>
-        <DeviceControlPanel device={device} control={control} />
-      </Box>
-    )
-  }
-  else if (standalone) {
-    content = (
-      <Box className='fill-height'>
-        <DeviceControlPanel device={device} control={control} standalone />
-      </Box>
-    )
-  }
+  const content = standalone ? (
+    <Box className='fill-height'>
+      <DeviceControlPanel device={device} control={control} standalone />
+    </Box>
+  ) : <ControlWorkspace device={device} control={control} />
 
   return (
     <>

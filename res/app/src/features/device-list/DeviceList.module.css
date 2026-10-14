@@ -286,6 +286,17 @@ tr:hover .noteEdit {
 }
 
 @media (max-width: 600px) {
+  .header {
+    align-items: stretch;
+    gap: var(--mantine-spacing-xs);
+    padding: var(--mantine-spacing-xs);
+  }
+
+  .stats {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: var(--mantine-spacing-sm);
@@ -301,7 +312,26 @@ tr:hover .noteEdit {
   }
 
   .toolbar {
+    display: flex;
+    justify-content: space-between;
     width: 100%;
     margin-left: 0;
+  }
+
+  .toolbar > * {
+    flex: 0 0 auto;
+  }
+
+  .toolbar .search {
+    flex: 1 1 180px;
+  }
+
+  .tileFooter {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .owner {
+    width: 100%;
   }
 }
