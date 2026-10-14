@@ -7,12 +7,14 @@
 /*.tgz
 /.env
 /node_modules/
-/res/bower_components/
 /res/build/
-/res/test_out/
 /rethinkdb_data/
 /temp/
 /tmp/
 package-lock.json
 yarn.lock
 /test-results/
+/lib/**/*.js
+/lib/types/wire.d.ts
+/lib/types/stfservice-wire.d.ts
+/res/common/lang/translations/

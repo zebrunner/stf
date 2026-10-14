@@ -383,6 +383,10 @@
 - The battery level and battery temperature columns are now filterable with comparison operators.
 - Log output now includes a timestamp.
 
+### Fixes
+
+- Fixed an issue on Windows where our device binaries may have failed to install due to an `Out of fallback locations` error caused by a faulty mode check. Thanks @iqianxing!
+
 ## 3.1.0 (2017-08-31)
 
 ### Enhancements

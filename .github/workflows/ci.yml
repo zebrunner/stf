@@ -20,8 +20,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  NPM_INSTALL_FLAGS: --no-audit --no-fund --loglevel=http
   # Bump to invalidate the dependency cache without touching package.json.
-  CACHE_EPOCH: v2
+  CACHE_EPOCH: v3
 
 jobs:
   # Reads .github/android-matrix.json so the matrix and the report's coverage
@@ -35,9 +36,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+
       - name: Read the Android matrix
         id: plan
-        run: node .github/scripts/plan-matrix.js
+        run: node .github/scripts/plan-matrix.mts
 
   build:
     name: Build
@@ -64,18 +69,11 @@ jobs:
             libzmq3-dev libprotobuf-dev protobuf-compiler \
             graphicsmagick yasm nasm git curl zip unzip wget
 
-      - name: Allow bower git:// dependencies over https
-        run: |
-          git config --global url."https://github.com/".insteadOf git://github.com/
-          git config --global url."https://".insteadOf git://
-          # A bower dependency that has since been deleted prompts for a
-          # GitHub password and hangs the job forever otherwise.
-          echo "GIT_TERMINAL_PROMPT=0" >> "$GITHUB_ENV"
-
       - name: Compute dependency cache key
         id: cachekey
         run: |
-          echo "key=stf-deps-${CACHE_EPOCH}-${{ runner.os }}-${{ hashFiles('package.json', 'bower.json', '.nvmrc') }}" >> "$GITHUB_OUTPUT"
+          flags="$(printf '%s' "$NPM_INSTALL_FLAGS" | sha256sum | cut -c1-12)"
+          echo "key=stf-deps-${CACHE_EPOCH}-${{ runner.os }}-${flags}-${{ hashFiles('package.json', '.nvmrc') }}" >> "$GITHUB_OUTPUT"
 
       - name: Restore dependency cache
         id: deps
@@ -83,22 +81,17 @@ jobs:
         with:
           path: |
             node_modules
-            res/bower_components
           key: ${{ steps.cachekey.outputs.key }}
 
       - name: Install npm dependencies
         if: steps.deps.outputs.cache-hit != 'true'
-        run: npm install --no-audit --no-fund --omit=optional --loglevel=http
+        run: npm install $NPM_INSTALL_FLAGS
 
-      - name: Install bower dependencies
-        run: npx bower install --config.interactive=false
+      - name: Compile lib
+        run: node build.mts compile
 
-      # gulp's own `build` task races clean against webpack:build, so run the
-      # two halves in order instead.
       - name: Build front-end bundle
-        run: |
-          npx gulp clean
-          npx gulp webpack:build
+        run: node build.mts clean webpack
 
       - name: Smoke check the CLI
         run: ./bin/stf -V
@@ -120,7 +113,7 @@ jobs:
       - name: Record verdict
         if: always()
         run: |
-          bash .github/scripts/verdict.sh build 'Build (npm + bower + webpack)' \
+          bash .github/scripts/verdict.sh build 'Build (npm + webpack)' \
             '${{ job.status }}' "deps cache ${{ steps.deps.outputs.cache-hit == 'true' && 'hit' || 'miss' }}"
 
       - name: Upload verdict
@@ -149,11 +142,10 @@ jobs:
         with:
           path: |
             node_modules
-            res/bower_components
           key: ${{ needs.build.outputs.cache-key }}
           fail-on-cache-miss: true
 
-      - name: eslint + jsonlint
+      - name: eslint + jsonlint + translations
         id: lint
         run: npm run lint
 
@@ -163,15 +155,15 @@ jobs:
       - name: 'Shell-parse every run: block'
         id: runblocks
         if: always()
-        run: node .github/scripts/check-run-blocks.js
+        run: node .github/scripts/check-run-blocks.mts
 
       - name: Record verdict
         if: always()
         run: |
           bash .github/scripts/verdict.sh lint \
-            'Lint (eslint + jsonlint + workflow shell)' \
+            'Lint (eslint + jsonlint + translations + workflow shell)' \
             '${{ job.status }}' \
-            'lib/, res/ and root JS + JSON, and every workflow run: block'
+            'lib/, res/ and root JS + JSON, translation catalogs, and every workflow run: block'
 
       - name: Upload verdict
         if: always()
@@ -199,7 +191,6 @@ jobs:
         with:
           path: |
             node_modules
-            res/bower_components
           key: ${{ needs.build.outputs.cache-key }}
           fail-on-cache-miss: true
 
@@ -239,69 +230,47 @@ jobs:
         with:
           path: |
             node_modules
-            res/bower_components
           key: ${{ needs.build.outputs.cache-key }}
           fail-on-cache-miss: true
 
-      - name: Locate Chrome
-        run: |
-          CHROME="$(command -v google-chrome || command -v google-chrome-stable \
-            || command -v chromium || command -v chromium-browser || true)"
-          if [ -z "$CHROME" ]; then
-            echo "::error::no Chrome binary on the runner"
-            exit 1
-          fi
-          echo "CHROME_BIN=$CHROME" >> "$GITHUB_ENV"
-          "$CHROME" --version
-
-      - name: karma (res/app AngularJS specs)
+      - name: vitest (res/app React specs)
         id: component
-        run: npm run test:component
+        run: npm run test:component -- --reporter=default --reporter=junit --outputFile.junit=../../test-results/vitest/junit.xml
 
-      - name: Summarise karma results
+      - name: Summarise vitest results
         if: always()
-        id: karma
+        id: vitest
         run: |
-          if [ -f test-results/karma/junit.xml ]; then
+          if [ -f test-results/vitest/junit.xml ]; then
             node -e '
               var fs = require("fs")
-              var xml = fs.readFileSync("test-results/karma/junit.xml", "utf8")
+              var xml = fs.readFileSync("test-results/vitest/junit.xml", "utf8")
               var pick = function(name) {
                 var m = new RegExp(name + "=\"(\\d+)\"").exec(xml)
                 return m ? Number(m[1]) : 0
               }
-              // karma counts what ran. The second half says how much of it
-              // asserts anything, because most specs under res/app are the
-              // unmodified AngularJS generator stub and reporting the executed
-              // count alone reads as coverage this tier does not have.
-              // No apostrophes in here: this program is inside a single-quoted
-              // shell string, so one would end it and hand the rest to bash.
-              var counted = require("./.github/scripts/count-assertions.js")
-                .count(["res/app"])
               var line = pick("tests") + " specs, " + pick("failures") +
-                " failed, " + pick("errors") + " errored (" + counted.asserting +
-                " assert, " + (counted.tautology + counted.empty) +
-                " are upstream stubs)"
+                " failed, " + pick("errors") + " errored"
               fs.appendFileSync(process.env.GITHUB_OUTPUT, "summary=" + line + "\n")
             '
           else
             echo "summary=no junit output produced" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Upload karma results
+      - name: Upload vitest results
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: karma-results
-          path: test-results/karma
+          name: vitest-results
+          path: test-results/vitest
           retention-days: 3
           if-no-files-found: warn
 
       - name: Record verdict
         if: always()
         run: |
-          bash .github/scripts/verdict.sh component 'Component tests (karma + AngularJS)' \
-            '${{ steps.component.outcome || job.status }}' '${{ steps.karma.outputs.summary }}'
+          bash .github/scripts/verdict.sh component 'Component tests (vitest + React)' \
+            '${{ steps.component.outcome || job.status }}' '${{ steps.vitest.outputs.summary }}'
 
       - name: Upload verdict
         if: always()
@@ -342,7 +311,6 @@ jobs:
         with:
           path: |
             node_modules
-            res/bower_components
           key: ${{ needs.build.outputs.cache-key }}
           fail-on-cache-miss: true
 
@@ -351,6 +319,9 @@ jobs:
         with:
           name: stf-bundle
           path: res/build
+
+      - name: Compile lib
+        run: node build.mts compile
 
       - name: Put adb on PATH
         run: |
@@ -376,8 +347,8 @@ jobs:
         id: fakedevice
         run: |
           node lib/cli/index.js generate-fake-device 'Nexus 5' -n 2
-          node .github/scripts/stf-devices.js wait-count 2 120
-          node .github/scripts/stf-devices.js list
+          node .github/scripts/stf-devices.mts wait-count 2 120
+          node .github/scripts/stf-devices.mts list
 
       # `playwright install --with-deps` shells out to apt for the browser
       # libraries, so it inherits every apt flake the runtime steps have and
@@ -390,13 +361,16 @@ jobs:
           bash ../../.github/scripts/retry.sh 3 npm install --no-audit --no-fund
           bash ../../.github/scripts/retry.sh 3 npx playwright install --with-deps chromium
 
+      - name: Type-check the Playwright suite
+        run: npx tsc -p test/playwright/tsconfig.json
+
       - name: Playwright web UI suite (no device)
         id: e2e
         env:
           STF_URL: http://127.0.0.1:7100
         run: |
           cd test/playwright
-          npx playwright test ui.spec.js
+          npx playwright test ui.spec.ts
 
       - name: Start SeaweedFS for the s3 storage backend
         if: always()
@@ -416,14 +390,14 @@ jobs:
         if: always()
         id: checks
         run: |
-          node .github/scripts/playwright-checks.js \
+          node .github/scripts/playwright-checks.mts \
             test-results/playwright/report.json playwright-checks.json
 
       - name: Collect logs
         if: always()
         run: |
           mkdir -p stf-logs
-          node .github/scripts/stf-devices.js list > stf-logs/stf-devices.json \
+          node .github/scripts/stf-devices.mts list > stf-logs/stf-devices.json \
             2> stf-logs/stf-devices.err || true
           if [ -f stf-logs/stf.pid ]; then
             kill "$(cat stf-logs/stf.pid)" 2>/dev/null || true
@@ -530,7 +504,6 @@ jobs:
         with:
           path: |
             node_modules
-            res/bower_components
           key: ${{ needs.build.outputs.cache-key }}
           fail-on-cache-miss: true
 
@@ -539,6 +512,9 @@ jobs:
         with:
           name: stf-bundle
           path: res/build
+
+      - name: Compile lib
+        run: node build.mts compile
 
       # `playwright install --with-deps` shells out to apt for the browser
       # libraries, so it inherits every apt flake the runtime steps have and
@@ -550,6 +526,9 @@ jobs:
           cd test/playwright
           bash ../../.github/scripts/retry.sh 3 npm install --no-audit --no-fund
           bash ../../.github/scripts/retry.sh 3 npx playwright install --with-deps chromium
+
+      - name: Type-check the Playwright suite
+        run: npx tsc -p test/playwright/tsconfig.json
 
       - name: Wait for RethinkDB
         run: bash .github/scripts/wait-for-port.sh 28015 60 rethinkdb
@@ -654,7 +633,7 @@ jobs:
           ANDROID_TARGET: ${{ matrix.target }}
           ANDROID_ARCH: ${{ matrix.arch }}
           EMULATOR_OUTCOME: ${{ steps.emulator.outcome }}
-        run: node .github/scripts/android-verdict.js
+        run: node .github/scripts/android-verdict.mts
 
       # The matrix is 20 legs wide and every one of them gates the run, so a 1%
       # per-leg flake rate reds one run in five however healthy STF is. Each
@@ -730,7 +709,7 @@ jobs:
           ANDROID_ARCH: ${{ matrix.arch }}
           EMULATOR_OUTCOME: ${{ steps.emulator_retry.outcome }}
           LEG_ATTEMPT: '2'
-        run: node .github/scripts/android-verdict.js
+        run: node .github/scripts/android-verdict.mts
 
       - name: Upload logs
         if: always()
@@ -864,7 +843,7 @@ jobs:
         if: always()
         id: checks
         run: |
-          node .github/scripts/playwright-checks.js \
+          node .github/scripts/playwright-checks.mts \
             test-results/playwright/report.json test-results/compose/playwright-checks.json
 
       - name: Upload logs and Playwright evidence
@@ -933,7 +912,7 @@ jobs:
           # adding a leg cannot leave it unenforced.
           EXPECTED_TIERS: build lint unit component integration compose
           EXPECTED_ANDROID_FILE: .github/android-matrix.json
-        run: node .github/scripts/render-report.js verdicts report.md
+        run: node .github/scripts/render-report.mts verdicts report.md
 
       - name: Job summary
         if: always()

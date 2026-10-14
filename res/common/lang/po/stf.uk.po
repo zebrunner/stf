@@ -1,0 +1,2357 @@
+# Translators:
+# Karol Wrótniak, 2026
+# 
+msgid ""
+msgstr ""
+"Last-Translator: Karol Wrótniak, 2026\n"
+"Language-Team: Ukrainian (https://app.transifex.com/devicefarmer/teams/110261/uk/)\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: uk\n"
+"Plural-Forms: nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);\n"
+
+#: res/app/src/features/settings/groups/rules.ts:101
+msgid "(Expiration date - Starting date) must be <= Class duration"
+msgstr "(Дата завершення - дата початку) має бути <= тривалості класу"
+
+#: res/app/src/features/settings/groups/GroupList.tsx:153
+#: res/app/src/features/settings/groups/shared/ObjectsTable.tsx:195
+#: res/app/src/features/settings/users/UsersSettings.tsx:231
+msgid "{{count}} selected"
+msgstr "Вибрано: {{count}}"
+
+#: res/app/src/features/group-list/GroupStats.tsx:102
+msgid "{{user.name}} groups duration use"
+msgstr "{{user.name}}: використання квоти тривалості груп"
+
+#: res/app/src/features/group-list/GroupStats.tsx:97
+msgid "{{user.name}} groups number use"
+msgstr "{{user.name}}: використання квоти кількості груп"
+
+#: res/app/src/ui/modals.tsx:155
+msgid "A new version of STF is available"
+msgstr "Доступна нова версія STF"
+
+#: res/app/src/core/install.ts:164
+msgid "A package is already installed with the same name."
+msgstr "Пакет з такою назвою вже установлено."
+
+#: res/app/src/core/install.ts:166
+msgid ""
+"A previously installed package of the same name has a different signature "
+"than the new package (and the old package's data was not removed)."
+msgstr ""
+"Раніше установлений пакет з таким іменем має інший цифровий підпис (дані "
+"старого пакету також не видалені)."
+
+#: res/app/src/core/install.ts:176
+msgid "A secure container mount point couldn't be accessed on external media."
+msgstr ""
+"Точка монтування захищеного контейнера не може бути доступна на зовнішніх "
+"носіях."
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:278
+#: res/app/src/features/device-list/columns.tsx:302
+#: res/app/src/features/settings/groups/GroupDevices.tsx:27
+msgid "ABI"
+msgstr "ABI"
+
+#: res/app/src/core/devices/enhance.ts:49
+msgid "AC"
+msgstr "AC"
+
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:144
+msgid "Access Tokens"
+msgstr "Токени доступу"
+
+#: res/app/src/features/control/panes/automation/StoreAccountCard.tsx:167
+msgid "Account"
+msgstr "Обліковий запис"
+
+#: res/app/src/features/control/panes/dashboard/install/ActivityLauncher.tsx:108
+msgid "Action"
+msgstr "Дія"
+
+#: res/app/src/features/control/panes/automation/StoreAccountCard.tsx:168
+msgid "Actions"
+msgstr "Дії"
+
+#: res/app/src/features/settings/general/AlertMessageSettings.tsx:74
+#: res/app/src/features/settings/general/AlertMessageSettings.tsx:82
+msgid "Activation"
+msgstr "Активація"
+
+#: res/app/src/features/group-list/columns.tsx:34
+#: res/app/src/features/settings/groups/rules.ts:155
+msgid "Active"
+msgstr "Активна"
+
+#: res/app/src/features/group-list/GroupStats.tsx:39
+msgid "Active groups"
+msgstr "Активні групи"
+
+#: res/app/src/features/control/panes/dashboard/install/ActivityLauncher.tsx:107
+msgid "Activity"
+msgstr "Activity"
+
+#: res/app/src/features/settings/keys/AdbKeysCard.tsx:140
+msgid "ADB Keys"
+msgstr "Ключі ADB"
+
+#: res/app/src/features/settings/groups/GroupDevices.tsx:182
+#: res/app/src/features/settings/groups/GroupDevices.tsx:209
+#: res/app/src/features/settings/groups/GroupUsers.tsx:139
+#: res/app/src/features/settings/groups/GroupUsers.tsx:160
+msgid "Add"
+msgstr "Додати"
+
+#: res/app/src/features/settings/keys/AdbKeysCard.tsx:155
+#: res/app/src/features/settings/keys/AdbKeysCard.tsx:160
+#: res/app/src/features/settings/keys/AdbKeysCard.tsx:82
+msgid "Add ADB Key"
+msgstr "Додати ADB ключ"
+
+#: res/app/src/features/settings/keys/AdbKeysCard.tsx:124
+#: res/app/src/ui/modals.tsx:201
+msgid "Add Key"
+msgstr "Додати ключ"
+
+#: res/app/src/ui/modals.tsx:176
+msgid "Add the following ADB Key to STF?"
+msgstr "Додати наступний ADB ключ до STF"
+
+#: res/app/src/ui/AppLayout.tsx:83
+msgid "Admin mode has been disabled."
+msgstr "Режим адміністратора деактивовано."
+
+#: res/app/src/ui/AppLayout.tsx:82
+msgid "Admin mode has been enabled."
+msgstr "Режим адміністратора активовано"
+
+#: res/app/src/features/control/ControlPage.tsx:79
+msgid "Advanced"
+msgstr "Просунутий"
+
+#: res/app/src/features/control/panes/advanced/AdvancedInputCard.tsx:64
+msgid "Advanced Input"
+msgstr "Просунуте введення"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:235
+msgid "Airplane Mode"
+msgstr "Режим літака"
+
+#: res/app/src/features/settings/general/AlertMessageSettings.tsx:56
+#: res/app/src/features/settings/general/AlertMessageSettings.tsx:67
+msgid "Alert Message"
+msgstr "Сповіщення"
+
+#: res/app/src/features/settings/general/AlertMessageSettings.tsx:75
+msgid "Alert message activation"
+msgstr "Активація сповіщення"
+
+#: res/app/src/features/settings/general/AlertMessageSettings.tsx:88
+msgid "Alert message level"
+msgstr "Рівень сповіщення"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:52
+msgid "Annotated"
+msgstr "З нотатками"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:46
+msgid "Any"
+msgstr "Будь-яке"
+
+#: res/app/src/features/control/panes/automation/StoreAccountCard.tsx:87
+#: res/app/src/features/control/panes/dashboard/apps/AppsCard.tsx:40
+msgid "App Store"
+msgstr "Магазин додатків"
+
+#: res/app/src/features/control/device-control/DeviceControlPanel.tsx:88
+msgid "App switch"
+msgstr "Перемикання додатків"
+
+#: res/app/src/features/control/device-control/install-file.ts:14
+#: res/app/src/features/control/panes/dashboard/install/InstallCard.tsx:151
+msgid "App Upload"
+msgstr "Загрузити додаток"
+
+#: res/app/src/features/control/panes/dashboard/apps/AppsCard.tsx:69
+msgid "Apps"
+msgstr "Додатки"
+
+#: res/app/src/features/control/panes/advanced/MaintenanceCard.tsx:43
+msgid ""
+"Are you sure you want to reboot this device and keep using it afterwards?"
+msgstr ""
+"Ви впевнені, що хочете перезавантажити цей пристрій і продовжити ним "
+"користуватися?"
+
+#: res/app/src/features/control/panes/advanced/MaintenanceCard.tsx:31
+msgid "Are you sure you want to reboot this device?"
+msgstr "Ви впевнені що хочете перезавантажити пристрій?"
+
+#: res/app/src/features/control/panes/logs/LogsPane.tsx:117
+msgid "Auto Scroll"
+msgstr "Автопрокручування"
+
+#: res/app/src/core/devices/enhance.ts:28
+msgid "Automating"
+msgstr "Автоматизація"
+
+#: res/app/src/features/control/ControlPage.tsx:73
+msgid "Automation"
+msgstr "Автоматизація"
+
+#: res/app/src/core/devices/enhance.ts:27
+msgid "Available"
+msgstr "Наявний"
+
+#: res/app/src/features/settings/groups/GroupDevices.tsx:172
+msgid "Available device selection"
+msgstr "Вибір доступних пристроїв"
+
+#: res/app/src/features/settings/groups/GroupDevices.tsx:120
+msgid "Available devices"
+msgstr "Доступні пристрої"
+
+#: res/app/src/features/settings/groups/GroupUsers.tsx:133
+msgid "Available user selection"
+msgstr "Вибір доступних користувачів"
+
+#: res/app/src/features/settings/groups/GroupUsers.tsx:80
+msgid "Available users"
+msgstr "Доступні користувачі"
+
+#: res/app/src/features/control/device-control/DeviceControlPanel.tsx:82
+#: res/app/src/features/control/device-control/DeviceMenuItems.tsx:28
+msgid "Back"
+msgstr "Назад"
+
+#: res/app/src/features/settings/groups/rules.ts:83
+#: res/app/src/features/settings/users/QuotasForm.tsx:20
+msgid "Bad syntax"
+msgstr "Неправильний синтаксис"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:198
+msgid "Battery"
+msgstr "Батарея"
+
+#: res/app/src/features/device-list/columns.tsx:309
+msgid "Battery Health"
+msgstr "Стан батареї"
+
+#: res/app/src/features/device-list/columns.tsx:316
+msgid "Battery Level"
+msgstr "Рівень батареї"
+
+#: res/app/src/features/device-list/columns.tsx:311
+msgid "Battery Source"
+msgstr "Джерело живлення"
+
+#: res/app/src/features/device-list/columns.tsx:313
+msgid "Battery Status"
+msgstr "Стан батареї"
+
+#: res/app/src/features/device-list/columns.tsx:321
+msgid "Battery Temp"
+msgstr "Температура батареї"
+
+#: res/app/src/core/devices/enhance.ts:71
+#: res/app/src/features/control/panes/automation/DeviceSettingsCard.tsx:140
+#: res/app/src/features/control/panes/automation/DeviceSettingsCard.tsx:162
+msgid "Bluetooth"
+msgstr "Bluetooth"
+
+#: res/app/src/core/common.ts:29
+msgid "Bookable"
+msgstr "Для бронювання"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:51
+msgid "Booked"
+msgstr "Заброньовані"
+
+#: res/app/src/features/device-list/columns.tsx:287
+msgid "Browser"
+msgstr "Браузер"
+
+#: res/app/src/core/devices/enhance.ts:13
+#: res/app/src/core/devices/enhance.ts:26
+msgid "Busy"
+msgstr "Зайнятий"
+
+#: res/app/src/features/device-list/DeviceStats.tsx:41
+msgid "Busy Devices"
+msgstr "Зайняті пристрої"
+
+#: res/app/src/features/control/panes/advanced/AdvancedInputCard.tsx:35
+msgid "Camera"
+msgstr "Камера"
+
+#: res/app/src/features/control/panes/logs/SaveLogModal.tsx:78
+#: res/app/src/features/device-list/cells.tsx:146
+#: res/app/src/features/settings/groups/GroupDetail.tsx:107
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:69
+#: res/app/src/features/settings/keys/AdbKeysCard.tsx:123
+#: res/app/src/ui/modals.tsx:192 res/app/src/ui/modals.tsx:57
+#: res/app/src/ui/modals.tsx:89
+msgid "Cancel"
+msgstr "Скасувати"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:248
+#: res/app/src/features/device-list/columns.tsx:273
+#: res/app/src/features/settings/groups/GroupDevices.tsx:17
+msgid "Carrier"
+msgstr "Оператор"
+
+#: res/app/src/features/control/panes/dashboard/install/ActivityLauncher.tsx:111
+msgid "Category"
+msgstr "Категорія"
+
+#: res/app/src/core/devices/enhance.ts:55
+msgid "Charging"
+msgstr "Заряджається"
+
+#: res/app/src/features/auth/SignInForm.tsx:85
+msgid "Check errors below"
+msgstr "Перевірте повідомлення про помилки нижче"
+
+#: res/app/src/features/group-list/columns.tsx:85
+#: res/app/src/features/settings/groups/GroupSchedule.tsx:62
+msgid "Class"
+msgstr "Клас"
+
+#: res/app/src/features/control/panes/automation/DeviceSettingsCard.tsx:141
+#: res/app/src/features/control/panes/automation/DeviceSettingsCard.tsx:146
+msgid "Clean Bluetooth bonded devices"
+msgstr "Видалити сполучені пристрої Bluetooth"
+
+#: res/app/src/features/control/panes/dashboard/install/InstallCard.tsx:161
+#: res/app/src/features/control/panes/dashboard/shell/ShellCard.tsx:57
+#: res/app/src/features/control/panes/logs/LogsPane.tsx:124
+#: res/app/src/features/control/panes/logs/LogsPane.tsx:129
+#: res/app/src/features/control/panes/screenshots/ScreenshotsPane.tsx:84
+#: res/app/src/features/device-list/DeviceListPage.tsx:139
+#: res/app/src/ui/Pager.tsx:46
+msgid "Clear"
+msgstr "Очистити"
+
+#: res/app/src/features/control/panes/dashboard/clipboard/ClipboardCard.tsx:41
+msgid "Clipboard"
+msgstr "Буфер обміну"
+
+#: res/app/src/features/settings/groups/GroupConflicts.tsx:46
+msgid "Close"
+msgstr "Закрити"
+
+#: res/app/src/core/devices/enhance.ts:40
+msgid "Cold"
+msgstr "Холодно"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:194
+#: res/app/src/features/settings/groups/GroupList.tsx:177
+#: res/app/src/features/settings/users/UsersSettings.tsx:268
+msgid "Confirm Remove"
+msgstr "Підтвердження видалення"
+
+#: res/app/src/features/settings/groups/GroupConflicts.tsx:35
+#: res/app/src/features/settings/groups/GroupConflicts.tsx:36
+#: res/app/src/features/settings/groups/GroupDetail.tsx:200
+msgid "Conflicts"
+msgstr "Конфлікти"
+
+#: res/app/src/core/devices/enhance.ts:20
+#: res/app/src/core/devices/enhance.ts:7
+#: res/app/src/features/control/panes/info/InfoPane.tsx:234
+msgid "Connected"
+msgstr "Підключений"
+
+#: res/app/src/ui/AppLayout.tsx:104
+msgid "Connected successfully."
+msgstr "Підключено успішно."
+
+#: res/app/src/features/group-list/GroupListPage.tsx:128
+#: res/app/src/features/settings/groups/GroupList.tsx:165
+msgid "Contact Owners"
+msgstr "Зв'язатися з власниками"
+
+#: res/app/src/features/auth/SignInForm.tsx:165
+#: res/app/src/features/auth/SignInForm.tsx:168
+#: res/app/src/ui/AppLayout.tsx:276 res/app/src/ui/AppLayout.tsx:283
+msgid "Contact Support"
+msgstr "Зв'язатися з підтримкою"
+
+#: res/app/src/features/group-list/GroupMembers.tsx:197
+#: res/app/src/features/settings/groups/GroupUsers.tsx:45
+#: res/app/src/features/settings/users/UsersSettings.tsx:248
+msgid "Contact Users"
+msgstr "Зв'язатися з користувачами"
+
+#: res/app/src/ui/AppLayout.tsx:211
+msgid "Control"
+msgstr "Контроль"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:53
+msgid "Controlled"
+msgstr "Керовані"
+
+#: res/app/src/ui/CopyButton.tsx:30
+msgid "Copied"
+msgstr "Скопійовано"
+
+#: res/app/src/ui/CopyButton.tsx:30 res/app/src/ui/CopyButton.tsx:38
+msgid "Copy to clipboard"
+msgstr "Копіювати в буфер обміну"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:288
+msgid "Cores"
+msgstr "Ядер"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:283
+msgid "CPU"
+msgstr "CPU"
+
+#: res/app/src/features/device-list/columns.tsx:303
+#: res/app/src/features/settings/groups/GroupDevices.tsx:29
+msgid "CPU Platform"
+msgstr "Платформа CPU"
+
+#: res/app/src/features/settings/groups/GroupList.tsx:134
+msgid "Create"
+msgstr "Створити"
+
+#: res/app/src/features/settings/users/CreateUserForm.tsx:42
+#: res/app/src/features/settings/users/UsersSettings.tsx:192
+msgid "Create new user"
+msgstr "Створити нового користувача"
+
+#: res/app/src/features/settings/general/AlertMessageSettings.tsx:25
+msgid "Critical"
+msgstr "Критичний"
+
+#: res/app/src/features/control/device-control/DeviceToolbar.tsx:75
+msgid "Current rotation:"
+msgstr "Поточна орієнтація:"
+
+#: res/app/src/ui/ColumnChoice.tsx:47 res/app/src/ui/ColumnChoice.tsx:48
+#: res/app/src/ui/ColumnChoice.tsx:54
+msgid "Customize"
+msgstr "Налаштувати"
+
+#: res/app/src/core/common.ts:22
+msgid "Daily"
+msgstr "Щодня"
+
+#: res/app/src/ui/AppLayout.tsx:301
+msgid "Dark"
+msgstr "Темна"
+
+#: res/app/src/features/control/ControlPage.tsx:54
+msgid "Dashboard"
+msgstr "Панель приладів"
+
+#: res/app/src/features/control/panes/dashboard/install/ActivityLauncher.tsx:116
+msgid "Data"
+msgstr "Дані"
+
+#: res/app/src/features/control/panes/explorer/ExplorerPane.tsx:230
+msgid "Date"
+msgstr "Дата"
+
+#: res/app/src/features/settings/general/GeneralSettings.tsx:44
+#: res/app/src/features/settings/general/GeneralSettings.tsx:49
+msgid "Date format"
+msgstr "Формат дати"
+
+#: res/app/src/core/devices/enhance.ts:42
+msgid "Dead"
+msgstr "Несправність"
+
+#: res/app/src/core/common.ts:28
+msgid "Debug"
+msgstr "Налагодження"
+
+#: res/app/src/features/settings/users/UsersSettings.tsx:203
+msgid "Default groups quotas"
+msgstr "Квоти груп за замовчуванням"
+
+#: res/app/src/features/settings/users/UsersSettings.tsx:259
+msgid "Default Groups Quotas"
+msgstr "Квоти груп за замовчуванням"
+
+#: res/app/src/features/settings/general/AlertMessageSettings.tsx:62
+msgid "Define your own alert message"
+msgstr "Задайте власне сповіщення"
+
+#: res/app/src/features/settings/general/GeneralSettings.tsx:45
+msgid "Define your own Date format"
+msgstr "Задайте власний формат дати"
+
+#: res/app/src/features/settings/general/GeneralSettings.tsx:68
+msgid "Define your own Email address separator"
+msgstr "Задайте власний роздільник адрес електронної пошти"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:217
+msgid "Density"
+msgstr "Щільність"
+
+#: res/app/src/features/device-list/DeviceListPage.tsx:177
+msgid "Details"
+msgstr "Деталі"
+
+#: res/app/src/features/control/panes/dashboard/apps/AppsCard.tsx:58
+msgid "Developer"
+msgstr "Розробник"
+
+#: res/app/src/features/control/panes/advanced/PortForwardingCard.tsx:109
+#: res/app/src/features/control/panes/advanced/PortForwardingCard.tsx:97
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:220
+#: res/app/src/features/settings/keys/AdbKeysCard.tsx:114
+#: res/app/src/ui/modals.tsx:187
+msgid "Device"
+msgstr "Пристрій"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:51
+msgid "Device booking state"
+msgstr "Стан бронювання пристрою"
+
+#: res/app/src/features/device-list/device-actions.ts:38
+msgid "Device cannot get kicked from the group"
+msgstr "Пристрій не може бути виключено з групи"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:53
+msgid "Device controlling state"
+msgstr "Стан керування пристроєм"
+
+#: res/app/src/core/devices/enhance.ts:35
+msgid "Device is not present anymore for some reason."
+msgstr "Підключення до пристрою відсутнє з невідомих причин."
+
+#: res/app/src/core/devices/enhance.ts:36
+msgid "Device is present but offline."
+msgstr "Пристрій підключений, але не активний."
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:275
+msgid "Device list"
+msgstr "Список пристроїв"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:52
+msgid "Device notes state"
+msgstr "Стан нотаток пристрою"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:175
+msgid "Device Photo"
+msgstr "Фото пристрою"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:50
+msgid "Device presence state"
+msgstr "Стан присутності пристрою"
+
+#: res/app/src/features/group-list/GroupMembers.tsx:126
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:153
+msgid "Device selection"
+msgstr "Вибір пристроїв"
+
+#: res/app/src/features/control/panes/automation/DeviceSettingsCard.tsx:101
+#: res/app/src/features/control/panes/automation/DeviceSettingsCard.tsx:45
+msgid "Device Settings"
+msgstr "Налаштування пристрою"
+
+#: res/app/src/features/control/ControlPage.tsx:109
+msgid "Device was disconnected"
+msgstr "Пристрій було відключено"
+
+#: res/app/src/core/devices/enhance.ts:34
+msgid "Device was kicked by automatic timeout."
+msgstr "Пристрій було відключено через закінчення часу."
+
+#: res/app/src/features/device-list/DeviceListPage.tsx:168
+#: res/app/src/features/device-list/DeviceListPage.tsx:49
+#: res/app/src/features/group-list/columns.tsx:76
+#: res/app/src/features/settings/groups/GroupDetail.tsx:186
+#: res/app/src/features/settings/SettingsPage.tsx:39
+#: res/app/src/ui/AppLayout.tsx:213
+msgid "Devices"
+msgstr "Пристрої"
+
+#: res/app/src/features/control/panes/automation/DeviceSettingsCard.tsx:154
+msgid "Disable Bluetooth"
+msgstr "Вимкнути Bluetooth"
+
+#: res/app/src/features/control/panes/automation/DeviceSettingsCard.tsx:127
+msgid "Disable WiFi"
+msgstr "Виключити WiFi"
+
+#: res/app/src/core/devices/enhance.ts:56
+msgid "Discharging"
+msgstr "Розряджається"
+
+#: res/app/src/core/devices/enhance.ts:19
+#: res/app/src/core/devices/enhance.ts:6 res/app/src/ui/modals.tsx:127
+msgid "Disconnected"
+msgstr "Відключено"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:212
+msgid "Display"
+msgstr "Дисплей"
+
+#: res/app/src/core/install.ts:53
+msgid "Downloading..."
+msgstr "Завантаження..."
+
+#: res/app/src/features/control/panes/dashboard/install/InstallCard.tsx:184
+msgid "Drop file to upload"
+msgstr "Перетягніть файл для загрузки"
+
+#: res/app/src/core/devices/enhance.ts:72
+msgid "Dummy"
+msgstr "Макет"
+
+#: res/app/src/features/group-list/columns.tsx:88
+#: res/app/src/features/settings/groups/GroupList.tsx:51
+#: res/app/src/features/settings/users/UsersSettings.tsx:300
+msgid "Duration"
+msgstr "Тривалість"
+
+#: res/app/src/features/auth/SignInForm.tsx:128
+#: res/app/src/features/auth/SignInForm.tsx:129
+msgid "E-mail"
+msgstr "Електронна пошта"
+
+#: res/app/src/features/group-list/GroupMembers.tsx:214
+#: res/app/src/features/settings/groups/GroupUsers.tsx:19
+#: res/app/src/features/settings/users/CreateUserForm.tsx:68
+#: res/app/src/features/settings/users/UsersSettings.tsx:297
+#: res/app/src/features/user/UserPage.tsx:80
+msgid "Email"
+msgstr "Електронна пошта"
+
+#: res/app/src/features/settings/general/GeneralSettings.tsx:67
+#: res/app/src/features/settings/general/GeneralSettings.tsx:72
+msgid "Email address separator"
+msgstr "Роздільник адрес електронної пошти"
+
+#: res/app/src/features/control/panes/automation/DeviceSettingsCard.tsx:154
+msgid "Enable Bluetooth"
+msgstr "Увімкнути Bluetooth"
+
+#: res/app/src/features/control/panes/automation/DeviceSettingsCard.tsx:127
+msgid "Enable WiFi"
+msgstr "Включити WiFi"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:184
+msgid "Enable/Disable confirmation for device removing"
+msgstr "Увімкнути/вимкнути підтвердження видалення пристроїв"
+
+#: res/app/src/features/settings/groups/GroupList.tsx:173
+msgid "Enable/Disable confirmation for group removing"
+msgstr "Увімкнути/вимкнути підтвердження видалення груп"
+
+#: res/app/src/features/settings/users/UsersSettings.tsx:263
+msgid "Enable/Disable confirmation for user removing"
+msgstr "Увімкнути/вимкнути підтвердження видалення користувачів"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:223
+msgid "Encrypted"
+msgstr "Зашифровано"
+
+#: res/app/src/features/control/panes/explorer/ExplorerPane.tsx:218
+#: res/app/src/features/device-list/device-actions.ts:32
+#: res/app/src/features/settings/keys/AdbKeysCard.tsx:64
+#: res/app/src/ui/AppLayout.tsx:110 res/app/src/ui/AppLayout.tsx:111
+msgid "Error"
+msgstr "Помилка"
+
+#: res/app/src/features/control/panes/dashboard/clipboard/ClipboardCard.tsx:28
+#: res/app/src/features/control/screen/screen-keyboard.ts:41
+#: res/app/src/features/control/screen/screen-keyboard.ts:45
+msgid "Error while getting data"
+msgstr "Помилка під час отримання даних"
+
+#: res/app/src/core/devices/enhance.ts:73
+msgid "Ethernet"
+msgstr "Ethernet"
+
+#: res/app/src/features/control/panes/dashboard/shell/ShellCard.tsx:47
+#: res/app/src/features/control/panes/dashboard/shell/ShellCard.tsx:92
+msgid "Executes remote shell commands"
+msgstr "Виконання віддалених команд shell"
+
+#: res/app/src/features/group-list/columns.tsx:98
+#: res/app/src/features/settings/groups/GroupConflicts.tsx:14
+#: res/app/src/features/settings/groups/GroupDetail.tsx:147
+#: res/app/src/features/settings/groups/GroupSchedule.tsx:102
+msgid "Expiration Date"
+msgstr "Дата завершення"
+
+#: res/app/src/features/control/panes/explorer/ExplorerPane.tsx:160
+msgid "Failed to download file"
+msgstr "Не вдалося завантажити файл"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:45
+msgid "False"
+msgstr "Ні"
+
+#: res/app/src/features/control/panes/advanced/AdvancedInputCard.tsx:56
+msgid "Fast Forward"
+msgstr "Перемотка вперед"
+
+#: res/app/src/features/control/ControlPage.tsx:85
+msgid "File Explorer"
+msgstr "Файловий менеджер"
+
+#: res/app/src/features/control/panes/logs/SaveLogModal.tsx:50
+msgid "File Name"
+msgstr "Ім'я файлу"
+
+#: res/app/src/features/settings/users/UsersSettings.tsx:119
+msgid "Filter on user group ownership"
+msgstr "Фільтр за володінням групами"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:181
+#: res/app/src/features/settings/users/UsersSettings.tsx:109
+msgid "Filters"
+msgstr "Фільтри"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:188
+msgid "Find Device"
+msgstr "Знайти пристрій"
+
+#: res/app/src/ui/modals.tsx:183
+msgid "Fingerprint"
+msgstr "Відбиток пальця"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:218
+msgid "FPS"
+msgstr "FPS"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:289
+msgid "Frequency"
+msgstr "Частота"
+
+#: res/app/src/core/devices/enhance.ts:57
+msgid "Full"
+msgstr "Повний"
+
+#: res/app/src/features/settings/SettingsPage.tsx:36
+msgid "General"
+msgstr "Загальні"
+
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:159
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:164
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:57
+msgid "Generate Access Token"
+msgstr "Генерування токена доступу"
+
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:70
+msgid "Generate New Token"
+msgstr "Генерування нового токену"
+
+#: res/app/src/features/control/panes/logs/LogsPane.tsx:95
+msgid "Get"
+msgstr "Отримати"
+
+#: res/app/src/features/control/panes/dashboard/clipboard/ClipboardCard.tsx:61
+msgid "Get clipboard contents"
+msgstr "Отримати вміст буфера обміну"
+
+#: res/app/src/features/settings/groups/GroupDetail.tsx:159
+msgid "Get ready"
+msgstr "Зробити готовою"
+
+#: res/app/src/features/docs/DocsPage.tsx:83
+#: res/app/src/features/docs/DocsPage.tsx:88
+msgid "Go Back"
+msgstr "Назад"
+
+#: res/app/src/features/control/ControlPage.tsx:121
+msgid "Go to Device List"
+msgstr "Відкрити список пристроїв"
+
+#: res/app/src/core/devices/enhance.ts:41
+msgid "Good"
+msgstr "Добрий"
+
+#: res/app/src/features/device-list/columns.tsx:245
+msgid "Group Class"
+msgstr "Клас групи"
+
+#: res/app/src/features/settings/groups/GroupDevices.tsx:131
+msgid "Group device selection"
+msgstr "Вибір пристроїв групи"
+
+#: res/app/src/features/settings/groups/GroupDevices.tsx:113
+msgid "Group devices"
+msgstr "Пристрої групи"
+
+#: res/app/src/features/settings/groups/rules.ts:108
+msgid "Group duration quotas is reached"
+msgstr "Досягнуто квоти тривалості груп"
+
+#: res/app/src/features/device-list/columns.tsx:252
+msgid "Group Expiration Date"
+msgstr "Дата завершення групи"
+
+#: res/app/src/features/settings/groups/GroupList.tsx:121
+msgid "Group list"
+msgstr "Список груп"
+
+#: res/app/src/features/device-list/columns.tsx:244
+#: res/app/src/features/settings/groups/GroupConflicts.tsx:15
+msgid "Group Name"
+msgstr "Назва групи"
+
+#: res/app/src/features/device-list/columns.tsx:256
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:226
+#: res/app/src/features/settings/groups/GroupDevices.tsx:42
+msgid "Group Origin"
+msgstr "Вихідна група"
+
+#: res/app/src/features/device-list/columns.tsx:248
+#: res/app/src/features/settings/groups/GroupConflicts.tsx:17
+#: res/app/src/features/settings/users/UsersSettings.tsx:120
+msgid "Group Owner"
+msgstr "Власник групи"
+
+#: res/app/src/features/device-list/columns.tsx:254
+msgid "Group Repetitions"
+msgstr "Повторення групи"
+
+#: res/app/src/features/group-list/GroupListPage.tsx:94
+#: res/app/src/features/settings/groups/GroupList.tsx:147
+msgid "Group selection"
+msgstr "Вибір груп"
+
+#: res/app/src/features/device-list/columns.tsx:253
+msgid "Group Starting Date"
+msgstr "Дата початку групи"
+
+#: res/app/src/features/settings/groups/GroupUsers.tsx:90
+msgid "Group user selection"
+msgstr "Вибір користувачів групи"
+
+#: res/app/src/features/settings/groups/GroupUsers.tsx:73
+msgid "Group users"
+msgstr "Користувачі групи"
+
+#: res/app/src/features/group-list/GroupListPage.tsx:51
+#: res/app/src/features/settings/groups/GroupList.tsx:48
+#: res/app/src/features/settings/SettingsPage.tsx:38
+#: res/app/src/features/settings/users/UsersSettings.tsx:299
+#: res/app/src/ui/AppLayout.tsx:214
+msgid "Groups"
+msgstr "Групи"
+
+#: res/app/src/features/settings/groups/GroupDevices.tsx:103
+msgid "Groups duration quota is reached"
+msgstr "Досягнуто квоти тривалості груп"
+
+#: res/app/src/features/settings/groups/GroupList.tsx:124
+msgid "Groups number quota is reached"
+msgstr "Досягнуто квоти кількості груп"
+
+#: res/app/src/features/settings/users/UsersSettings.tsx:343
+msgid "Groups Quotas"
+msgstr "Квоти груп"
+
+#: res/app/src/core/common.ts:26
+msgid "Halfyearly"
+msgstr "Щопівроку"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:258
+msgid "Hardware"
+msgstr "Залізо"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:202
+msgid "Health"
+msgstr "Стан"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:220
+msgid "Height"
+msgstr "Висота"
+
+#: res/app/src/features/docs/DocsPage.tsx:108
+#: res/app/src/features/docs/DocsPage.tsx:28 res/app/src/ui/AppLayout.tsx:289
+#: res/app/src/ui/AppLayout.tsx:295
+msgid "Help"
+msgstr "Допомога"
+
+#: res/app/src/features/control/panes/dashboard/install/InstallCard.tsx:85
+msgid "Hide Manifest"
+msgstr "Приховати маніфест"
+
+#: res/app/src/features/control/device-control/DeviceToolbar.tsx:128
+#: res/app/src/features/control/device-control/DeviceToolbar.tsx:133
+msgid "Hide Screen"
+msgstr "Заховати екран"
+
+#: res/app/src/features/control/device-control/DeviceControlPanel.tsx:85
+#: res/app/src/features/control/device-control/DeviceMenuItems.tsx:31
+#: res/app/src/features/docs/DocsPage.tsx:100
+#: res/app/src/features/docs/DocsPage.tsx:64
+#: res/app/src/features/docs/DocsPage.tsx:95
+msgid "Home"
+msgstr "Дім"
+
+#: res/app/src/features/control/panes/advanced/PortForwardingCard.tsx:101
+#: res/app/src/features/control/panes/advanced/PortForwardingCard.tsx:110
+msgid "Host"
+msgstr "Хост"
+
+#: res/app/src/features/control/panes/advanced/PortForwardingCard.tsx:118
+msgid "Hostname"
+msgstr "Ім'я хоста"
+
+#: res/app/src/core/common.ts:21
+msgid "Hourly"
+msgstr "Щогодини"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:253
+msgid "ICCID"
+msgstr "ICCID"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:221
+msgid "ID"
+msgstr "ID"
+
+#: res/app/src/features/group-list/columns.tsx:66
+#: res/app/src/features/settings/groups/GroupDetail.tsx:144
+msgid "Identifier"
+msgstr "Ідентифікатор"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:251
+msgid "IMEI"
+msgstr "IMEI"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:252
+msgid "IMSI"
+msgstr "IMSI"
+
+#: res/app/src/features/settings/groups/rules.ts:157
+msgid "Inactive"
+msgstr "Неактивна"
+
+#: res/app/src/features/auth/SignInForm.tsx:86
+msgid "Incorrect login details"
+msgstr "Невірні дані для входу"
+
+#: res/app/src/features/control/ControlPage.tsx:91
+msgid "Info"
+msgstr "Інформація"
+
+#: res/app/src/features/settings/general/AlertMessageSettings.tsx:23
+msgid "Information"
+msgstr "Інформація"
+
+#: res/app/src/core/install.ts:159
+msgid "Installation canceled by user."
+msgstr "Установка скасована користувачем."
+
+#: res/app/src/core/install.ts:157
+msgid "Installation failed due to an unknown error."
+msgstr "Установка не вдалася через невідому помилку."
+
+#: res/app/src/core/install.ts:156
+#: res/app/src/features/control/device-control/install-file.ts:32
+msgid "Installation succeeded."
+msgstr "Установка пройшла успішно."
+
+#: res/app/src/core/install.ts:158
+msgid "Installation timed out."
+msgstr "Час установки вийшов."
+
+#: res/app/src/core/install.ts:57
+msgid "Installing app..."
+msgstr "Установка додатку..."
+
+#: res/app/src/ui/Pager.tsx:61
+msgid "Items per page"
+msgstr "Елементів на сторінці"
+
+#: res/app/src/features/settings/keys/AdbKeysCard.tsx:97
+msgid "Key"
+msgstr "Ключ"
+
+#: res/app/src/features/control/screen/DeviceScreen.tsx:181
+msgid "Keyboard"
+msgstr "Клавіатура"
+
+#: res/app/src/features/settings/SettingsPage.tsx:37
+msgid "Keys"
+msgstr "Ключі"
+
+#: res/app/src/features/control/device-control/DeviceToolbar.tsx:93
+#: res/app/src/features/control/device-control/DeviceToolbar.tsx:97
+msgid "Landscape"
+msgstr "Альбомний"
+
+#: res/app/src/features/settings/general/GeneralSettings.tsx:22
+#: res/app/src/features/settings/general/GeneralSettings.tsx:25
+msgid "Language"
+msgstr "Мова"
+
+#: res/app/src/features/control/panes/dashboard/install/ActivityLauncher.tsx:120
+msgid "Launch Activity"
+msgstr "Запустити додаток"
+
+#: res/app/src/core/install.ts:58
+msgid "Launching activity..."
+msgstr "Запуск додатку..."
+
+#: res/app/src/features/auth/SignInForm.tsx:110
+#: res/app/src/features/auth/SignInForm.tsx:111
+msgid "LDAP Username"
+msgstr "Ім'я користувача LDAP"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:205
+#: res/app/src/features/control/panes/logs/LogTable.tsx:133
+#: res/app/src/features/settings/general/AlertMessageSettings.tsx:87
+msgid "Level"
+msgstr "Рівень"
+
+#: res/app/src/ui/AppLayout.tsx:301
+msgid "Light"
+msgstr "Світла"
+
+#: res/app/src/features/settings/general/GeneralSettings.tsx:90
+msgid "Local Settings"
+msgstr "Локальні налаштування"
+
+#: res/app/src/features/device-list/columns.tsx:325
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:225
+#: res/app/src/features/settings/groups/GroupDevices.tsx:40
+msgid "Location"
+msgstr "Місцезнаходження"
+
+#: res/app/src/features/auth/SignInForm.tsx:156
+msgid "Log In"
+msgstr "Увійти"
+
+#: res/app/src/features/control/panes/logs/LogsPane.tsx:102
+#: res/app/src/features/control/panes/logs/LogsPane.tsx:103
+msgid "Logcat Level"
+msgstr "Рівень logcat"
+
+#: res/app/src/ui/AppLayout.tsx:313 res/app/src/ui/AppLayout.tsx:319
+msgid "Logout"
+msgstr "Вийти"
+
+#: res/app/src/features/control/ControlPage.tsx:60
+msgid "Logs"
+msgstr "Лог"
+
+#: res/app/src/features/control/panes/advanced/MaintenanceCard.tsx:23
+msgid "Maintenance"
+msgstr "Підтримка"
+
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:90
+msgid ""
+"Make sure to copy your access token now. You won't be able to see it again."
+msgstr "Збережіть токен доступу зараз. Ви не зможете побачити його знову."
+
+#: res/app/src/features/control/panes/dashboard/apps/AppsCard.tsx:52
+msgid "Manage Apps"
+msgstr "Управління додатками"
+
+#: res/app/src/features/control/panes/automation/DeviceSettingsCard.tsx:103
+msgid "Manner Mode"
+msgstr "Режим дзвінка"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:262
+#: res/app/src/features/device-list/columns.tsx:294
+#: res/app/src/features/settings/groups/GroupDevices.tsx:22
+msgid "Manufacturer"
+msgstr "Виробник"
+
+#: res/app/src/features/device-list/columns.tsx:295
+#: res/app/src/features/settings/groups/GroupDevices.tsx:38
+msgid "Market name"
+msgstr "Комерційна назва"
+
+#: res/app/src/features/control/panes/advanced/AdvancedInputCard.tsx:49
+msgid "Media"
+msgstr "Медіа"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:294
+msgid "Memory"
+msgstr "Пам'ять"
+
+#: res/app/src/features/control/device-control/DeviceControlPanel.tsx:79
+msgid "Menu"
+msgstr "Меню"
+
+#: res/app/src/core/devices/enhance.ts:74
+msgid "Mobile"
+msgstr "Мобільний"
+
+#: res/app/src/core/devices/enhance.ts:75
+msgid "Mobile DUN"
+msgstr "Мобільний DUN"
+
+#: res/app/src/core/devices/enhance.ts:76
+msgid "Mobile High Priority"
+msgstr "Високий пріоритет мобільного"
+
+#: res/app/src/core/devices/enhance.ts:77
+msgid "Mobile MMS"
+msgstr "Мобільні MMS"
+
+#: res/app/src/core/devices/enhance.ts:78
+msgid "Mobile SUPL"
+msgstr "Мобільний SUPL"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:264
+#: res/app/src/features/device-list/columns.tsx:258
+#: res/app/src/features/settings/groups/GroupDevices.tsx:15
+msgid "Model"
+msgstr "Модель"
+
+#: res/app/src/core/common.ts:24
+msgid "Monthly"
+msgstr "Щомісяця"
+
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:147
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:154
+msgid "More about Access Tokens"
+msgstr "Більше про токени доступу"
+
+#: res/app/src/features/settings/keys/AdbKeysCard.tsx:143
+#: res/app/src/features/settings/keys/AdbKeysCard.tsx:150
+msgid "More about ADB Keys"
+msgstr "Більше про ADB ключі"
+
+#: res/app/src/features/control/panes/advanced/AdvancedInputCard.tsx:43
+msgid "Mute"
+msgstr "Вимкнути звук"
+
+#: res/app/src/features/auth/SignInForm.tsx:110
+#: res/app/src/features/auth/SignInForm.tsx:111
+#: res/app/src/features/control/panes/explorer/ExplorerPane.tsx:228
+#: res/app/src/features/control/panes/info/InfoPane.tsx:287
+#: res/app/src/features/group-list/columns.tsx:56
+#: res/app/src/features/settings/groups/GroupDetail.tsx:58
+#: res/app/src/features/settings/groups/GroupDetail.tsx:61
+#: res/app/src/features/settings/groups/GroupDetail.tsx:83
+#: res/app/src/features/settings/groups/GroupDetail.tsx:84
+#: res/app/src/features/settings/groups/GroupUsers.tsx:17
+#: res/app/src/features/settings/users/CreateUserForm.tsx:57
+#: res/app/src/features/settings/users/UsersSettings.tsx:296
+msgid "Name"
+msgstr "Ім'я"
+
+#: res/app/src/ui/AppLayout.tsx:270
+msgid "Native"
+msgstr "Нативний"
+
+#: res/app/src/features/control/panes/dashboard/navigation/NavigationCard.tsx:54
+msgid "Navigation"
+msgstr "Навігація"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:230
+#: res/app/src/features/control/panes/info/InfoPane.tsx:249
+#: res/app/src/features/device-list/columns.tsx:280
+#: res/app/src/features/settings/groups/GroupDevices.tsx:19
+msgid "Network"
+msgstr "Мережа"
+
+#: res/app/src/features/control/panes/advanced/AdvancedInputCard.tsx:55
+msgid "Next"
+msgstr "Наступний"
+
+#: res/app/src/core/devices/enhance.ts:100
+msgid "No"
+msgstr "Ні"
+
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:191
+msgid "No access tokens"
+msgstr "Відсутні токени доступу"
+
+#: res/app/src/features/settings/keys/AdbKeysCard.tsx:174
+msgid "No ADB keys"
+msgstr "Відсутні ADB ключі"
+
+#: res/app/src/features/settings/groups/GroupDevices.tsx:173
+msgid "No available devices"
+msgstr "Немає доступних пристроїв"
+
+#: res/app/src/features/settings/groups/GroupUsers.tsx:134
+msgid "No available users"
+msgstr "Немає доступних користувачів"
+
+#: res/app/src/features/settings/groups/rules.ts:91
+#: res/app/src/features/settings/users/QuotasForm.tsx:24
+msgid "No change"
+msgstr "Без змін"
+
+#: res/app/src/features/control/panes/dashboard/clipboard/ClipboardCard.tsx:25
+#: res/app/src/features/control/screen/screen-keyboard.ts:38
+msgid "No clipboard data"
+msgstr "В буфері обміну відсутні дані"
+
+#: res/app/src/features/control/screen/DeviceScreen.tsx:160
+msgid "No device screen"
+msgstr "Відсутній екран пристрою"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:140
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:265
+msgid "No Devices"
+msgstr "Немає пристроїв"
+
+#: res/app/src/features/device-list/DeviceListPage.tsx:103
+msgid "No devices connected"
+msgstr "Немає підключених пристроїв"
+
+#: res/app/src/features/settings/groups/GroupDevices.tsx:132
+msgid "No group devices"
+msgstr "У групі немає пристроїв"
+
+#: res/app/src/features/settings/groups/GroupUsers.tsx:91
+msgid "No group users"
+msgstr "У групі немає користувачів"
+
+#: res/app/src/features/group-list/GroupListPage.tsx:87
+#: res/app/src/features/settings/groups/GroupList.tsx:200
+msgid "No Groups"
+msgstr "Немає груп"
+
+#: res/app/src/features/control/panes/logs/LogsPane.tsx:28
+msgid "No log entries match the filters"
+msgstr "Жоден запис логу не відповідає фільтрам"
+
+#: res/app/src/features/control/panes/dashboard/shell/ShellCard.tsx:98
+msgid "No output"
+msgstr "Немає виводу"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:104
+msgid "No photo available"
+msgstr "Відсутнє фото"
+
+#: res/app/src/features/control/panes/advanced/PortForwardingCard.tsx:94
+msgid "No Ports Forwarded"
+msgstr "Відсутні перенаправлені порти"
+
+#: res/app/src/features/device-list/DeviceListPage.tsx:117
+#: res/app/src/features/group-list/GroupListPage.tsx:161
+#: res/app/src/features/group-list/GroupMembers.tsx:90
+msgid "No results"
+msgstr "Немає результатів"
+
+#: res/app/src/features/control/panes/screenshots/ScreenshotsPane.tsx:118
+msgid "No screenshots taken"
+msgstr "Відсутні знімки екрану"
+
+#: res/app/src/features/settings/users/UsersSettings.tsx:289
+msgid "No Users"
+msgstr "Немає користувачів"
+
+#: res/app/src/features/control/panes/automation/DeviceSettingsCard.tsx:34
+msgid "Normal Mode"
+msgstr "Нормальний режим"
+
+#: res/app/src/core/devices/enhance.ts:58
+msgid "Not Charging"
+msgstr "Не заряджається"
+
+#: res/app/src/features/docs/DocsPage.tsx:62
+#: res/app/src/features/user/UserPage.tsx:54
+msgid "Not Found"
+msgstr "Не знайдено"
+
+#: res/app/src/features/device-list/cells.tsx:132
+#: res/app/src/features/device-list/cells.tsx:162
+#: res/app/src/features/device-list/columns.tsx:326
+msgid "Notes"
+msgstr "Записки"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:250
+msgid "Number"
+msgstr "Номер"
+
+#: res/app/src/features/settings/users/QuotasForm.tsx:54
+msgid "Number of groups"
+msgstr "Кількість груп"
+
+#: res/app/src/features/settings/users/QuotasForm.tsx:80
+msgid "Number of repetitions per group"
+msgstr "Кількість повторень на групу"
+
+#: res/app/src/core/devices/enhance.ts:21
+#: res/app/src/core/devices/enhance.ts:8
+msgid "Offline"
+msgstr "Offline"
+
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:111
+#: res/app/src/ui/modals.tsx:67 res/app/src/ui/modals.tsx:88
+msgid "OK"
+msgstr "OK"
+
+#: res/app/src/core/common.ts:20
+msgid "Once"
+msgstr "Одноразово"
+
+#: res/app/src/features/control/device-control/install-file.ts:38
+#: res/app/src/features/control/panes/dashboard/install/InstallCard.tsx:108
+#: res/app/src/features/control/panes/dashboard/remote-debug/RemoteDebugCard.tsx:105
+#: res/app/src/ui/notify.ts:8
+msgid "Oops!"
+msgstr "Упс!"
+
+#: res/app/src/features/control/panes/dashboard/navigation/NavigationCard.tsx:98
+msgid "Open"
+msgstr "Відкрити"
+
+#: res/app/src/features/device-list/columns.tsx:304
+#: res/app/src/features/settings/groups/GroupDevices.tsx:34
+msgid "OpenGL ES version"
+msgstr "Версія OpenGL ES"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:222
+msgid "Orientation"
+msgstr "Орієнтація"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:275
+#: res/app/src/features/device-list/columns.tsx:276
+#: res/app/src/features/group-list/GroupMembers.tsx:152
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:222
+#: res/app/src/features/settings/groups/GroupDevices.tsx:18
+msgid "OS"
+msgstr "OS"
+
+#: res/app/src/core/devices/enhance.ts:43
+msgid "Over Voltage"
+msgstr "Перенапруження"
+
+#: res/app/src/core/devices/enhance.ts:44
+msgid "Overheat"
+msgstr "Перегрів"
+
+#: res/app/src/features/group-list/columns.tsx:71
+#: res/app/src/features/settings/groups/GroupDetail.tsx:145
+msgid "Owner"
+msgstr "Власник"
+
+#: res/app/src/features/control/panes/dashboard/install/ActivityLauncher.tsx:102
+msgid "Package"
+msgstr "Пакет"
+
+#: res/app/src/features/auth/SignInForm.tsx:144
+#: res/app/src/features/auth/SignInForm.tsx:145
+#: res/app/src/features/control/panes/automation/StoreAccountCard.tsx:117
+msgid "Password"
+msgstr "Пароль"
+
+#: res/app/src/ui/mail.ts:18
+msgid "Paste the email addresses from the clipboard!"
+msgstr "Вставте адреси електронної пошти з буфера обміну!"
+
+#: res/app/src/features/control/panes/dashboard/clipboard/ClipboardCard.tsx:71
+msgid "Paste to device"
+msgstr "Вставити на пристрій"
+
+#: res/app/src/features/group-list/columns.tsx:35
+#: res/app/src/features/settings/groups/rules.ts:152
+msgid "Pending"
+msgstr "У підготовці"
+
+#: res/app/src/features/group-list/GroupStats.tsx:46
+msgid "Pending groups"
+msgstr "Групи в підготовці"
+
+#: res/app/src/features/control/panes/explorer/ExplorerPane.tsx:231
+msgid "Permissions"
+msgstr "Дозволи"
+
+#: res/app/src/features/device-list/columns.tsx:305
+msgid "Phone"
+msgstr "Телефон"
+
+#: res/app/src/features/device-list/columns.tsx:308
+msgid "Phone ICCID"
+msgstr "ICCID телефону"
+
+#: res/app/src/features/device-list/columns.tsx:306
+#: res/app/src/features/settings/groups/GroupDevices.tsx:39
+msgid "Phone IMEI"
+msgstr "IMEI телефону"
+
+#: res/app/src/features/device-list/columns.tsx:307
+msgid "Phone IMSI"
+msgstr "IMSI телефону"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:183
+msgid "Physical Device"
+msgstr "Фізичний пристрій"
+
+#: res/app/src/features/control/panes/logs/LogsPane.tsx:110
+#: res/app/src/features/control/panes/logs/LogTable.tsx:137
+msgid "PID"
+msgstr "PID"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:192
+msgid "Place"
+msgstr "Місце"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:271
+msgid "Platform"
+msgstr "Платформа"
+
+#: res/app/src/features/control/panes/advanced/AdvancedInputCard.tsx:53
+msgid "Play/Pause"
+msgstr "Відтворення/Пауза"
+
+#: res/app/src/features/auth/SignInForm.tsx:49
+msgid "Please enter a valid email"
+msgstr "Будь ласка, введіть коректну адресу електронної пошти"
+
+#: res/app/src/features/control/panes/automation/StoreAccountCard.tsx:124
+msgid "Please enter your Store password"
+msgstr "Будь ласка, введіть пароль від магазину"
+
+#: res/app/src/features/control/panes/automation/StoreAccountCard.tsx:108
+msgid "Please enter your Store username"
+msgstr "Будь ласка, введіть ім'я користувача від магазину"
+
+#: res/app/src/features/control/panes/advanced/PortForwardingCard.tsx:117
+#: res/app/src/features/control/panes/advanced/PortForwardingCard.tsx:120
+msgid "Port"
+msgstr "Порт"
+
+#: res/app/src/features/control/panes/advanced/PortForwardingCard.tsx:27
+#: res/app/src/features/control/panes/advanced/PortForwardingCard.tsx:75
+#: res/app/src/features/control/panes/advanced/PortForwardingCard.tsx:83
+msgid "Port Forwarding"
+msgstr "Перенаправлення портів"
+
+#: res/app/src/features/control/device-control/DeviceToolbar.tsx:82
+#: res/app/src/features/control/device-control/DeviceToolbar.tsx:86
+msgid "Portrait"
+msgstr "Портретний"
+
+#: res/app/src/features/control/panes/advanced/AdvancedInputCard.tsx:34
+msgid "Power"
+msgstr "Живлення"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:203
+msgid "Power Source"
+msgstr "Джерело живлення"
+
+#: res/app/src/core/devices/enhance.ts:10
+#: res/app/src/core/devices/enhance.ts:23
+#: res/app/src/features/control/ControlPage.tsx:288
+msgid "Preparing"
+msgstr "Підготовка"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:50
+msgid "Present"
+msgstr "Присутні"
+
+#: res/app/src/features/control/panes/logs/LogsPane.tsx:33
+msgid "Press Get to start logging"
+msgstr "Натисніть «Отримати», щоб почати логування"
+
+#: res/app/src/features/control/panes/advanced/AdvancedInputCard.tsx:52
+msgid "Previous"
+msgstr "Попередній"
+
+#: res/app/src/features/group-list/GroupMembers.tsx:215
+#: res/app/src/features/settings/groups/GroupUsers.tsx:24
+#: res/app/src/features/settings/users/UsersSettings.tsx:298
+msgid "Privilege"
+msgstr "Привілеї"
+
+#: res/app/src/core/install.ts:55
+msgid "Processing..."
+msgstr "Обробка..."
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:263
+#: res/app/src/features/device-list/columns.tsx:263
+msgid "Product"
+msgstr "Продукт"
+
+#: res/app/src/core/install.ts:56
+msgid "Pushing app..."
+msgstr "Загрузка додатку на пристрій..."
+
+#: res/app/src/core/common.ts:25
+msgid "Quaterly"
+msgstr "Щокварталу"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:298
+msgid "RAM"
+msgstr "RAM"
+
+#: res/app/src/core/devices/enhance.ts:11
+#: res/app/src/core/devices/enhance.ts:24
+#: res/app/src/features/group-list/columns.tsx:37
+msgid "Ready"
+msgstr "Готово"
+
+#: res/app/src/features/group-list/GroupStats.tsx:44
+msgid "Ready groups"
+msgstr "Готові групи"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:112
+msgid "Really delete this device?"
+msgstr "Дійсно видалити цей пристрій?"
+
+#: res/app/src/features/settings/groups/actions.ts:62
+msgid "Really delete this group?"
+msgstr "Дійсно видалити цю групу?"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:123
+msgid "Really delete this selection of devices?"
+msgstr "Дійсно видалити вибрані пристрої?"
+
+#: res/app/src/features/settings/groups/actions.ts:70
+msgid "Really delete this selection of groups?"
+msgstr "Дійсно видалити вибрані групи?"
+
+#: res/app/src/features/settings/users/UsersSettings.tsx:166
+msgid "Really delete this selection of users?"
+msgstr "Дійсно видалити вибраних користувачів?"
+
+#: res/app/src/features/settings/users/UsersSettings.tsx:158
+msgid "Really delete this user?"
+msgstr "Дійсно видалити цього користувача?"
+
+#: res/app/src/features/control/device-control/DeviceMenuItems.tsx:34
+msgid "Recents"
+msgstr "Недавні"
+
+#: res/app/src/features/settings/groups/GroupDetail.tsx:86
+#: res/app/src/features/settings/users/CreateUserForm.tsx:61
+msgid "Regex syntax"
+msgstr "Синтаксис регулярного виразу"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:266
+#: res/app/src/features/device-list/columns.tsx:274
+msgid "Released"
+msgstr "Дата випуску"
+
+#: res/app/src/ui/modals.tsx:165
+msgid "Reload"
+msgstr "Перезавантажити"
+
+#: res/app/src/features/control/panes/dashboard/remote-debug/RemoteDebugCard.tsx:67
+msgid "Remote debug"
+msgstr "Дистанційне налагодження"
+
+#: res/app/src/features/control/panes/advanced/PortForwardingCard.tsx:126
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:207
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:256
+#: res/app/src/features/settings/groups/GroupDetail.tsx:170
+#: res/app/src/features/settings/groups/GroupDevices.tsx:139
+#: res/app/src/features/settings/groups/GroupDevices.tsx:159
+#: res/app/src/features/settings/groups/GroupList.tsx:192
+#: res/app/src/features/settings/groups/GroupUsers.tsx:120
+#: res/app/src/features/settings/groups/GroupUsers.tsx:98
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:211
+#: res/app/src/features/settings/keys/AdbKeysCard.tsx:195
+#: res/app/src/features/settings/users/UsersSettings.tsx:283
+#: res/app/src/features/settings/users/UsersSettings.tsx:348
+msgid "Remove"
+msgstr "Видалити"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:197
+msgid "Remove the device selection"
+msgstr "Видалити вибрані пристрої"
+
+#: res/app/src/features/settings/groups/GroupList.tsx:184
+msgid "Remove the group selection"
+msgstr "Видалити вибрані групи"
+
+#: res/app/src/features/settings/users/UsersSettings.tsx:275
+msgid "Remove the user selection"
+msgstr "Видалити вибраних користувачів"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:71
+#: res/app/src/features/settings/users/UsersSettings.tsx:115
+msgid "Removing filters"
+msgstr "Фільтри видалення"
+
+#: res/app/src/features/group-list/columns.tsx:86
+#: res/app/src/features/settings/groups/GroupSchedule.tsx:71
+#: res/app/src/features/settings/groups/GroupSchedule.tsx:81
+#: res/app/src/features/settings/users/UsersSettings.tsx:301
+msgid "Repetitions"
+msgstr "Повторення"
+
+#: res/app/src/features/settings/groups/rules.ts:94
+msgid "Repetitions must be > 0 for this Class"
+msgstr "Кількість повторень має бути > 0 для цього класу"
+
+#: res/app/src/features/control/panes/dashboard/navigation/NavigationCard.tsx:65
+#: res/app/src/features/settings/general/GeneralSettings.tsx:104
+#: res/app/src/ui/ColumnChoice.tsx:87
+msgid "Reset"
+msgstr "Скинути"
+
+#: res/app/src/features/control/panes/dashboard/navigation/NavigationCard.tsx:56
+msgid "Reset all browser settings"
+msgstr "Скинути всі налаштування браузера"
+
+#: res/app/src/features/settings/general/GeneralSettings.tsx:93
+msgid "Reset Settings"
+msgstr "Скинути налаштування"
+
+#: res/app/src/features/control/panes/advanced/MaintenanceCard.tsx:47
+msgid "Restart and Keep Device"
+msgstr "Перезавантажити й залишити пристрій"
+
+#: res/app/src/features/control/panes/advanced/MaintenanceCard.tsx:35
+msgid "Restart Device"
+msgstr "Перезавантажити пристрій"
+
+#: res/app/src/features/control/screen/DeviceScreen.tsx:167
+msgid "Retry"
+msgstr "Повторити"
+
+#: res/app/src/features/control/panes/advanced/AdvancedInputCard.tsx:51
+msgid "Rewind"
+msgstr "Перемотка назад"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:237
+msgid "Roaming"
+msgstr "Роумінг"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:299
+msgid "ROM"
+msgstr "ROM"
+
+#: res/app/src/features/control/device-control/DeviceMenuItems.tsx:38
+#: res/app/src/features/control/device-control/DeviceToolbar.tsx:106
+#: res/app/src/features/control/device-control/DeviceToolbar.tsx:110
+msgid "Rotate Left"
+msgstr "Повернути ліворуч"
+
+#: res/app/src/features/control/device-control/DeviceMenuItems.tsx:44
+#: res/app/src/features/control/device-control/DeviceToolbar.tsx:116
+#: res/app/src/features/control/device-control/DeviceToolbar.tsx:120
+msgid "Rotate Right"
+msgstr "Повернути праворуч"
+
+#: res/app/src/features/control/panes/dashboard/shell/ShellCard.tsx:77
+msgid "Run"
+msgstr "Виконати"
+
+#: res/app/src/features/control/panes/dashboard/remote-debug/RemoteDebugCard.tsx:33
+msgid ""
+"Run the following on your command line to debug the device from your Browser"
+msgstr "Виконайте цю команду, щоб налагодити пристрій з вашого браузера"
+
+#: res/app/src/features/control/panes/dashboard/remote-debug/RemoteDebugCard.tsx:32
+msgid ""
+"Run the following on your command line to debug the device from your IDE"
+msgstr "Виконайте цю команду, щоб налагодити пристрій з вашої IDE"
+
+#: res/app/src/features/settings/keys/AdbKeysCard.tsx:86
+msgid "Run this command to copy the key to your clipboard"
+msgstr "Виконайте цю команду, щоб скопіювати ключ в буфер обміну"
+
+#: res/app/src/features/control/panes/logs/SaveLogModal.tsx:68
+msgid "Sample of log format"
+msgstr "Приклад формату логу"
+
+#: res/app/src/features/device-list/cells.tsx:143
+#: res/app/src/features/settings/groups/GroupDetail.tsx:100
+#: res/app/src/features/settings/groups/GroupSchedule.tsx:111
+#: res/app/src/features/settings/users/CreateUserForm.tsx:83
+#: res/app/src/features/settings/users/QuotasForm.tsx:95
+msgid "Save"
+msgstr "Зберегти"
+
+#: res/app/src/features/control/panes/logs/LogsPane.tsx:134
+#: res/app/src/features/control/panes/logs/LogsPane.tsx:139
+#: res/app/src/features/control/panes/logs/SaveLogModal.tsx:80
+#: res/app/src/features/control/panes/logs/SaveLogModal.tsx:90
+msgid "Save Logs"
+msgstr "Зберегти лог"
+
+#: res/app/src/features/control/device-control/device-commands.ts:23
+#: res/app/src/features/control/device-control/DeviceMenuItems.tsx:48
+msgid "Save ScreenShot"
+msgstr "Зберегти знімок екрану"
+
+#: res/app/src/features/settings/groups/GroupSchedule.tsx:115
+msgid "Saving will also get ready the group!"
+msgstr "Збереження також зробить групу готовою!"
+
+#: res/app/src/features/settings/groups/GroupDetail.tsx:196
+msgid "Schedule"
+msgstr "Розклад"
+
+#: res/app/src/features/device-list/columns.tsx:281
+#: res/app/src/features/group-list/GroupMembers.tsx:153
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:223
+#: res/app/src/features/settings/groups/GroupDevices.tsx:20
+msgid "Screen"
+msgstr "Екран"
+
+#: res/app/src/features/control/panes/screenshots/ScreenshotsPane.tsx:58
+#: res/app/src/features/control/panes/screenshots/ScreenshotsPane.tsx:75
+msgid "Screenshot"
+msgstr "Знімок екрану"
+
+#: res/app/src/features/control/ControlPage.tsx:67
+msgid "Screenshots"
+msgstr "Знімки екрану"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:300
+msgid "SD Card Mounted"
+msgstr "SD карта підключена"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:277
+#: res/app/src/features/device-list/columns.tsx:297
+#: res/app/src/features/group-list/GroupMembers.tsx:154
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:224
+#: res/app/src/features/settings/groups/GroupDevices.tsx:26
+msgid "SDK"
+msgstr "SDK"
+
+#: res/app/src/features/control/panes/advanced/AdvancedInputCard.tsx:37
+#: res/app/src/features/device-list/DeviceListPage.tsx:134
+#: res/app/src/ui/Pager.tsx:38
+msgid "Search"
+msgstr "Пошук"
+
+#: res/app/src/features/settings/groups/GroupList.tsx:154
+#: res/app/src/features/settings/groups/shared/ObjectsTable.tsx:137
+#: res/app/src/features/settings/users/UsersSettings.tsx:232
+msgid "Select all"
+msgstr "Вибрати всі"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:265
+#: res/app/src/features/device-list/columns.tsx:293
+#: res/app/src/features/group-list/GroupMembers.tsx:151
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:221
+#: res/app/src/features/settings/groups/GroupConflicts.tsx:12
+#: res/app/src/features/settings/groups/GroupDevices.tsx:16
+msgid "Serial"
+msgstr "Серійний номер"
+
+#: res/app/src/features/auth/SignInForm.tsx:87
+msgid "Server error. Check log output."
+msgstr "Помилка сервера. Перевірте лог."
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:171
+msgid "Set filters for device removing"
+msgstr "Встановити фільтри видалення пристроїв"
+
+#: res/app/src/features/settings/users/UsersSettings.tsx:101
+msgid "Set filters for user removing"
+msgstr "Встановити фільтри видалення користувачів"
+
+#: res/app/src/features/settings/users/UsersSettings.tsx:251
+msgid "Set groups quotas for new users"
+msgstr "Встановити квоти груп для нових користувачів"
+
+#: res/app/src/features/control/panes/dashboard/apps/AppsCard.tsx:34
+#: res/app/src/features/settings/SettingsPage.tsx:56
+#: res/app/src/features/settings/SettingsPage.tsx:79
+#: res/app/src/ui/AppLayout.tsx:215
+msgid "Settings"
+msgstr "Налаштування"
+
+#: res/app/src/features/settings/general/GeneralSettings.tsx:101
+msgid "Settings cleared"
+msgstr "Налаштування очищено"
+
+#: res/app/src/features/control/panes/dashboard/shell/ShellCard.tsx:46
+msgid "Shell"
+msgstr "Командний рядок"
+
+#: res/app/src/features/control/panes/dashboard/install/InstallCard.tsx:85
+msgid "Show Manifest"
+msgstr "Показати маніфест"
+
+#: res/app/src/features/control/device-control/DeviceToolbar.tsx:128
+#: res/app/src/features/control/device-control/DeviceToolbar.tsx:133
+msgid "Show Screen"
+msgstr "Показати екран"
+
+#: res/app/src/features/control/panes/automation/StoreAccountCard.tsx:157
+msgid "Sign In"
+msgstr "Увійти"
+
+#: res/app/src/features/auth/SignInForm.tsx:97
+msgid "Sign in to continue"
+msgstr "Увійдіть, щоб продовжити"
+
+#: res/app/src/features/auth/SignInForm.tsx:97
+msgid "Sign in with your LDAP account"
+msgstr "Увійдіть за допомогою облікового запису LDAP"
+
+#: res/app/src/features/control/panes/automation/StoreAccountCard.tsx:188
+msgid "Sign Out"
+msgstr "Вийти"
+
+#: res/app/src/features/control/panes/automation/DeviceSettingsCard.tsx:32
+msgid "Silent Mode"
+msgstr "Тихий режим"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:244
+msgid "SIM"
+msgstr "SIM"
+
+#: res/app/src/features/control/panes/explorer/ExplorerPane.tsx:229
+#: res/app/src/features/control/panes/info/InfoPane.tsx:216
+msgid "Size"
+msgstr "Розмір"
+
+#: res/app/src/features/auth/SignInForm.tsx:95
+msgid "Smartphone Test Farm"
+msgstr "Smartphone Test Farm"
+
+#: res/app/src/ui/AppLayout.tsx:109
+msgid "Socket connection was lost"
+msgstr "Socket підключення втрачене"
+
+#: res/app/src/core/devices/enhance.ts:33
+msgid "Someone stole your device."
+msgstr "Хтось вкрав ваш пристрій"
+
+#: res/app/src/features/control/panes/advanced/AdvancedInputCard.tsx:32
+msgid "Special Keys"
+msgstr "Спеціальні кнопки"
+
+#: res/app/src/core/common.ts:30
+msgid "Standard"
+msgstr "Стандартний"
+
+#: res/app/src/features/control/panes/dashboard/remote-debug/RemoteDebugCard.tsx:90
+msgid "Start"
+msgstr "Запустити"
+
+#: res/app/src/features/control/panes/logs/LogsPane.tsx:86
+msgid "Start/Stop Logging"
+msgstr "Почати/Зупинити логування"
+
+#: res/app/src/features/group-list/columns.tsx:93
+#: res/app/src/features/settings/groups/GroupConflicts.tsx:13
+#: res/app/src/features/settings/groups/GroupDetail.tsx:146
+#: res/app/src/features/settings/groups/GroupSchedule.tsx:92
+msgid "Starting Date"
+msgstr "Дата початку"
+
+#: res/app/src/features/settings/groups/rules.ts:97
+msgid "Starting date >= Expiration date"
+msgstr "Дата початку >= дата завершення"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:204
+#: res/app/src/features/device-list/columns.tsx:238
+#: res/app/src/features/group-list/columns.tsx:51
+msgid "Status"
+msgstr "Статус"
+
+#: res/app/src/features/control/panes/advanced/AdvancedInputCard.tsx:54
+#: res/app/src/features/control/panes/dashboard/remote-debug/RemoteDebugCard.tsx:79
+#: res/app/src/features/control/panes/logs/LogsPane.tsx:95
+msgid "Stop"
+msgstr "Стоп"
+
+#: res/app/src/core/devices/enhance.ts:15
+msgid "Stop Automation"
+msgstr "Зупинити автоматизацію"
+
+#: res/app/src/core/devices/enhance.ts:12
+#: res/app/src/features/control/device-control/DeviceMenuItems.tsx:56
+#: res/app/src/features/control/device-control/DeviceToolbar.tsx:140
+#: res/app/src/features/control/device-control/DeviceToolbar.tsx:146
+#: res/app/src/features/control/device-control/use-device-actions.ts:67
+msgid "Stop Using"
+msgstr "Звільнити"
+
+#: res/app/src/features/control/panes/automation/StoreAccountCard.tsx:63
+#: res/app/src/features/control/panes/automation/StoreAccountCard.tsx:76
+#: res/app/src/features/control/panes/automation/StoreAccountCard.tsx:82
+msgid "Store Account"
+msgstr "Обліковий запис магазину додатків"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:239
+msgid "Sub Type"
+msgstr "Підтип"
+
+#: res/app/src/features/control/panes/advanced/AdvancedInputCard.tsx:36
+msgid "Switch Charset"
+msgstr "Переключити кодування"
+
+#: res/app/src/features/control/panes/logs/LogsPane.tsx:112
+#: res/app/src/features/control/panes/logs/LogTable.tsx:139
+msgid "Tag"
+msgstr "Тег"
+
+#: res/app/src/features/control/panes/screenshots/ScreenshotsPane.tsx:68
+msgid "Take Screenshot"
+msgstr "Зробити знімок екрану"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:206
+msgid "Temperature"
+msgstr "Температура"
+
+#: res/app/src/features/control/panes/logs/LogsPane.tsx:113
+#: res/app/src/features/control/panes/logs/LogTable.tsx:142
+#: res/app/src/features/settings/general/AlertMessageSettings.tsx:61
+msgid "Text"
+msgstr "Текст"
+
+#: res/app/src/features/control/screen/DeviceScreen.tsx:163
+msgid "The current view is marked secure and cannot be viewed remotely."
+msgstr ""
+"Поточний перегляд відмічений як безпечний і до нього не можна отримати "
+"доступ віддалено."
+
+#: res/app/src/features/control/panes/advanced/MaintenanceCard.tsx:11
+msgid "The device will be unavailable for a moment."
+msgstr "Пристрій буде тимчасово недоступний."
+
+#: res/app/src/core/install.ts:168
+msgid "The existing package could not be deleted."
+msgstr "Існуючий пакет не може бути видалений."
+
+#: res/app/src/core/install.ts:180
+msgid ""
+"The new package couldn't be installed because the verification did not "
+"succeed."
+msgstr ""
+"Новий пакет не може бути встановлений, тому що перевірка не пройшла успішно."
+
+#: res/app/src/core/install.ts:179
+msgid ""
+"The new package couldn't be installed because the verification timed out."
+msgstr "Новий пакет не може бути встановлений, тому що вийшов час перевірки."
+
+#: res/app/src/core/install.ts:178
+msgid ""
+"The new package couldn't be installed in the specified install location "
+"because the media is not available."
+msgstr ""
+"Новий пакет не може бути встановлений в вказане місце оскільки воно "
+"недоступне."
+
+#: res/app/src/core/install.ts:177
+msgid ""
+"The new package couldn't be installed in the specified install location."
+msgstr "Новий пакет не може бути встановлений в вказане місце."
+
+#: res/app/src/core/install.ts:171
+msgid ""
+"The new package failed because it contains a content provider with thesame "
+"authority as a provider already installed in the system."
+msgstr ""
+"Не вдалося встановити новий пакет, оскільки він містить постачальника вмісту"
+" з таким самим authority, як у вже встановленого в системі постачальника."
+
+#: res/app/src/core/install.ts:173
+msgid ""
+"The new package failed because it has specified that it is a test-only "
+"package and the caller has not supplied the INSTALL_ALLOW_TEST flag."
+msgstr ""
+"Не вдалося встановити новий пакет, оскільки він позначений як пакет лише для"
+" тестування, а програма, що викликає, не передала прапорець "
+"INSTALL_ALLOW_TEST."
+
+#: res/app/src/core/install.ts:172
+msgid ""
+"The new package failed because the current SDK version is newer than that "
+"required by the package."
+msgstr ""
+"Не вдалося встановити новий пакет, оскільки поточна версія SDK новіша, ніж "
+"вимагає пакет."
+
+#: res/app/src/core/install.ts:170
+msgid ""
+"The new package failed because the current SDK version is older than that "
+"required by the package."
+msgstr ""
+"Не вдалося встановити новий пакет, оскільки поточна версія SDK старіша, ніж "
+"вимагає пакет."
+
+#: res/app/src/core/install.ts:169
+msgid ""
+"The new package failed while optimizing and validating its dex files, either"
+" because there was not enough storage or the validation failed."
+msgstr ""
+"Не вдалося встановити новий пакет під час оптимізації та перевірки його DEX-"
+"файлів: недостатньо місця для зберігання або перевірка не вдалася."
+
+#: res/app/src/core/install.ts:183
+msgid ""
+"The new package has an older version code than the currently installed "
+"package."
+msgstr "Новий пакет має старішу версію, ніж вже встановлений."
+
+#: res/app/src/core/install.ts:182
+msgid "The new package is assigned a different UID than it previously held."
+msgstr "Новому пакету присвоюється інший UID."
+
+#: res/app/src/core/install.ts:175
+msgid "The new package uses a feature that is not available."
+msgstr "Новий пакет використовує функцію, яка недоступна."
+
+#: res/app/src/core/install.ts:167
+msgid "The new package uses a shared library that is not available."
+msgstr "Новий пакет використовує бібліотеку, яка недоступна."
+
+#: res/app/src/core/install.ts:161
+msgid "The package archive file is invalid."
+msgstr "Файл архіву програми пошкоджений."
+
+#: res/app/src/core/install.ts:174
+msgid ""
+"The package being installed contains native code, but none that is "
+"compatible with the device's CPU_ABI."
+msgstr ""
+"Пакет який встановлюється містить нативний код, але він не сумісний з "
+"CPU_ABI пристрою."
+
+#: res/app/src/core/install.ts:181
+msgid "The package changed from what the calling program expected."
+msgstr ""
+"Пакет відрізняється від того, що очікувала програма, яка його викликала."
+
+#: res/app/src/core/install.ts:160
+msgid "The package is already installed."
+msgstr "Пакет вже встановлено."
+
+#: res/app/src/core/install.ts:163
+msgid ""
+"The package manager service found that the device didn't have enough storage"
+" space to install the app."
+msgstr ""
+"Менеджер пакетів виявив, що на пристрії не достатньо місця, щоб встановити "
+"додаток."
+
+#: res/app/src/core/install.ts:193
+msgid ""
+"The parser did not find any actionable tags (instrumentation or application)"
+" in the manifest."
+msgstr "Парсер не знайшов діючих тегів (інструмента або додатку) в маніфесті."
+
+#: res/app/src/core/install.ts:187
+msgid "The parser did not find any certificates in the .apk."
+msgstr "Аналізатор не знайшов сертифікатів в .apk."
+
+#: res/app/src/core/install.ts:190
+msgid "The parser encountered a bad or missing package name in the manifest."
+msgstr "Аналізатор виявив невірне або відсутнє ім'я пакета в маніфесті."
+
+#: res/app/src/core/install.ts:191
+msgid "The parser encountered a bad shared user id name in the manifest."
+msgstr ""
+"Аналізатор виявив неправильне ім'я спільного ідентифікатора користувача "
+"(shared user id) в маніфесті."
+
+#: res/app/src/core/install.ts:189
+msgid ""
+"The parser encountered a CertificateEncodingException in one of the files in"
+" the .apk."
+msgstr ""
+"Аналізатор виявив CertificateEncodingException в одному з файлів в .apk."
+
+#: res/app/src/core/install.ts:186
+msgid "The parser encountered an unexpected exception."
+msgstr ""
+"Виникла непередбачена виняткова ситуація під час роботи синтаксичного "
+"аналізатора."
+
+#: res/app/src/core/install.ts:192
+msgid "The parser encountered some structural problem in the manifest."
+msgstr "Синтаксичний аналізатор виявив структурні проблеми в маніфесті."
+
+#: res/app/src/core/install.ts:188
+msgid "The parser found inconsistent certificates on the files in the .apk."
+msgstr "Синтаксичний аналізатор виявив несумісний сертифікат в .apk файлі"
+
+#: res/app/src/core/install.ts:184
+msgid ""
+"The parser was given a path that is not a file, or does not end with the "
+"expected '.apk' extension."
+msgstr ""
+"Синтаксичному аналізатору був переданий не шлях до файлу, або ім'я файлу не "
+"закінчується на '.apk'."
+
+#: res/app/src/core/install.ts:185
+msgid "The parser was unable to retrieve the AndroidManifest.xml file."
+msgstr "Синтаксичний аналізатор не зміг отримати файл AndroidManifest.xml"
+
+#: res/app/src/core/install.ts:165
+msgid "The requested shared user does not exist."
+msgstr "Запитаного спільного користувача не існує."
+
+#: res/app/src/features/settings/groups/GroupSchedule.tsx:56
+msgid "The schedule can only be changed while the group is pending"
+msgstr "Розклад можна змінити, лише поки група в підготовці"
+
+#: res/app/src/core/install.ts:196
+msgid ""
+"The system failed to install the package because its packaged native code "
+"did not match any of the ABIs supported by the system."
+msgstr ""
+"Системі не вдалося встановити пакет, оскільки його нативний код не "
+"відповідає жодній ABI підтримуваній системі."
+
+#: res/app/src/core/install.ts:194
+msgid "The system failed to install the package because of system issues."
+msgstr "Не вдалося встановити пакет через системні помилки"
+
+#: res/app/src/core/install.ts:195
+msgid ""
+"The system failed to install the package because the user is restricted from"
+" installing apps."
+msgstr ""
+"Не вдалося встановити пакет, оскільки цьому користувачеві заборонена "
+"установка додатків."
+
+#: res/app/src/core/install.ts:162
+msgid "The URI passed in is invalid."
+msgstr "Невалідний URI."
+
+#: res/app/src/features/control/panes/explorer/ExplorerPane.tsx:265
+msgid "This folder is empty"
+msgstr "Ця папка порожня"
+
+#: res/app/src/features/control/panes/logs/LogsPane.tsx:111
+#: res/app/src/features/control/panes/logs/LogTable.tsx:138
+msgid "TID"
+msgstr "TID"
+
+#: res/app/src/features/control/panes/logs/LogsPane.tsx:109
+#: res/app/src/features/control/panes/logs/LogTable.tsx:134
+msgid "Time"
+msgstr "Час"
+
+#: res/app/src/features/settings/keys/AdbKeysCard.tsx:86
+msgid "Tip:"
+msgstr "Підказка:"
+
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:61
+msgid "Title"
+msgstr "Заголовок"
+
+#: res/app/src/features/device-list/DeviceStats.tsx:39
+msgid "Total Devices"
+msgstr "Всього пристроїв"
+
+#: res/app/src/features/settings/users/QuotasForm.tsx:66
+msgid "Total duration of groups (ms)"
+msgstr "Загальна тривалість груп (мс)"
+
+#: res/app/src/features/group-list/GroupStats.tsx:38
+msgid "Total groups"
+msgstr "Всього груп"
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:44
+msgid "True"
+msgstr "Так"
+
+#: res/app/src/features/control/ControlPage.tsx:118
+#: res/app/src/ui/modals.tsx:141
+msgid "Try to reconnect"
+msgstr "Спробуйте підключитися"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:238
+msgid "Type"
+msgstr "Тип"
+
+#: res/app/src/core/devices/enhance.ts:22
+#: res/app/src/core/devices/enhance.ts:9
+msgid "Unauthorized"
+msgstr "Не авторизований"
+
+#: res/app/src/features/settings/groups/rules.ts:105
+msgid "Unauthorized class while device list is not empty"
+msgstr "Недозволений клас, поки список пристроїв не порожній"
+
+#: res/app/src/features/control/panes/dashboard/install/InstallCard.tsx:73
+msgid "Uninstall"
+msgstr "Видалити"
+
+#: res/app/src/core/devices/enhance.ts:84
+#: res/app/src/core/devices/enhance.ts:88
+msgid "Unknown"
+msgstr "Невідомий"
+
+#: res/app/src/core/devices/enhance.ts:92
+msgid "Unknown reason."
+msgstr "Невідома причина."
+
+#: res/app/src/core/devices/enhance.ts:45
+msgid "Unspecified Failure"
+msgstr "Невизначена несправність"
+
+#: res/app/src/features/control/panes/dashboard/install/InstallCard.tsx:205
+#: res/app/src/features/control/panes/dashboard/install/InstallCard.tsx:206
+msgid "Upload From Link"
+msgstr "Завантажити за посиланням"
+
+#: res/app/src/core/install.ts:54
+#: res/app/src/features/control/device-control/install-file.ts:17
+msgid "Uploading..."
+msgstr "Завантаження..."
+
+#: res/app/src/features/device-list/DeviceStats.tsx:40
+msgid "Usable Devices"
+msgstr "Доступні пристрої"
+
+#: res/app/src/core/devices/enhance.ts:50
+msgid "USB"
+msgstr "USB"
+
+#: res/app/src/core/devices/enhance.ts:14
+msgid "Use"
+msgstr "Використовувати"
+
+#: res/app/src/features/device-list/columns.tsx:330
+#: res/app/src/features/user/UserPage.tsx:46
+#: res/app/src/features/user/UserPage.tsx:88
+msgid "User"
+msgstr "Користувач"
+
+#: res/app/src/features/settings/users/UsersSettings.tsx:182
+msgid "User list"
+msgstr "Список користувачів"
+
+#: res/app/src/features/group-list/GroupMembers.tsx:177
+#: res/app/src/features/settings/users/UsersSettings.tsx:226
+msgid "User selection"
+msgstr "Вибір користувачів"
+
+#: res/app/src/features/control/panes/automation/StoreAccountCard.tsx:101
+msgid "Username"
+msgstr "Ім'я користувача"
+
+#: res/app/src/features/group-list/columns.tsx:81
+#: res/app/src/features/settings/groups/GroupDetail.tsx:193
+#: res/app/src/features/settings/SettingsPage.tsx:40
+msgid "Users"
+msgstr "Користувачі"
+
+#: res/app/src/core/devices/enhance.ts:25
+msgid "Using"
+msgstr "Використовується"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:236
+msgid "Using Fallback"
+msgstr "Резервне з'єднання"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:276
+msgid "Version"
+msgstr "Версія"
+
+#: res/app/src/ui/modals.tsx:151
+msgid "Version Update"
+msgstr "Оновлення версії"
+
+#: res/app/src/features/control/panes/automation/DeviceSettingsCard.tsx:33
+msgid "Vibrate Mode"
+msgstr "Режим вібрації"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:207
+msgid "Voltage"
+msgstr "Вольтаж"
+
+#: res/app/src/features/control/panes/advanced/AdvancedInputCard.tsx:41
+msgid "Volume"
+msgstr "Гучність"
+
+#: res/app/src/features/control/panes/advanced/AdvancedInputCard.tsx:44
+msgid "Volume Down"
+msgstr "Зменшення гучності"
+
+#: res/app/src/features/control/panes/advanced/AdvancedInputCard.tsx:45
+msgid "Volume Up"
+msgstr "Збільшення гучності"
+
+#: res/app/src/features/group-list/columns.tsx:36
+msgid "Waiting"
+msgstr "Очікує"
+
+#: res/app/src/features/control/panes/logs/LogsPane.tsx:31
+msgid "Waiting for log entries"
+msgstr "Очікування записів логу"
+
+#: res/app/src/features/settings/general/AlertMessageSettings.tsx:24
+#: res/app/src/features/settings/groups/actions.ts:33
+#: res/app/src/features/settings/users/UsersSettings.tsx:158
+#: res/app/src/features/settings/users/UsersSettings.tsx:166
+msgid "Warning"
+msgstr "Попередження"
+
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:88
+msgid "Warning:"
+msgstr "Увага:"
+
+#: res/app/src/ui/AppLayout.tsx:269
+msgid "Web"
+msgstr "Web"
+
+#: res/app/src/core/common.ts:23
+msgid "Weekly"
+msgstr "Щотижня"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:219
+msgid "Width"
+msgstr "Ширина"
+
+#: res/app/src/core/devices/enhance.ts:79
+#: res/app/src/features/control/panes/automation/DeviceSettingsCard.tsx:124
+#: res/app/src/features/control/panes/automation/DeviceSettingsCard.tsx:134
+#: res/app/src/features/control/panes/dashboard/apps/AppsCard.tsx:46
+#: res/app/src/features/control/panes/info/InfoPane.tsx:41
+msgid "WiFi"
+msgstr "WiFi"
+
+#: res/app/src/core/devices/enhance.ts:80
+msgid "WiMAX"
+msgstr "WiMAX"
+
+#: res/app/src/core/devices/enhance.ts:51
+msgid "Wireless"
+msgstr "Бездротове"
+
+#: res/app/src/features/settings/groups/GroupUsers.tsx:148
+msgid "Write a mail to the available user selection"
+msgstr "Написати листа вибраним доступним користувачам"
+
+#: res/app/src/features/settings/groups/GroupUsers.tsx:108
+msgid "Write a mail to the group user selection"
+msgstr "Написати листа вибраним користувачам групи"
+
+#: res/app/src/features/auth/SignInForm.tsx:163
+msgid "Write a mail to the support team"
+msgstr "Написати листа команді підтримки"
+
+#: res/app/src/features/group-list/GroupListPage.tsx:120
+#: res/app/src/features/settings/groups/GroupList.tsx:162
+msgid "Write an email to the group owner selection"
+msgstr "Написати електронного листа вибраним власникам груп"
+
+#: res/app/src/features/group-list/GroupMembers.tsx:189
+msgid "Write an email to the group user selection"
+msgstr "Написати електронного листа вибраним користувачам групи"
+
+#: res/app/src/features/settings/users/UsersSettings.tsx:240
+msgid "Write an email to the user selection"
+msgstr "Написати електронного листа вибраним користувачам"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:224
+msgid "X DPI"
+msgstr "X DPI"
+
+#: res/app/src/features/control/panes/info/InfoPane.tsx:225
+msgid "Y DPI"
+msgstr "Y DPI"
+
+#: res/app/src/core/common.ts:27
+msgid "Yearly"
+msgstr "Щороку"
+
+#: res/app/src/core/devices/enhance.ts:97
+msgid "Yes"
+msgstr "Так"
+
+#: res/app/src/features/user/UserPage.tsx:72
+msgid "You"
+msgstr "Ви"
+
+#: res/app/src/core/devices/enhance.ts:32
+msgid "You (or someone else) kicked the device."
+msgstr "Ви (або ще хтось) відключили пристрій."

@@ -68,7 +68,7 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          node .github/scripts/changelog.js --extract CHANGELOG.md "$VERSION" > notes.md
+          node .github/scripts/changelog.mts --extract CHANGELOG.md "$VERSION" > notes.md
           cat notes.md
 
       - name: Tag and publish
@@ -116,12 +116,6 @@ jobs:
             build-essential cmake ninja-build pkg-config python3 \
             libzmq3-dev libprotobuf-dev protobuf-compiler \
             graphicsmagick yasm nasm git curl zip unzip wget
-
-      - name: Allow bower git:// dependencies over https
-        run: |
-          git config --global url."https://github.com/".insteadOf git://github.com/
-          git config --global url."https://".insteadOf git://
-          echo "GIT_TERMINAL_PROMPT=0" >> "$GITHUB_ENV"
 
       - name: Install
         run: npm install --omit=optional --loglevel http

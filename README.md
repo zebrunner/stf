@@ -1,15 +1,10 @@
-SmartTestFarm
-==================
+<img src="https://raw.githubusercontent.com/DeviceFarmer/stf/master/res/common/logo/exports/STF-128.png" style="width:100px;height:100px;" alt="STF">
 
-Feel free to support the development with a [**donation**](https://www.paypal.com/donate/?hosted_button_id=MNHYYCYHAKUVA) for the next improvements.
-
-<p align="center">
-  <a href="https://zebrunner.com/"><img alt="Zebrunner" src="https://github.com/zebrunner/zebrunner/raw/master/docs/img/zebrunner_intro.png"></a>
-</p>
+[![Build Status](https://travis-ci.org/DeviceFarmer/stf.svg?branch=master&status=created)](https://travis-ci.org/github/DeviceFarmer/stf)
+[![Docker Pulls](https://img.shields.io/docker/pulls/devicefarmer/stf.svg)](https://hub.docker.com/r/devicefarmer/stf/)
+[![npm](https://img.shields.io/npm/v/@devicefarmer/stf)](https://www.npmjs.com/package/@devicefarmer/stf)
 
 **STF** (or Smartphone Test Farm) is a web application for debugging smartphones, smartwatches and other gadgets remotely, from the comfort of your browser.
-## Disclaimer
-Current project <b>must be deployed only</b> as part of [Zebrunner CE](https://github.com/zebrunner/community-edition) or [MCloud](https://github.com/zebrunner/mcloud) solutions!
 
 ## Overview
 
@@ -159,10 +154,16 @@ Now you're ready to [run](#running). For development, though, you should [build]
 
 After you've got all the [requirements](#requirements) installed, it's time to fetch the rest of the dependencies.
 
-First, fetch all NPM and Bower modules:
+First, fetch all NPM modules:
 
 ```bash
 npm install
+```
+
+Then compile the TypeScript sources in `lib/`, which `bin/stf` runs from:
+
+```bash
+node build.mts compile
 ```
 
 You may also wish to link the module so that you'll be able to access the `stf` command directly from the command line:
@@ -234,7 +235,7 @@ stf local --public-ip <your_internal_network_ip_here>
 
 ## Updating
 
-To update your development version, simply pull the repo and run `npm install` again. You may occasionally have to remove the whole `node_modules` and `res/bower_components` folder to prevent NPM or Bower from complaining about version mismatches.
+To update your development version, simply pull the repo and run `npm install` and `node build.mts compile` again. You may occasionally have to remove the whole `node_modules` folder to prevent NPM from complaining about version mismatches.
 
 ## FAQ
 
@@ -433,30 +434,40 @@ Most powered USB 3.0 hubs we've tested have had a serious problem: the whole hub
 
 ## Translating
 
-Currently STF UI is available in English and Japanese.
+Translations are managed in the [STF Transifex project](https://app.transifex.com/devicefarmer/stf-main). If you would like to translate STF into your language, please contribute there rather than editing the `po` files directly, so that your work is not overwritten by the next sync.
 
-If you would like translate to any other language, please contribute in the [STF Transifex project](https://www.transifex.com/devicefarmer/stf-main).
+Transifex language codes are used as-is for the files in `res/common/lang/po` and the keys in `res/common/lang/langs.json`.
 
-For updating the source and all the translation files first you have to install the [Transifex client](http://docs.transifex.com/client/setup/).
+See [doc/TRANSLATING.md](doc/TRANSLATING.md) for the file layout, the status of machine translations and the list of translators.
 
-Then just run:
+The `json` catalogs the UI loads are not committed. `node build.mts webpack`, and so `npm install` and `node build.mts build`, compiles them from the `po` files first; run `node build.mts translate-compile` yourself if you serve the UI through webpack without building it.
+
+When you add or change a translatable string in the UI, run `node build.mts translate-extract` and commit the updated `stf.pot`. `node build.mts lint`, and so CI, runs `node build.mts translate-check`, which fails when `stf.pot` does not match the sources, when `langs.json` and the catalogs disagree, or when a translation uses a placeholder its source string does not have.
+
+The [Transifex GitHub integration](https://help.transifex.com/en/articles/6265125-github-installation-and-configuration), configured in [`transifex.yml`](transifex.yml), does the rest:
+
+1. A new `stf.pot` on `master` is sent to Transifex.
+2. Translations are sent back as a pull request that updates the `po` files. Run `node build.mts translate-contributors` after merging one to refresh the list of translators in `doc/TRANSLATING.md`.
+
+A language Transifex sends that is not in `langs.json` fails `translate-check`, so it can be added together with its label in the same pull request.
+
+To sync by hand instead, install the [Transifex client](https://developers.transifex.com/docs/cli), provide an API token in the `TX_TOKEN` environment variable and run:
 ```bash
-gulp translate
+node build.mts translate
 ```
 
 It will do the following:
 
-1. Convert all the `jade` files to `html`.
-2. Extract with gettext all translatable strings to `stf.pot`.
-3. Push `stf.pot` to Transifex.
-4. Pull from Transifex all `po` translations.
-5. Compile all `po` files to `json`.
+1. Extract all translatable strings from the UI sources to `stf.pot`.
+2. Push `stf.pot` to Transifex.
+3. Pull from Transifex the translations of every language that has a `po` file.
+4. Compile all `po` files to the `json` catalogs the UI loads.
+5. Update the list of current translators in `doc/TRANSLATING.md` from the `po` headers.
 
-Then in order to add it officially (only needs to be done once):
+Then in order to add a language officially (only needs to be done once):
 
 1. Add the language to `res/common/lang/langs.json`.
-2. Pull the specific language `tx pull -l <lang>`.
-3. Run `gulp translate`.
+2. Pull the specific language with `tx pull -l <lang>`.
 
 ## Testing
 
