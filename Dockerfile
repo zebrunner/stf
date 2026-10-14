@@ -61,10 +61,11 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
     echo '--- Building app' && \
     cd /tmp/build && \
     export PATH=$PWD/node_modules/.bin:$PATH && \
-    echo 'npm install --python="/usr/bin/python3" --omit=optional --loglevel http' | su stf -s /bin/bash && \
+    echo 'npm install --python="/usr/bin/python3" --loglevel http' | su stf -s /bin/bash && \
     echo '--- Assembling app' && \
     echo 'npm pack' | su stf -s /bin/bash && \
     tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /app && \
+    test -d /app/res/build && \
     npm prune --omit=dev && \
     mv node_modules /app && \
     rm -rf ~/.node-gyp && \
@@ -115,10 +116,11 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     sed -i'' -e '/phantomjs/d' package.json && \
     export VCPKG_FORCE_SYSTEM_BINARIES="arm" && \
     echo 'npm install --save-dev pnpm' | su stf -s /bin/bash && \
-    echo 'npm install --python="/usr/bin/python3" --omit=optional --loglevel http' | su stf -s /bin/bash && \
+    echo 'npm install --python="/usr/bin/python3" --loglevel http' | su stf -s /bin/bash && \
     echo '--- Assembling app' && \
     echo 'npm pack' | su stf -s /bin/bash && \
     tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /app && \
+    test -d /app/res/build && \
     echo 'npm prune --omit=dev' | su stf -s /bin/bash && \
     wget --progress=dot:mega \
       https://github.com/google/bundletool/releases/download/1.2.0/bundletool-all-1.2.0.jar && \
