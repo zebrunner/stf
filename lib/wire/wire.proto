@@ -87,6 +87,40 @@ enum MessageType {
   BluetoothSetEnabledMessage = 94;
   BluetoothGetStatusMessage  = 95;
   BluetoothCleanBondedMessage = 96;
+  // Fork (Zebrunner) messages. 94-96 were taken by upstream Bluetooth
+  // messages, so SetIosDeviceDisplay, IosDevicePorts and StartStreaming moved
+  // to 123-125.
+  InstalledApplications             = 83;
+  GetInstalledApplications          = 84;
+  Applications                      = 85;
+  TestPush                          = 97;
+  TouchDownIosMessage               = 98;
+  TouchMoveIosMessage               = 99;
+  DeviceIosIntroductionMessage      = 100;
+  ProviderIosMessage                = 101;
+  CheckIosDeviceConnected           = 102;
+  ConnectDeviceViaUSB               = 103;
+  DeleteIosDevice                   = 104;
+  SetAbsentDisconnectedDevices      = 105;
+  UninstallIosMessage               = 106;
+  SetDeviceApp                      = 107;
+  RotationIosEvent                  = 108;
+  GetIosDeviceApps                  = 109;
+  TransationGetMessage              = 110;
+  UpdateIosDevice                   = 112;
+  BatteryIosEvent                   = 113;
+  SdkIosVersion                     = 114;
+  SizeIosDevice                     = 115;
+  DashboardOpenMessage              = 116;
+  GetIosTreeElements                = 117;
+  TransactionTreeMessage            = 118;
+  TapDeviceTreeElement              = 119;
+  TemporarilyUnavailableMessage     = 120;
+  InitializeIosDeviceState          = 121;
+  UpdateRemoteConnectUrl            = 122;
+  SetIosDeviceDisplay               = 123;
+  IosDevicePorts                    = 124;
+  StartStreaming                    = 125;
   GroupUserChangeMessage     = 1200;
   DeviceGroupChangeMessage   = 1201;
   DeviceOriginGroupMessage   = 1202;
