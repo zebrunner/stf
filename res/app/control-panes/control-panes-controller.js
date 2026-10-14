@@ -3,7 +3,7 @@
 **/
 
 module.exports =
-  function ControlPanesController($scope, $http, gettext, $routeParams,
+  function ControlPanesController($scope, $rootScope, $http, gettext, $routeParams,
     $timeout, $location, DeviceService, GroupService, ControlService,
     StorageService, FatalMessageService, SettingsService, $route) {
 
@@ -37,24 +37,31 @@ module.exports =
 
     $scope.topTabs = [
       {
-        title: gettext('Dashboard'),
-        icon: 'fa-dashboard fa-fw color-pink',
-        templateUrl: 'control-panes/dashboard/dashboard.pug',
-        filters: ['native', 'web']
+        title: gettext('Dashboard')
+        , icon: 'fa-dashboard fa-fw color-pink'
+        , templateUrl: 'control-panes/dashboard/dashboard.pug'
+        , filters: ['native', 'web']
       }
     ].concat(angular.copy(sharedTabs))
 
     $scope.belowTabs = [
       {
-        title: gettext('Logs'),
-        icon: 'fa-list-alt color-red',
-        templateUrl: 'control-panes/logs/logs.pug',
-        filters: ['native', 'web']
+        title: gettext('Logs')
+        , icon: 'fa-list-alt color-red'
+        , templateUrl: 'control-panes/logs/logs.pug'
+        , filters: ['native', 'web']
       }
     ].concat(angular.copy(sharedTabs))
 
     $scope.device = null
     $scope.control = null
+
+    var paneClosed = false
+
+    $scope.$on('$destroy', function() {
+      paneClosed = true
+      $rootScope.pageTitle = null
+    })
 
     // TODO: Move this out to Ctrl.resolve
     function getDevice(serial) {
@@ -67,8 +74,9 @@ module.exports =
           $scope.device = device
           $scope.control = ControlService.create(device, device.channel)
 
-          // TODO: Change title, flickers too much on Chrome
-          // $rootScope.pageTitle = device.name
+          if (!paneClosed) {
+            $rootScope.pageTitle = device.enhancedName
+          }
 
           SettingsService.set('lastUsedDevice', serial)
 

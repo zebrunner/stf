@@ -27,9 +27,9 @@ module.exports = function MenuCtrl(
   })
 
   SettingsService.bind($rootScope, {
-    target: 'platform',
-    defaultValue: 'native',
-    deviceEntries: LogcatService.deviceEntries
+    target: 'platform'
+    , defaultValue: 'native'
+    , deviceEntries: LogcatService.deviceEntries
   })
 
   $scope.$on('$routeChangeSuccess', function() {

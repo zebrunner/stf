@@ -1,27 +1,5 @@
 module.exports = function LogsCtrl($scope, $rootScope, $routeParams, LogcatService) {
-
   var deviceSerial = $routeParams.serial
-  var cleanDevice = (window.location.href).split('/').pop()
-  cleanDeviceSettings()
-
-  $scope.started = checkLogBtnStatus() === null ? false : checkLogBtnStatus()
-  $scope.filters = {}
-
-  var curentFilterValue = ''
-
-  LogcatService.getFilterLevels()
-    .then(response => {
-      $scope.filters.levelNumbers = LogcatService.filters.levelNumbers
-    })
-    .catch(err => {
-      $scope.filters.levelNumbers = LogcatService.filters.levelNumbers
-    })
-
-  LogcatService.filters.filterLines()
-
-  restoreFilters()
-  setFiltersPriority()
-
   function cleanDeviceSettings() {
     if (Object.keys($rootScope).includes('LogcatService')) {
       LogcatService.deviceEntries = $rootScope.LogcatService.deviceEntries
@@ -76,17 +54,38 @@ module.exports = function LogsCtrl($scope, $rootScope, $routeParams, LogcatServi
     return null
   }
 
+  var cleanDevice = (window.location.href).split('/').pop()
+  cleanDeviceSettings()
+
+  $scope.started = checkLogBtnStatus() === null ? false : checkLogBtnStatus()
+  $scope.filters = {}
+
+  var curentFilterValue = ''
+
+  LogcatService.getFilterLevels()
+    .then(response => {
+      $scope.filters.levelNumbers = LogcatService.filters.levelNumbers
+    })
+    .catch(err => {
+      $scope.filters.levelNumbers = LogcatService.filters.levelNumbers
+    })
+
+  LogcatService.filters.filterLines()
+
+  restoreFilters()
+  setFiltersPriority()
+
   $scope.$watch('started', function(newValue, oldValue) {
     if (!Object.keys(LogcatService.deviceEntries).includes(deviceSerial)) {
-      LogcatService.deviceEntries[deviceSerial] = {logs: [], selectedLogLevel: 2, started: false,
-        filters: {
-          'message': '',
-          'pid': '',
-          'tid': '',
-          'dateLabel': '',
-          'date': '',
-          'tag': '',
-          'priority': '',
+      LogcatService.deviceEntries[deviceSerial] = {logs: [], selectedLogLevel: 2, started: false
+        , filters: {
+          message: ''
+          , pid: ''
+          , tid: ''
+          , dateLabel: ''
+          , date: ''
+          , tag: ''
+          , priority: '',
         }
       }
     }
@@ -101,8 +100,8 @@ module.exports = function LogsCtrl($scope, $rootScope, $routeParams, LogcatServi
         LogcatService.deviceEntries[deviceSerial].started = true
         $scope.device.logs_enabled = true
         setFiltersPriority()
-
-      } else {
+      }
+      else {
         if (Object.keys(LogcatService.deviceEntries).includes(deviceSerial)) {
           LogcatService.deviceEntries[deviceSerial].started = false
         }
@@ -194,13 +193,13 @@ module.exports = function LogsCtrl($scope, $rootScope, $routeParams, LogcatServi
   }
 
   defineFilterWatchers([
-    'levelNumber',
-    'message',
-    'pid',
-    'tid',
-    'dateLabel',
-    'date',
-    'tag',
-    'priority'
+    'levelNumber'
+    , 'message'
+    , 'pid'
+    , 'tid'
+    , 'dateLabel'
+    , 'date'
+    , 'tag'
+    , 'priority'
   ])
 }

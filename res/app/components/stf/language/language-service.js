@@ -3,18 +3,10 @@ var _ = require('lodash')
 
 module.exports =
   function LanguageServiceFactory(SettingsService, gettextCatalog) {
-    // TODO: make this LanguageProvider so it can be used on config
-
     var LanguageService = {}
 
     function detectLanguage() {
       return navigator.language || navigator.userLanguage
-    }
-
-    function browserToSupportedLang(lang) {
-      //supportedLanguages.
-
-      //return lang.replace(/([A-Za-z]{2})(-|_)?([A-Za-z]{0,4})/gm, '$1')
     }
 
     function isSupported(lang) {
@@ -31,17 +23,17 @@ module.exports =
     LanguageService.detectedLanguage =
       onlySupported(detectLanguage(), LanguageService.defaultLanguage)
 
-    SettingsService.sync(
-      LanguageService, {
-        target: LanguageService.settingKey,
-        source: LanguageService.settingKey,
-        defaultValue: LanguageService.detectedLanguage
-      }, updateLanguage
-    )
-
     function updateLanguage() {
       gettextCatalog.setCurrentLanguage(LanguageService.selectedLanguage)
     }
+
+    SettingsService.sync(
+      LanguageService, {
+        target: LanguageService.settingKey
+        , source: LanguageService.settingKey
+        , defaultValue: LanguageService.detectedLanguage
+      }, updateLanguage
+    )
 
     LanguageService.updateLanguage = updateLanguage
 

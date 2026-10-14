@@ -4,28 +4,29 @@ module.exports =
   function SaveLogsServiceFactory($uibModal, $location, $route) {
     var SaveLogService = {}
     var logExtentension = ['json', 'log']
-    var selectedExtension = logExtentension[0]
 
     function parseLogsToDefinedExtenstion(device, logExtension, lineLimitation) {
-      var lineLimiter = ((isNaN(lineLimitation)) ? device.length : lineLimitation)
+      var requestedLines = isNaN(lineLimitation) ? device.length : lineLimitation
+      var lineLimiter = Math.min(requestedLines, device.length)
       var output = ''
       if (device.length > 0) {
         if (logExtension === 'log') {
           for (let line = 0; line < lineLimiter; line++) {
-            output += [device[line].date, device[line].pid,
-                      device[line].tag, device[line].priorityLabel,
-                      device[line].message].join('\t') + '\n'
+            output += [device[line].date, device[line].pid
+                      , device[line].tag, device[line].priorityLabel
+                      , device[line].message].join('\t') + '\n'
           }
-        } else {
-          output = {'deviceOS': device[0].deviceLabel,
-                    'serial': device[0].serial,
-                    'logs': []}
+        }
+        else {
+          output = {deviceOS: device[0].deviceLabel
+                    , serial: device[0].serial
+                    , logs: []}
           for (let line = 0; line < lineLimiter; line++) {
-            output.logs.push({'date': device[line].date,
-                              'pid': device[line].pid,
-                              'tag': device[line].tag,
-                              'priorityLabel': device[line].priorityLabel,
-                              'message': device[line].message})
+            output.logs.push({date: device[line].date
+                              , pid: device[line].pid
+                              , tag: device[line].tag
+                              , priorityLabel: device[line].priorityLabel
+                              , message: device[line].message})
           }
         }
       }
@@ -71,27 +72,17 @@ module.exports =
       }
 
       $scope.saveLogs = function() {
-        var parsedOutput = NaN
+        var selectedExtension = $scope.selectedExtension
+        var parsedLogs = parseLogsToDefinedExtenstion(device, selectedExtension)
+        var parsedOutput
 
-        switch(selectedExtension) {
-          case 'json':
-              parsedOutput = new Blob(
-                [JSON.stringify(parseLogsToDefinedExtenstion(device, selectedExtension))],
-                {type: 'application/json;charset=utf-8'})
-              break
-          case 'log':
-              parsedOutput = new Blob(
-                [parseLogsToDefinedExtenstion(device, selectedExtension)],
-                {type: 'text/plain;charset=utf-8'})
-              break
-          default:
-              // ToDo
-              // Add support for other types
-              // Ad-hoc save file as plain text
-              parsedOutput = new Blob(
-                [parseLogsToDefinedExtenstion(device, selectedExtension)],
-                {type: 'text/plain;charset=utf-8'})
-              break
+        if (selectedExtension === 'json') {
+          parsedOutput = new Blob([JSON.stringify(parsedLogs)],
+            {type: 'application/json;charset=utf-8'})
+        }
+        else {
+          parsedOutput = new Blob([parsedLogs],
+            {type: 'text/plain;charset=utf-8'})
         }
 
         if (typeof $scope.saveLogFileName === 'undefined' ||
@@ -99,7 +90,7 @@ module.exports =
           FileSaver.saveAs(parsedOutput,
             (window.location.href).split('/').pop() + '_logs.' + selectedExtension)
         }
-         else {
+        else {
           FileSaver.saveAs(parsedOutput,
             $scope.saveLogFileName + '.' + selectedExtension)
         }
@@ -108,7 +99,6 @@ module.exports =
 
       $scope.$watch('selectedExtension', function(newValue, oldValue) {
         if (newValue !== oldValue) {
-          selectedExtension = newValue
           createSamplePresentation(device, newValue, $scope)
         }
       })
@@ -116,13 +106,13 @@ module.exports =
 
     SaveLogService.open = function(device, tryToReconnect) {
       var modalInstance = $uibModal.open({
-        template: require('./save-log.pug'),
-        controller: ModalInstanceCtrl,
-        resolve: {
+        template: require('./save-log.pug')
+        , controller: ModalInstanceCtrl
+        , resolve: {
           device: function() {
             return device
-          },
-          tryToReconnect: function() {
+          }
+          , tryToReconnect: function() {
             return tryToReconnect
           }
         }

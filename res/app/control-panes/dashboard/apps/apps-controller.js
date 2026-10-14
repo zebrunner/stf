@@ -14,7 +14,7 @@ module.exports = function ShellCtrl($scope, AppState) {
     // Force run activity
     command += ' --activity-clear-top'
     return $scope.control.shell(command)
-      .then(function(result) {
+      .then(function() {
         // console.log(result)
       })
   }
@@ -35,7 +35,7 @@ module.exports = function ShellCtrl($scope, AppState) {
   }
 
   $scope.openWiFiSettings = function() {
-    //openSetting('WifiSettingsActivity')
+    // openSetting('WifiSettingsActivity')
     run('am start -a android.settings.WIFI_SETTINGS')
   }
 

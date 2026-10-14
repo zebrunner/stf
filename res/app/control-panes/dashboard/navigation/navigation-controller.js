@@ -5,7 +5,6 @@
 var _ = require('lodash')
 
 module.exports = function NavigationCtrl($scope, $rootScope) {
-
   var faviconIsSet = false
 
   function setUrlFavicon(url) {
@@ -15,7 +14,7 @@ module.exports = function NavigationCtrl($scope, $rootScope) {
   }
 
   function resetFavicon() {
-    $scope.urlFavicon = require('./default-favicon.png').default
+    $scope.urlFavicon = require('./default-favicon.png')
     faviconIsSet = false
   }
 
@@ -54,11 +53,13 @@ module.exports = function NavigationCtrl($scope, $rootScope) {
         if (!_.isEmpty(selectedBrowser)) {
           currentBrowser = selectedBrowser
         }
-      } else {
+      }
+      else {
         var defaultBrowser = _.find(browser.apps, {name: 'Browser'})
         if (defaultBrowser) {
           currentBrowser = defaultBrowser
-        } else {
+        }
+        else {
           currentBrowser = _.head(browser.apps)
         }
       }

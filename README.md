@@ -91,6 +91,7 @@ Thank you to all the people who have already contributed to STF!
   - Set the default groups quotas applicable to all users
   - Set the groups quotas applicable to a specific user
 * Simple REST [API](doc/API.md)
+* Prometheus [metrics](doc/METRICS.md)
 
 ## Status
 
@@ -138,7 +139,7 @@ brew install rethinkdb graphicsmagick zeromq protobuf yasm pkg-config cmake
 On Windows you're on your own. In theory you might be able to get STF installed via [Cygwin](https://www.cygwin.com/) or similar, but we've never tried. In principle we will not provide any Windows installation support, but please do send a documentation pull request if you figure out what to do.
 
 We also provide a [Docker](http://docker.com/) container in the [Docker Hub](https://hub.docker.com/) as [devicefarmer/stf](https://hub.docker.com/r/devicefarmer/stf). You can use our [Dockerfile](Dockerfile) as guidance if you'd prefer to do the installation yourself.
-An example standalone [docker-compose.yaml](docker-compose.yaml) file is also provided.
+The [docker-compose.yaml](docker-compose.yaml) runs STF units as separate services. See the [Compose setup guide](docker/compose/README.md) for configuration and startup instructions.
 
 You should now be ready to [build](#building) or [run](#running) STF.
 

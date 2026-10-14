@@ -3,19 +3,16 @@
 **/
 
 describe('GroupsCtrl', function() {
-
   beforeEach(angular.mock.module(require('./index').name))
 
-  var scope, ctrl
+  var scope
 
   beforeEach(inject(function($rootScope, $controller) {
     scope = $rootScope.$new()
-    ctrl = $controller('GroupsCtrl', {$scope: scope})
+    $controller('GroupsCtrl', {$scope: scope})
   }))
 
   it('should ...', inject(function() {
     expect(1).toEqual(1)
-
   }))
-
 })

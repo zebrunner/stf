@@ -158,7 +158,7 @@ module.exports = function ControlServiceFactory(
       return sendTwoWay('clipboard.copy')
     }
 
-    //@TODO: Refactor this please
+    // @TODO: Refactor this please
     var that = this
     this.getClipboardContent = function() {
       that.copy().then(function(result) {
@@ -166,10 +166,12 @@ module.exports = function ControlServiceFactory(
           if (result.success) {
             if (result.lastData) {
               that.clipboardContent = result.lastData
-            } else {
+            }
+            else {
               that.clipboardContent = gettext('No clipboard data')
             }
-          } else {
+          }
+          else {
             that.clipboardContent = gettext('Error while getting data')
           }
         })
@@ -209,10 +211,18 @@ module.exports = function ControlServiceFactory(
       return sendTwoWay('device.reboot')
     }
 
+    // Holding the device has to be refused unless the caller is the one using it, and the socket
+    // has no serial of its own to check that against, so this one goes through the API instead
+    this.rebootAndKeep = function() {
+      return $http.post(
+        '/api/v1/user/devices/' + target.serial + '/reboot?keepOwnership=true'
+      )
+    }
+
     this.rotate = function(rotation, lock) {
       return sendOneWay('display.rotate', {
-        rotation: rotation,
-        lock: lock
+        rotation: rotation
+        , lock: lock
       })
     }
 

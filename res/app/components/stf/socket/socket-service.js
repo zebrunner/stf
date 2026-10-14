@@ -6,7 +6,6 @@ var io = require('socket.io-client').io
 
 module.exports = function SocketFactory(
   $rootScope
-, VersionUpdateService
 , TemporarilyUnavailableService
 , AppState
 ) {
@@ -34,10 +33,6 @@ module.exports = function SocketFactory(
       }
     }
   }
-
-  socket.on('outdated', function() {
-    VersionUpdateService.open()
-  })
 
   socket.on('socket.ip', function(ip) {
     $rootScope.$apply(function() {

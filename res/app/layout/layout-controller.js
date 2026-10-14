@@ -8,11 +8,12 @@ module.exports =
 
       $rootScope.adminMode = !$rootScope.adminMode
 
+      // eslint-disable-next-line no-alert
       alert($rootScope.adminMode ? enabled : disabled)
     }
 
     hotkeys.add({
-      combo: 'up up down down left right left right enter',
-      callback: toggleAdminMode
+      combo: 'up up down down left right left right enter'
+      , callback: toggleAdminMode
     })
   }

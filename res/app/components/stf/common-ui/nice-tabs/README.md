@@ -4,7 +4,8 @@ This are nice tabs. They wrap:
 - Angular Bootstrap tabs
 - Feature Font Awesome icon support
 - Load and preload templates for each tab
-- Save last selected tab to localForage
+- Save the last selected tab through SettingsService using the `key` attribute
+- Place the tab strip below the content with `direction='below'`
 - Support tab show/hide (?)
 
 
@@ -12,6 +13,9 @@ This are nice tabs. They wrap:
 
 
 ### Current syntax
+
+Use a distinct `key` for each tabset. `direction='below'` expects a positioned container with a fixed height.
+
 ```html
 <nice-tabs key='ControlBottomTabs' direction='below' tabs='tabs'></nice-tabs>
 ```
@@ -23,12 +27,4 @@ function Ctrl($scope) {
     	{title: 'Tab One', icon: 'fa-bolt', templateUrl='terminal/tab-one.jade'},
 	]
 }
-```
-
-### Declarative syntax (future):
-```html
-<nice-tabs key='ControlBottomTabs' direction='below'>
-      <nice-tab title='Tab One' icon='fa-bolt' templateUrl='"terminal/tab-one.jade"'></nice-tab>
-      <nice-tab title='Tab Two' icon='fa-bolt' templateUrl='"terminal/tab-two.jade"' ng-show='showOtherTabs'></nice-tab>
-</nice-tabs>
 ```

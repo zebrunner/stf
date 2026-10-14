@@ -14,7 +14,7 @@ module.exports = function DeviceControlCtrl($scope, DeviceService, GroupService,
 
   $scope.groupDevices = $scope.groupTracker.devices
 
-  $scope.$on('$locationChangeStart', function(event, next, current) {
+  $scope.$on('$locationChangeStart', function() {
     $scope.LogcatService = LogcatService
     $rootScope.LogcatService = LogcatService
   })
@@ -32,6 +32,7 @@ module.exports = function DeviceControlCtrl($scope, DeviceService, GroupService,
     $rootScope.LogcatService = LogcatService
 
     if (!device || !$scope.device) {
+      // eslint-disable-next-line no-alert
       alert('No device found')
       return
     }
@@ -39,10 +40,8 @@ module.exports = function DeviceControlCtrl($scope, DeviceService, GroupService,
     try {
       // If we're trying to kick current device
       if (device.serial === $scope.device.serial) {
-
         // If there is more than one device left
         if ($scope.groupDevices.length > 1) {
-
           // Control first free device first
           var firstFreeDevice = _.find($scope.groupDevices, function(dev) {
             return dev.serial !== $scope.device.serial
@@ -53,7 +52,8 @@ module.exports = function DeviceControlCtrl($scope, DeviceService, GroupService,
           GroupService.kick(device).then(function() {
             $scope.$digest()
           })
-        } else {
+        }
+        else {
           // Kick the device
           GroupService.kick(device).then(function() {
             $scope.$digest()
@@ -63,12 +63,15 @@ module.exports = function DeviceControlCtrl($scope, DeviceService, GroupService,
             $route.reload()
           }, 50)
         }
-      } else {
+      }
+      else {
         GroupService.kick(device).then(function() {
           $scope.$digest()
         })
       }
-    } catch (e) {
+    }
+    catch (e) {
+      // eslint-disable-next-line no-alert
       alert(e.message)
     }
   }
@@ -103,7 +106,8 @@ module.exports = function DeviceControlCtrl($scope, DeviceService, GroupService,
       $timeout(function() {
         isLandscape() ? $scope.currentRotation = 'landscape' : $scope.currentRotation = 'portrait'
       }, 400)
-    } else if (rotation === 'landscape') {
+    }
+    else if (rotation === 'landscape') {
       $scope.control.rotate(90)
       if ($rootScope.basicMode) {
         $scope.currentRotation = 'landscape'
@@ -142,7 +146,8 @@ module.exports = function DeviceControlCtrl($scope, DeviceService, GroupService,
     }
     if (angle === 0) {
       angle = 270
-    } else {
+    }
+    else {
       angle -= 90
     }
     $scope.control.rotate(angle)
@@ -159,7 +164,8 @@ module.exports = function DeviceControlCtrl($scope, DeviceService, GroupService,
     }
     if (angle === 270) {
       angle = 0
-    } else {
+    }
+    else {
       angle += 90
     }
     $scope.control.rotate(angle)
@@ -168,5 +174,4 @@ module.exports = function DeviceControlCtrl($scope, DeviceService, GroupService,
       $window.resizeTo($window.outerHeight, $window.outerWidth)
     }
   }
-
 }

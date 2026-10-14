@@ -3,14 +3,13 @@
 **/
 
 module.exports = function AccessTokensCtrl($scope, AccessTokenService) {
-
     $scope.accessTokens = []
     $scope.newToken = null
 
     function updateTokens() {
       AccessTokenService.getAccessTokens()
         .then(function(response) {
-          $scope.accessTokenTitles = response.data.titles || []
+          $scope.accessTokens = response.data.tokens || []
         })
     }
 

@@ -1,12 +1,11 @@
 describe('ShellCtrl', function() {
-
   beforeEach(angular.mock.module(require('./').name))
 
-  var scope, ctrl
+  var scope
 
   beforeEach(inject(function($rootScope, $controller) {
     scope = $rootScope.$new()
-    ctrl = $controller('ShellCtrl', {$scope: scope})
+    $controller('ShellCtrl', {$scope: scope})
   }))
 
   it('should clear the results', inject(function() {
@@ -16,5 +15,4 @@ describe('ShellCtrl', function() {
     expect(scope.data).toBe('')
     expect(scope.command).toBe('')
   }))
-
 })

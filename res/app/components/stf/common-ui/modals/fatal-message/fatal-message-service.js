@@ -7,14 +7,11 @@ module.exports =
     StateClassesService,
   ) {
     const FatalMessageService = {}
-    let intervalDeviceInfo
 
-    const ModalInstanceCtrl = function(
-      $scope,
-      $uibModalInstance,
-      device,
-      tryToReconnect,
-    ) {
+    var ModalInstanceCtrl = function($scope, $uibModalInstance, device,
+      tryToReconnect) {
+      var intervalReconnect
+
       $scope.ok = function() {
         $uibModalInstance.close(true)
         $route.reload()
@@ -27,12 +24,10 @@ module.exports =
 
       update()
 
-      // TODO: remove this please
-      intervalDeviceInfo = $interval(update, 750)
+      var intervalDeviceInfo = $interval(update, 750)
 
       if (tryToReconnect) {
-        // TODO: this is ugly, find why its not updated correctly (also on the device list)
-        intervalDeviceInfo = $interval(function() {
+        intervalReconnect = $interval(function() {
           update()
           console.log('fatal message service',device.usable)
           if (device.usable) {
@@ -51,10 +46,15 @@ module.exports =
         $uibModalInstance.dismiss('cancel')
       }
 
-      const destroyInterval = function() {
-        if (angular.isDefined(intervalDeviceInfo)) {
+      var destroyInterval = function() {
+        if (intervalDeviceInfo) {
           $interval.cancel(intervalDeviceInfo)
-          intervalDeviceInfo = undefined
+          intervalDeviceInfo = null
+        }
+
+        if (intervalReconnect) {
+          $interval.cancel(intervalReconnect)
+          intervalReconnect = null
         }
       }
 
@@ -70,8 +70,8 @@ module.exports =
         resolve: {
           device: function() {
             return device
-          },
-          tryToReconnect: function() {
+          }
+          , tryToReconnect: function() {
             return tryToReconnect
           }
         }

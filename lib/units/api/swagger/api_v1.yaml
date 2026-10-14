@@ -34,6 +34,8 @@ tags:
     description: Groups Operations
   - name: admin 
     description: Privileged Operations
+  - name: metrics
+    description: Metrics Operations
 paths:
   /groups:
     x-swagger-router-controller: groups
@@ -1583,6 +1585,47 @@ paths:
             $ref: "#/definitions/UnexpectedErrorResponse"
       security:
         - accessTokenAuth: []
+  /user/devices/{serial}/reboot:
+    x-swagger-router-controller: user
+    post:
+      summary: Reboot
+      description: >
+        Reboots a device you are using. By default the device is released as it leaves, exactly
+        as any other reboot; pass keepOwnership to have it kept for you while it is away so the
+        session survives. Answers once the request has been dispatched: a reboot cannot be
+        acknowledged, since it disconnects the worker that would answer. Poll the device until
+        it is present and ready again.
+      operationId: rebootUserDeviceBySerial
+      tags:
+        - user
+      parameters:
+        - name: serial
+          in: path
+          description: Device Serial
+          required: true
+          type: string
+        - name: keepOwnership
+          in: query
+          description: Keep the device for you while it reboots instead of releasing it
+          required: false
+          type: boolean
+          default: false
+      responses:
+        "200":
+          description: Device Reboot Requested
+          schema:
+            $ref: "#/definitions/Response"
+        default:
+          description: >
+            Unexpected Error:
+              * 401: Unauthorized => bad credentials
+              * 403: Forbidden => device is not controlled by the user
+              * 404: Not Found => unknown device
+              * 500: Internal Server Error
+          schema:
+            $ref: "#/definitions/UnexpectedErrorResponse"
+      security:
+        - accessTokenAuth: []
   /user/fullAccessTokens:
     x-swagger-router-controller: user
     get:
@@ -2277,6 +2320,33 @@ paths:
               * 500: Internal Server Error
               * 503: Service Unavailable => server too busy or a lock on a resource is pending
               * 504: Gateway Time-out => server is not responding
+          schema:
+            $ref: "#/definitions/UnexpectedErrorResponse"
+      security:
+        - accessTokenAuth: []
+  /metrics:
+    x-swagger-router-controller: metrics
+    get:
+      summary: Gets the platform metrics
+      description: Returns the device, user and group counters of the whole platform using the Prometheus text exposition format; this is a privileged operation reserved to the administrator user because the returned counters cover all the objects of the platform, whatever the group they belong to
+      operationId: getMetrics
+      produces:
+        - text/plain
+        - application/json
+      tags:
+        - metrics
+        - admin
+      responses:
+        "200":
+          description: Platform metrics using the Prometheus text exposition format
+          schema:
+            type: string
+        default:
+          description: >
+            Unexpected Error:
+              * 401: Unauthorized => bad credentials
+              * 403: Forbidden => privileged operation (admin)
+              * 500: Internal Server Error
           schema:
             $ref: "#/definitions/UnexpectedErrorResponse"
       security:

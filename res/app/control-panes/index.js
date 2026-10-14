@@ -19,25 +19,24 @@ module.exports = angular.module('control-panes', [
   require('./info').name,
 ])
   .config(['$routeProvider', function($routeProvider) {
-
     $routeProvider
       .when('/control', {
-        template: '<div ng-controller="ControlPanesNoDeviceController"></div>',
-        controller: 'ControlPanesNoDeviceController'
+        template: '<div ng-controller="ControlPanesNoDeviceController"></div>'
+        , controller: 'ControlPanesNoDeviceController'
       })
       .when('/control/:serial', {
-        template: require('./control-panes.pug'),
-        controller: 'ControlPanesCtrl'
+        template: require('./control-panes.pug')
+        , controller: 'ControlPanesCtrl'
         // TODO: Move device inviting to resolve
-        //resolve: {
+        // resolve: {
         //  device
         //  control
-        //}
+        // }
       })
       // TODO: add standalone
       .when('/c/:serial', {
-        template: require('./control-panes.pug'),
-        controller: 'ControlPanesCtrl'
+        template: require('./control-panes.pug')
+        , controller: 'ControlPanesCtrl'
       })
   }])
   .factory('ControlPanesService', require('./control-panes-service'))

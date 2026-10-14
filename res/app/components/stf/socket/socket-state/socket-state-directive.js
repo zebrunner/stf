@@ -4,12 +4,13 @@ module.exports = function SocketStateDirectiveFactory(
 , gettext
 , $filter
 , SocketDisconnectedService
+, VersionUpdateService
 , $window
 ) {
   return {
-    restrict: 'EA',
-    template: require('./socket-state.pug'),
-    link: function(scope) {
+    restrict: 'EA'
+    , template: require('./socket-state.pug')
+    , link: function(scope) {
       var hasFailedOnce = false
 
       function setState(state) {
@@ -72,6 +73,9 @@ module.exports = function SocketStateDirectiveFactory(
       , reconnect: function() {
           setState('reconnect')
           hasFailedOnce = true
+        }
+      , outdated: function() {
+          VersionUpdateService.open()
         }
       }
 

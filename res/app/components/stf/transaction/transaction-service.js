@@ -8,10 +8,89 @@ module.exports = function TransactionServiceFactory(socket, TransactionError) {
     return 'tx.' + uuid.v4()
   }
 
+  function PendingTransactionResult(result, onProgress) {
+    var resolve_, reject_
+    var promise = new Promise(function(resolve, reject) {
+      resolve_ = resolve
+      reject_ = reject
+    })
+    var seq = 0
+    var last = Infinity
+    var unplaced = []
+
+    function readQueue() {
+      var message
+      var foundAny = false
+
+      while (seq <= last && (message = unplaced[seq])) {
+        unplaced[seq] = null
+
+        if (seq === last) {
+          result.success = message.success
+
+          if (message.body) {
+            result.body = JSON.parse(message.body)
+          }
+
+          if (result.success) {
+            if (message.data) {
+              result.lastData = result.data[seq] = message.data
+            }
+            resolve_(result)
+          }
+          else {
+            result.lastData = result.error = message.data
+            reject_(new TransactionError(result))
+          }
+
+          return
+        }
+        else {
+          if (message.progress) {
+            result.progress = message.progress
+          }
+        }
+
+        foundAny = true
+        result.lastData = result.data[seq++] = message.data
+      }
+
+      if (foundAny) {
+        onProgress(result)
+      }
+    }
+
+    this.progress = function(message) {
+      unplaced[message.seq] = message
+      readQueue()
+    }
+
+    this.done = function(message) {
+      last = message.seq
+      unplaced[message.seq] = message
+      readQueue()
+    }
+
+    this.cancel = function(message) {
+      if (!result.settled) {
+        last = message.seq = seq
+        unplaced[message.seq] = message
+        readQueue()
+      }
+    }
+
+    this.result = result
+    this.promise = promise.finally(function() {
+      result.settled = true
+      result.progress = 100
+    })
+  }
+
   function MultiTargetTransaction(targets, options) {
     var pending = Object.create(null)
     var results = []
     var channel = createChannel()
+    var notify = null
 
     function doneListener(someChannel, data) {
       if (someChannel === channel) {
@@ -46,12 +125,17 @@ module.exports = function TransactionServiceFactory(socket, TransactionError) {
 
     this.channel = channel
     this.results = results
-    this.promise = Promise.settle(targets.map(function(target) {
-        var result = new options.result(target)
-        var pendingResult = new PendingTransactionResult(result)
+
+    var promise = Promise.all(targets.map(function(target) {
+        var result = new options.Result(target)
+        var pendingResult = new PendingTransactionResult(result, function() {
+          if (notify) {
+            notify(results)
+          }
+        })
         pending[options.id ? target[options.id] : target.id] = pendingResult
         results.push(result)
-        return pendingResult.promise
+        return pendingResult.promise.reflect()
       }))
       .finally(function() {
         socket.removeListener('tx.done', doneListener)
@@ -60,17 +144,26 @@ module.exports = function TransactionServiceFactory(socket, TransactionError) {
         socket.removeListener('tx.cancel', cancelListener)
         socket.emit('tx.cleanup', channel)
       })
-      .progressed(function() {
-        return results
-      })
       .then(function() {
         return results
       })
+
+    promise.progressed = function(listener) {
+      notify = listener
+      return promise
+    }
+
+    this.promise = promise
   }
 
   function SingleTargetTransaction(target, options) {
-    var result = new options.result(target)
-    var pending = new PendingTransactionResult(result)
+    var notify = null
+    var result = new options.Result(target)
+    var pending = new PendingTransactionResult(result, function() {
+      if (notify) {
+        notify(result)
+      }
+    })
     var channel = createChannel()
 
     function doneListener(someChannel, data) {
@@ -105,7 +198,8 @@ module.exports = function TransactionServiceFactory(socket, TransactionError) {
     this.channel = channel
     this.result = result
     this.results = [result]
-    this.promise = pending.promise
+
+    var promise = pending.promise
       .finally(function() {
         socket.removeListener('tx.done', doneListener)
         socket.removeListener('tx.tree', treeListener)
@@ -113,86 +207,16 @@ module.exports = function TransactionServiceFactory(socket, TransactionError) {
         socket.removeListener('tx.cancel', cancelListener)
         socket.emit('tx.cleanup', channel)
       })
-      .progressed(function() {
-        return result
-      })
       .then(function() {
         return result
       })
-  }
 
-  function PendingTransactionResult(result) {
-    var resolver = Promise.defer()
-    var seq = 0
-    var last = Infinity
-    var unplaced = []
-
-    function readQueue() {
-      var message
-      var foundAny = false
-
-      while (seq <= last && (message = unplaced[seq])) {
-        unplaced[seq] = undefined
-
-        if (seq === last) {
-          result.success = message.success
-
-          if (message.body) {
-            result.body = JSON.parse(message.body)
-          }
-
-          if (result.success) {
-            if (message.data) {
-              result.lastData = result.data[seq] = message.data
-            }
-            resolver.resolve(result)
-          }
-          else {
-            result.lastData = result.error = message.data
-            resolver.reject(new TransactionError(result))
-          }
-
-          return
-        }
-        else {
-          if (message.progress) {
-            result.progress = message.progress
-          }
-        }
-
-        foundAny = true
-        result.lastData = result.data[seq++] = message.data
-      }
-
-      if (foundAny) {
-        resolver.progress(result)
-      }
+    promise.progressed = function(listener) {
+      notify = listener
+      return promise
     }
 
-    this.progress = function(message) {
-      unplaced[message.seq] = message
-      readQueue()
-    }
-
-    this.done = function(message) {
-      last = message.seq
-      unplaced[message.seq] = message
-      readQueue()
-    }
-
-    this.cancel = function(message) {
-      if (!result.settled) {
-        last = message.seq = seq
-        unplaced[message.seq] = message
-        readQueue()
-      }
-    }
-
-    this.result = result
-    this.promise = resolver.promise.finally(function() {
-      result.settled = true
-      result.progress = 100
-    })
+    this.promise = promise
   }
 
   function TransactionResult(source) {
@@ -211,41 +235,44 @@ module.exports = function TransactionServiceFactory(socket, TransactionError) {
     this.device = this.source
   }
 
-  DeviceTransactionResult.prototype = Object.create(TransactionResult)
-  DeviceTransactionResult.constructor = DeviceTransactionResult
+  DeviceTransactionResult.prototype = Object.create(TransactionResult.prototype)
+  DeviceTransactionResult.prototype.constructor = DeviceTransactionResult
 
   transactionService.create = function(target, options) {
-    if (options && !options.result) {
-      options.result = TransactionResult
+    if (options && !options.Result) {
+      options.Result = TransactionResult
     }
 
     if (Array.isArray(target)) {
       return new MultiTargetTransaction(target, options || {
-        result: DeviceTransactionResult
+        Result: DeviceTransactionResult
       , id: 'serial'
       })
     }
     else {
       return new SingleTargetTransaction(target, options || {
-        result: DeviceTransactionResult
+        Result: DeviceTransactionResult
       , id: 'serial'
       })
     }
   }
 
   transactionService.punch = function(channel) {
-    var resolver = Promise.defer()
+    var resolve_
+    var promise = new Promise(function(resolve) {
+      resolve_ = resolve
+    })
 
     function punchListener(someChannel) {
       if (channel === someChannel) {
-        resolver.resolve(channel)
+        resolve_(channel)
       }
     }
 
     socket.on('tx.punch', punchListener)
     socket.emit('tx.punch', channel)
 
-    return resolver.promise
+    return promise
       .timeout(5000)
       .finally(function() {
         socket.removeListener('tx.punch', punchListener)
