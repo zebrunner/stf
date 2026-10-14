@@ -57,6 +57,13 @@ module.exports = function MenuCtrl(
     }, 100)
   }
 
+  $scope.scrollToStoredPosition = function() {
+    if ($route.current.$$route.originalPath === '/devices') {
+      return
+    }
+    $location.path('/devices/')
+  }
+
   $scope.alertMessage = {
     activation: 'False'
   , data: ''

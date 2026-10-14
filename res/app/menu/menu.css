@@ -68,6 +68,24 @@
 .stf-menu.navbar {
   height: 44px !important;
   min-height: 44px !important;
+  background-color: white;
+}
+
+@media (max-width: 600px) {
+  .stf-menu .stf-nav > li {
+    padding: 0;
+  }
+  .stf-menu .stf-nav > li > a {
+    padding-left: 0;
+    padding-right: 10px;
+  }
+
+  .stf-menu .stf-nav > li > a > span.fa {
+    display: inline-block;
+    float: left;
+    margin: 8px 3px 0 0;
+    font-size: 28px;
+  }
 }
 
 .stf-menu .version-text {
