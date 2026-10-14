@@ -7,8 +7,8 @@
 enum MessageType {
   CopyMessage                       = 33;
   DeviceIntroductionMessage         = 74;
-  DeviceOnInstAppMessage            = 1;
-  DeviceAbsentMessage               = 111;
+  DeviceAbsentMessage               = 1;
+  DeviceOnInstAppMessage            = 111;
   DeviceIdentityMessage             = 2;
   DeviceLogcatEntryMessage          = 3;
   DeviceLogMessage                  = 4;
