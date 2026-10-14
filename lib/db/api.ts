@@ -36,11 +36,21 @@ import type {
 , GroupCreateData
 , GroupDocument
 , GroupRef
+, InstalledAppEntry
 , LockedWriteResult
 , UserDocument
 , UserIdentity
 } from '../types/stf.js'
-import type {ReverseForwardFields} from '../types/wire.js'
+import type {
+  BatteryIosEventFields
+, InitializeIosDeviceStateFields
+, ReverseForwardFields
+, RotationIosEventFields
+, SdkIosVersionFields
+, SetDeviceAppFields
+, SetIosDeviceDisplayFields
+, UpdateIosDeviceFields
+} from '../types/wire.js'
 
 type UserExpression = r.Expression<UserDocument>
 
@@ -208,6 +218,33 @@ interface DbApi {
   removeAccessToken(id: string): Promise<r.WriteResult>
   loadAccessTokens(email: string): Promise<r.Cursor>
   loadAccessToken(id: string): Promise<AccessTokenDocument | null>
+  // Fork (Zebrunner) iOS/tvOS support
+  markDeviceAsUsing(serial: string): Promise<r.WriteResult>
+  unmarkDeviceAsUsing(serial: string): Promise<r.WriteResult>
+  setIosDeviceRotation(message: RotationIosEventFields): Promise<r.WriteResult>
+  setDeviceSocketDisplay(data: SetIosDeviceDisplayFields): Promise<r.WriteResult>
+  setDeviceSocketPorts(
+    data: {serial: string, screenPort: number, connectPort: number}
+  , publicIp: string
+  ): Promise<DeviceDocument | null>
+  updateIosDevice(message: UpdateIosDeviceFields): Promise<r.WriteResult>
+  setDeviceIosBattery(message: BatteryIosEventFields): Promise<r.WriteResult>
+  setDeviceIosVersion(message: SdkIosVersionFields): Promise<void>
+  sizeIosDevice(serial: string, height: number, width: number, scale: number): Promise<r.WriteResult>
+  getDeviceSize(serial: string): Promise<DeviceDocument['display'] | null>
+  checkIosDeviceConnected(data: {id: string}): Promise<DeviceDocument | null>
+  deleteIosDevice(data: {serial: string}): Promise<r.WriteResult>
+  setAbsentDisconnectedDevices(): Promise<r.WriteResult>
+  setDeviceApp(message: SetDeviceAppFields): Promise<{removePathApp: string}>
+  getInstalledApplications(message: {serial: string}): Promise<DeviceDocument | null>
+  getDeviceGroupOwner(serial: string): Promise<DeviceGroup['owner'] | null>
+  setDeviceGroupOwner(message: {serial: string}): Promise<r.WriteResult>
+  setDeviceType(serial: string, type: string): Promise<r.WriteResult>
+  getDeviceType(serial: string): Promise<string | null | undefined>
+  initializeIosDeviceState(
+    publicIp: string
+  , message: InitializeIosDeviceStateFields
+  ): Promise<r.WriteResult | GroupDocument | null>
 }
 const log = logger.createLogger('db:api')
 
@@ -853,7 +890,7 @@ dbapi.adminLockGroup = function(id, lock) {
             lock.group = stats.changes![0]!.new_val
           }
         }
-        else if (stats.skipped) {
+        else if (stats.skipped || stats.unchanged) {
           result.status = true
         }
         return result
@@ -1774,6 +1811,7 @@ dbapi.setDeviceReady = function(serial, channel) {
     channel: channel
   , ready: true
   , owner: null
+  , present: true
   , reverseForwards: []
   }, {returnChanges: 'always'}))
 }
@@ -1922,6 +1960,295 @@ dbapi.loadAccessTokens = function(email) {
 
 dbapi.loadAccessToken = function(id) {
   return db.run(r.table('accessTokens').get<AccessTokenDocument>(id))
+}
+
+// Fork (Zebrunner) iOS/tvOS support
+
+// Display defaults reported for iOS devices until WDA tells the real size
+const DEFAULT_IOS_DEVICE_ARGS = {
+  DENSITY: 2
+, FPS: 60
+, ID: 0
+, ROTATION: 0
+, SECURE: true
+, SIZE: 4.971253395080566
+, XDPI: 294.9670104980469
+, YDPI: 295.56298828125
+}
+
+dbapi.markDeviceAsUsing = function(serial) {
+  return db.run(r.table('devices').get<DeviceDocument>(serial).update({
+    using: true
+  }))
+}
+
+dbapi.unmarkDeviceAsUsing = function(serial) {
+  return db.run(r.table('devices').get<DeviceDocument>(serial).update({
+    using: false
+  }))
+}
+
+dbapi.setIosDeviceRotation = function(message) {
+  return db.run(r.table('devices').get<DeviceDocument>(message.serial).update({
+    display: {
+      rotation: message.rotation
+    , height: message.height
+    , width: message.width
+    }
+  }))
+}
+
+dbapi.setDeviceSocketDisplay = function(data) {
+  return db.run(r.table('devices').get<DeviceDocument>(data.serial).update({
+    iosClientChannel: data.channel
+  , display: {
+      density: DEFAULT_IOS_DEVICE_ARGS.DENSITY
+    , fps: DEFAULT_IOS_DEVICE_ARGS.FPS
+    , id: DEFAULT_IOS_DEVICE_ARGS.ID
+    , rotation: DEFAULT_IOS_DEVICE_ARGS.ROTATION
+    , secure: DEFAULT_IOS_DEVICE_ARGS.SECURE
+    , size: DEFAULT_IOS_DEVICE_ARGS.SIZE
+    , xdpi: DEFAULT_IOS_DEVICE_ARGS.XDPI
+    , ydpi: DEFAULT_IOS_DEVICE_ARGS.YDPI
+    , width: data.width
+    , height: data.height
+    }
+  }))
+}
+
+dbapi.setDeviceSocketPorts = function(data, publicIp) {
+  return db.run(r.table('devices').get<DeviceDocument>(data.serial).update({
+    display: {
+      url: `ws://${publicIp}:${data.screenPort}/`
+    }
+  , screenPort: data.screenPort
+  , connectPort: data.connectPort
+  }))
+    .then(function() {
+      return db.run(r.table('devices').get<DeviceDocument>(data.serial))
+    })
+}
+
+dbapi.updateIosDevice = function(message) {
+  return db.run(r.table('devices').get<DeviceDocument>(message.id).update({
+    model: message.name
+  , platform: message.platform
+  , sdk: message.architect
+  }))
+}
+
+dbapi.setDeviceIosBattery = function(message) {
+  return db.run(r.table('devices').get<DeviceDocument>(message.id).update({
+    battery: {
+      health: message.health
+    , source: message.source
+    , status: message.status
+    , level: message.level
+    , temp: message.temp
+    , scale: message.scale
+    }
+  }))
+}
+
+dbapi.setDeviceIosVersion = function(message) {
+  return db.run(r.table('devices').get<DeviceDocument>(message.id))
+    .then(function(device) {
+      if (!device) {
+        return
+      }
+      // Not awaited on purpose, as before: the version is informational
+      db.run(r.table('devices').get<DeviceDocument>(message.id).update({
+        version: message.sdkVersion
+      , model: `${device.model}`
+      , provider: {
+          name: `${device.provider.name}`
+        }
+      }))
+    })
+}
+
+dbapi.sizeIosDevice = function(serial, height, width, scale) {
+  return db.run(r.table('devices').get<DeviceDocument>(serial).update({
+    display: {
+      height: height
+    , width: width
+    , scale: scale
+    }
+  }))
+}
+
+dbapi.getDeviceSize = function(serial) {
+  return db.run(r.table('devices').get<DeviceDocument>(serial)).then(function(device) {
+    return device ? device.display : null
+  })
+}
+
+dbapi.checkIosDeviceConnected = function(data) {
+  return db.run(r.table('devices').get<DeviceDocument>(data.id))
+}
+
+dbapi.deleteIosDevice = function(data) {
+  return db.run(r.table('devices').get<DeviceDocument>(data.serial).delete())
+}
+
+dbapi.setAbsentDisconnectedDevices = function() {
+  return db.run(r.table('devices').filter({
+    ios: true
+  }).update({
+    present: false
+  , ready: false
+  }))
+}
+
+// Replaces the entry of an already installed application, or appends a new one. Resolves with the
+// path of the replaced application package so the caller can remove it from disk.
+dbapi.setDeviceApp = function(message) {
+  var entry: InstalledAppEntry = {
+    bundleId: message.bundleId
+  , bundleName: message.bundleName
+  , pathToApp: message.pathToApp
+  }
+
+  function appendEntry() {
+    return db.run(r.table('devices').get<DeviceDocument>(message.serial).update({
+      installedApps: r.row('installedApps').default([]).append(entry)
+    }))
+  }
+
+  return db.run(r.table('devices').get<DeviceDocument>(message.serial))
+    .then(function(device) {
+      var installedApps = device?.installedApps || []
+      var index = installedApps.findIndex(function(item) {
+        return item.bundleName === message.bundleName && item.bundleId === message.bundleId
+      })
+
+      if (index >= 0) {
+        var removePathApp = installedApps[index]!.pathToApp
+        installedApps[index] = entry
+        db.run(r.table('devices').get<DeviceDocument>(message.serial).update({
+          installedApps: installedApps
+        }))
+        return {removePathApp: removePathApp}
+      }
+
+      appendEntry()
+      return {removePathApp: ''}
+    })
+    .catch(function(err) {
+      appendEntry()
+      throw err
+    })
+}
+
+dbapi.getInstalledApplications = function(message) {
+  return db.run(r.table('devices').get<DeviceDocument>(message.serial))
+}
+
+dbapi.getDeviceGroupOwner = function(serial) {
+  return db.run(r.table('devices').get<DeviceDocument>(serial)).then(function(device) {
+    return device ? device.group.owner : null
+  })
+}
+
+dbapi.setDeviceGroupOwner = function(message) {
+  return db.run(r.table('devices').get<DeviceDocument>(message.serial).update({
+    group: {
+      owner: {
+        email: process.env.STF_ADMIN_EMAIL
+      , name: process.env.STF_ADMIN_NAME
+      }
+    }
+  }))
+}
+
+dbapi.setDeviceType = function(serial, type) {
+  return db.run(r.table('devices').get<DeviceDocument>(serial).update({
+    deviceType: type
+  }))
+}
+
+dbapi.getDeviceType = function(serial) {
+  return db.run(r.table('devices').get<DeviceDocument>(serial)).then(function(device) {
+    return device ? device.deviceType : null
+  })
+}
+
+dbapi.initializeIosDeviceState = function(publicIp, message) {
+  var screenWsUrlPattern =
+    message.provider.screenWsUrlPattern || `ws://${publicIp}:${message.ports.screenPort}/`
+
+  var data = {
+    present: true
+  , presenceChangedAt: r.now()
+  , provider: message.provider
+  , owner: null
+  , status: message.status
+  , statusChangedAt: r.now()
+    // Reset on each (re)initialization so DeviceStatusMessages from the new ios-device process are
+    // not discarded as stale
+  , statusTimeStamp: 0
+  , ready: true
+  , reverseForwards: []
+  , remoteConnect: false
+  , remoteConnectUrl: null
+  , usage: null
+  , ios: true
+  , iosClientChannel: message.serial
+  , display: {
+      density: DEFAULT_IOS_DEVICE_ARGS.DENSITY
+    , fps: DEFAULT_IOS_DEVICE_ARGS.FPS
+    , id: DEFAULT_IOS_DEVICE_ARGS.ID
+    , rotation: DEFAULT_IOS_DEVICE_ARGS.ROTATION
+    , secure: DEFAULT_IOS_DEVICE_ARGS.SECURE
+    , size: DEFAULT_IOS_DEVICE_ARGS.SIZE
+    , xdpi: DEFAULT_IOS_DEVICE_ARGS.XDPI
+    , ydpi: DEFAULT_IOS_DEVICE_ARGS.YDPI
+    , url: screenWsUrlPattern
+    }
+  , group: {
+      owner: {
+        email: 'administrator@fakedomain.com'
+      , name: 'administrator'
+      }
+    }
+  , screenPort: message.ports.screenPort
+  , connectPort: message.ports.connectPort
+  , model: message.options.name
+  , platform: message.options.platform
+  , sdk: message.options.architect
+  }
+
+  return db.run(r.table('devices').get<DeviceDocument>(message.serial).update(data))
+    .then(function(stats): Promise<r.WriteResult | GroupDocument | null> {
+      if (stats.skipped) {
+        return dbapi.getRootGroup().then(function(group) {
+          var row = Object.assign({}, data, {
+            serial: message.serial
+          , createdAt: r.now()
+          , group: {
+              id: group.id
+            , name: group.name
+            , lifeTime: group.dates[0]!
+            , owner: group.owner
+            , origin: group.id
+            , class: group.class
+            , repetitions: group.repetitions
+            , originName: group.name
+            , lock: false
+            }
+          })
+
+          return db.run(r.table('devices').insert(row))
+            .then(function() {
+              return dbapi.addOriginGroupDevice(group, message.serial)
+            })
+        })
+      }
+
+      dbapi.setDeviceGroupOwner(message)
+
+      return Promise.resolve(stats)
+    })
 }
 
 export default dbapi

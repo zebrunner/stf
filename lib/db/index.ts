@@ -19,7 +19,12 @@ interface Database {
 var db: Database = Object.create(null)
 var log = logger.createLogger('db')
 
-function connect() {
+// Fork (Zebrunner): ride out short RethinkDB outages (e.g. while containers start) before giving up
+var CONNECT_RETRIES = 3
+var CONNECT_RETRY_DELAY = 5000
+var retryCount = 0
+
+function connect(): Promise<r.Connection> {
   var options = {
     // These environment variables are exposed when we --link to a
     // RethinkDB container.
@@ -53,6 +58,15 @@ function connect() {
 
       return next()
     })
+    .catch(function(err: Error): Promise<r.Connection> {
+      if (retryCount >= CONNECT_RETRIES) {
+        throw err
+      }
+      retryCount++
+      log.error(err.message)
+      log.info('Retrying connection in %d seconds...', CONNECT_RETRY_DELAY / 1000)
+      return Promise.delay(CONNECT_RETRY_DELAY).then(connect)
+    })
 }
 
 // Export connection as a Promise
@@ -73,6 +87,7 @@ db.connect = (function() {
     return connect()
       .then(function(conn: r.Connection) {
         connection = conn
+        retryCount = 0
 
         conn.on('close', function closeListener() {
           log.warn('Connection closed')

@@ -103,6 +103,7 @@ export interface DeviceDocument {
   provider: {
     name: string
     channel: string
+    screenWsUrlPattern?: string
   }
   createdAt: Date
   presenceChangedAt: Date
@@ -119,7 +120,7 @@ export interface DeviceDocument {
   battery?: DeviceBattery
   browser?: DeviceBrowser
   network?: DeviceNetwork
-  display?: Partial<DeviceDisplayMessageFields>
+  display?: Partial<DeviceDisplayMessageFields> & {scale?: number}
   notes?: string
   platform?: string
   manufacturer?: string
@@ -133,6 +134,20 @@ export interface DeviceDocument {
   cpuPlatform?: string | null
   openGLESVersion?: string | null
   marketName?: string | null
+  // Fork (Zebrunner) iOS/tvOS device fields
+  ios?: boolean
+  iosClientChannel?: string
+  deviceType?: string | null
+  using?: boolean
+  installedApps?: InstalledAppEntry[]
+  screenPort?: number
+  connectPort?: number
+}
+
+export interface InstalledAppEntry {
+  bundleId: string
+  bundleName: string
+  pathToApp: string
 }
 
 export interface AccessTokenDocument {
