@@ -49,6 +49,7 @@ export default function(options: DeviceOptions) {
         .dependency(require('./plugins/bluetooth.js').default)
         .dependency(require('./plugins/sd.js').default)
         .dependency(require('./plugins/filesystem.js').default)
+        .dependency(require('./plugins/remotedebug.js').default)
         .define(function(options: DeviceOptions, heartbeat: unknown, solo: SoloPlugin) {
           if (process.send) {
             // Only if we have a parent process
@@ -62,6 +63,9 @@ export default function(options: DeviceOptions) {
     .consume(options)
     .catch(function(err) {
       log.fatal('Setup had an error', err.stack)
-      lifecycle.fatal()
+      if (err instanceof Error && err.stack && err.stack.includes('no service started')) {
+        return lifecycle.graceful(err.stack)
+      }
+      return lifecycle.fatal()
     })
 }

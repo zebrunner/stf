@@ -26,6 +26,16 @@ var builder = function(yargs: Argv) {
     , type: 'number'
     , default: process.env.PORT || 7100
     })
+    .option('connect-push', {
+      describe: 'Accepted for compatibility with older deployments; not used by temp storage.'
+    , array: true
+    , type: 'string'
+    })
+    .option('connect-sub', {
+      describe: 'Accepted for compatibility with older deployments; not used by temp storage.'
+    , array: true
+    , type: 'string'
+    })
     .option('save-dir', {
       describe: 'The location where files are saved to.'
     , type: 'string'

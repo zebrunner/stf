@@ -82,8 +82,8 @@ class Lifecycle {
     })
   }
 
-  graceful() {
-    log.info('Winding down for graceful exit')
+  graceful(err?: unknown) {
+    log.info('Winding down for graceful exit, with optional error : ', err)
 
     this.ending = true
 
@@ -92,8 +92,8 @@ class Lifecycle {
     })
   }
 
-  fatal() {
-    log.fatal('Shutting down due to fatal error')
+  fatal(err?: unknown) {
+    log.fatal('Shutting down due to fatal error with optional error : ', err)
     this.ending = true
     process.exit(1)
   }

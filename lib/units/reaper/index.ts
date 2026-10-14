@@ -102,6 +102,7 @@ export default function(options: ReaperOptions) {
   function listenToChanges() {
     sub.on('message', wirerouter()
       .on(wire.DeviceIntroductionMessage, function(channel, message) {
+        message.status = wire.DeviceStatus.ONLINE
         ttlset.drop(message.serial, TtlSet.SILENT)
         ttlset.bump(message.serial, Date.now())
       })
@@ -109,7 +110,10 @@ export default function(options: ReaperOptions) {
         ttlset.bump(message.serial, Date.now())
       })
       .on(wire.DeviceAbsentMessage, function(channel, message) {
-        ttlset.drop(message.serial, TtlSet.SILENT)
+        var maybeApplications = message as typeof message & {applications?: unknown}
+        if (!maybeApplications.applications) {
+          ttlset.drop(message.serial, TtlSet.SILENT)
+        }
       })
       .handler())
   }

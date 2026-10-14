@@ -1,4 +1,5 @@
 import util from 'util'
+import fs from 'fs'
 
 import Promise from 'bluebird'
 import syrup from '@devicefarmer/stf-syrup'
@@ -64,8 +65,7 @@ export default syrup.serial()
         return adb.stat(options.serial, res.dest)
           .timeout(5000)
           .then(function(stats) {
-            // Can't use fs.constants.S_IXUSR due to differences on Windows.
-            return (stats.mode & 0x40) === 0x40
+            return (stats.mode & fs.constants.S_IXUSR) === fs.constants.S_IXUSR
           })
       }
 

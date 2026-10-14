@@ -246,13 +246,11 @@ export default syrup.serial()
       }
 
       start() {
-        log.info('Requesting touch consumer to start')
         this.desiredState.push(TouchConsumer.STATE_STARTED)
         this._ensureState()
       }
 
       stop() {
-        log.info('Requesting touch consumer to stop')
         this.desiredState.push(TouchConsumer.STATE_STOPPED)
         this._ensureState()
       }
@@ -273,13 +271,11 @@ export default syrup.serial()
       }
 
       _socketEnded() {
-        log.warn('Connection to minitouch ended unexpectedly')
         this.failCounter.inc()
         this.restart()
       }
 
       _outputEnded() {
-        log.warn('Shell keeping minitouch running ended unexpectedly')
         this.failCounter.inc()
         this.restart()
       }
@@ -295,7 +291,6 @@ export default syrup.serial()
       }
 
       _startService() {
-        log.info('Launching touch service')
         return minitouch.run()
           .timeout(10000)
       }

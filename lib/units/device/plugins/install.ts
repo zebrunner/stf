@@ -75,6 +75,7 @@ export default syrup.serial()
         var contentLength: number | null = null
         req.on('response', function(res) {
           contentLength = parseInt(res.headers['content-length'] as string, 10)
+          log.info('Uploaded file contentLength "%s"', contentLength)
         })
 
         var source = new stream.Readable().wrap(req as unknown as NodeJS.ReadableStream)

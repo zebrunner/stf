@@ -662,6 +662,11 @@ export default syrup.serial()
             clearInterval(pingTimer)
             broadcastSet.remove(id)
           })
+
+          ws.on('error', function() {
+            clearInterval(pingTimer)
+            broadcastSet.remove(id)
+          })
         })
 
         lifecycle.observe(function() {

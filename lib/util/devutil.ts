@@ -6,8 +6,10 @@ import androidDeviceList from 'android-device-list'
 import type {Properties} from '@devicefarmer/adbkit'
 import type {Duplex, Readable} from 'stream'
 import type adbutil from './adbutil.js'
+import logger from './logger.js'
 
 type Adb = ReturnType<typeof adbutil>
+var log = logger.createLogger('util:devutil')
 
 type LocalSocket = Duplex & {sock: string}
 
@@ -216,6 +218,13 @@ devutil.makeIdentity = function(serial: string, properties: Properties) {
   // Remove manufacturer prefix for consistency
   if (model.substr(0, manufacturer.length) === manufacturer) {
     model = model.substr(manufacturer.length)
+  }
+
+  var deviceUdid = process.env.DEVICE_UDID
+  var deviceName = process.env.STF_PROVIDER_DEVICE_NAME
+  if (deviceUdid && deviceName && serial === deviceUdid) {
+    log.info('Attached device udid: %s; name: %s', deviceUdid, deviceName)
+    model = deviceName
   }
 
   if (customMarketName) {

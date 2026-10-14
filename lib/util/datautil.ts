@@ -50,7 +50,9 @@ datautil.applyData = function<D extends DeviceView>(device: D) {
   })
 
   if (match) {
-    device.name = match.name.id
+    if (!device.name) {
+      device.name = match.name.id
+    }
     device.releasedAt = match.date
     device.image = match.image
     device.cpu = match.cpu

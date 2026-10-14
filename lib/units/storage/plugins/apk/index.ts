@@ -57,6 +57,17 @@ export default function(options: ApkPluginOptions) {
   })
 
   app.get('/s/apk/:id/:name', function(req, res) {
+    log.info('Proxying APK/app "%s" from storage', req.params.id)
+    request(url.resolve(options.storageUrl, util.format(
+      '/s/blob/%s/%s'
+    , req.params.id
+    , req.params.name
+    )))
+    .pipe(res)
+  })
+
+  app.get('/s/app/:id/:name', function(req, res) {
+    log.info('Proxying iOS app "%s" from storage', req.params.id)
     request(url.resolve(options.storageUrl, util.format(
       '/s/blob/%s/%s'
     , req.params.id
