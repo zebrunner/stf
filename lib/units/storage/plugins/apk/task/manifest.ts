@@ -30,6 +30,8 @@ function openZip(filepath: string) {
   })
 }
 
+var APP_INFO_PLIST = /^(?:[^/]+\/){0,2}Info\.plist$/
+
 function extractInfoPlist(filepath: string, destination: string) {
   return openZip(filepath)
     .then(function(zipfile) {
@@ -54,7 +56,9 @@ function extractInfoPlist(filepath: string, destination: string) {
           finish(new Error('Unable to find Info.plist'))
         })
         zipfile.on('entry', function(entry) {
-          if (/\/$/.test(entry.fileName) || path.basename(entry.fileName) !== 'Info.plist') {
+          // Only the app's own plist (Payload/<App>.app/Info.plist), not the ones of embedded
+          // frameworks or plugins, like the previous `find -maxdepth 3` did
+          if (!APP_INFO_PLIST.test(entry.fileName)) {
             zipfile.readEntry()
             return
           }

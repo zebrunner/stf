@@ -1,6 +1,11 @@
+import fs from 'fs'
+import os from 'os'
+import path from 'path'
+
 import {expect} from 'chai'
 
 import {parsePlistXml} from '../../lib/units/storage/plugins/apk/task/parser.js'
+import manifestTask from '../../lib/units/storage/plugins/apk/task/manifest.js'
 
 describe('storage apk plist parser', function() {
   it('should parse nested Info.plist data', function() {
@@ -44,5 +49,20 @@ describe('storage apk plist parser', function() {
 
   it('should return an empty object when no plist dictionary exists', function() {
     expect(parsePlistXml('not a plist')).to.deep.equal({})
+  })
+})
+
+describe('storage apk manifest task', function() {
+  it('should read the app Info.plist of an .ipa, not an embedded framework one', function() {
+    var source = path.join(import.meta.dirname, '../fixt/ios-with-framework.ipa')
+    var copy = path.join(os.tmpdir(), 'stf-manifest-' + process.pid + '.ipa')
+    fs.copyFileSync(source, copy)
+    return manifestTask({path: copy})
+      .then(function(manifest) {
+        expect(manifest).to.have.property('CFBundleIdentifier', 'com.example.app')
+      })
+      .finally(function() {
+        fs.rmSync(copy, {force: true})
+      })
   })
 })

@@ -2,7 +2,6 @@ import {SimpleGrid} from '@mantine/core'
 import type {PaneProps} from '../../types'
 import {DeviceSettingsCard} from '../automation/DeviceSettingsCard'
 import {AdvancedInputCard} from './AdvancedInputCard'
-import {IosTreeCard} from './IosTreeCard'
 import {MaintenanceCard} from './MaintenanceCard'
 import {PortForwardingCard} from './PortForwardingCard'
 
@@ -13,7 +12,6 @@ export default function AdvancedPane({device, control}: PaneProps) {
       <DeviceSettingsCard device={device} control={control} />
       <PortForwardingCard device={device} control={control} />
       <MaintenanceCard control={control} />
-      {device.ios && <IosTreeCard control={control} />}
     </SimpleGrid>
   )
 }

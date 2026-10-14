@@ -38,7 +38,8 @@ export interface IosDeviceOptions {
   connectPort: number
   wdaHost: string
   wdaPort: number
-  mjpegPort: number
+  // Never set by the CLI; the MJPEG stream is read from connectPort
+  mjpegPort?: number
   vncInitialSize: number[]
   heartbeatInterval: number
   bootCompleteTimeout: number

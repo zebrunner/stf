@@ -216,7 +216,6 @@ var handler = function(argv: CommandArgv<typeof builder>) {
   , connectPort: argv.connectPort
   , wdaHost: argv.wdaHost
   , wdaPort: argv.wdaPort
-  , mjpegPort: argv.mjpegPort
   , vncInitialSize: argv.vncInitialSize
   , heartbeatInterval: argv.heartbeatInterval
   , bootCompleteTimeout: argv.bootCompleteTimeout

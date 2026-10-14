@@ -108,6 +108,12 @@ function lookup(table: Record<string, string>, key?: string | null): string {
   return key && table[key] ? translate(table[key]) : '-'
 }
 
+// iOS units report PREPARING (6) while WebDriverAgent starts; once the device is present the fork
+// UI treats it as ONLINE (3), as the AngularJS UI did by rewriting the status.
+function effectiveStatus(device: Device): number | undefined {
+  return device.ios && device.present && device.status === 6 ? 3 : device.status
+}
+
 export function computeState(device: Device): DeviceState {
   if (!device.present) {
     return 'absent'
@@ -115,17 +121,14 @@ export function computeState(device: Device): DeviceState {
   if (device.using && device.owner) {
     return device.usage === 'automation' ? 'automation' : 'using'
   }
-  if (device.ios && device.state === 'available') {
-    return device.using ? 'using' : 'available'
-  }
-  switch (device.status) {
+  switch (effectiveStatus(device)) {
     case 1:
       return 'offline'
     case 2:
     case 5:
       return 'unauthorized'
     case 6:
-      return device.ios && device.state === 'present' ? 'available' : 'preparing'
+      return 'preparing'
     case 7:
       return 'unhealthy'
     case 3:
@@ -159,10 +162,8 @@ export function userProfileUrl(email?: string): string | undefined {
 
 export function enhanceDevice(device: Device): Device {
   const state = computeState(device)
-  device.usable = Boolean(device.present && (
-    (device.status === 3 && device.ready && (!device.owner || device.using)) ||
-    (device.ios && state === 'available')
-  ))
+  device.usable = Boolean(device.present && effectiveStatus(device) === 3 && device.ready &&
+    (!device.owner || device.using))
 
   if (!device.usable || !device.owner) {
     device.using = false

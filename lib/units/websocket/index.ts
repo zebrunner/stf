@@ -832,18 +832,23 @@ export default function(options: WebsocketOptions) {
           }
         })
         .on('input.touchMoveIos', function(channel, data) {
-          push.send([
-            channel
-          , wireutil.envelope(
-              new wire.TouchMoveIosMessage(
-                data.toX
-              , data.toY
-              , data.fromX
-              , data.fromY
-              , 0.042
+          try {
+            push.send([
+              channel
+            , wireutil.envelope(
+                new wire.TouchMoveIosMessage(
+                  data.toX
+                , data.toY
+                , data.fromX
+                , data.fromY
+                , 0.042
+                )
               )
-            )
-          ])
+            ])
+          }
+          catch(err) {
+            log.error('input.touchMoveIos had an error', (err as Error).stack)
+          }
         })
         .on('tapDeviceTreeElement', function(channel, data) {
           push.send([

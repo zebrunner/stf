@@ -219,6 +219,7 @@ interface DbApi {
   loadAccessTokens(email: string): Promise<r.Cursor>
   loadAccessToken(id: string): Promise<AccessTokenDocument | null>
   // Fork (Zebrunner) iOS/tvOS support
+  setDeviceStatusOverride(serial: string, status: number): Promise<r.WriteResult>
   markDeviceAsUsing(serial: string): Promise<r.WriteResult>
   unmarkDeviceAsUsing(serial: string): Promise<r.WriteResult>
   setIosDeviceRotation(message: RotationIosEventFields): Promise<r.WriteResult>
@@ -1979,6 +1980,15 @@ const DEFAULT_IOS_DEVICE_ARGS = {
 , SIZE: 4.971253395080566
 , XDPI: 294.9670104980469
 , YDPI: 295.56298828125
+}
+
+// Administrative status change from the REST API. Unlike saveDeviceStatus it does not compare
+// timestamps, which come from the device units' monotonic clock and can't be produced here.
+dbapi.setDeviceStatusOverride = function(serial, status) {
+  return db.run(r.table('devices').get<DeviceDocument>(serial).update({
+    status: status
+  , statusChangedAt: r.now()
+  }))
 }
 
 dbapi.markDeviceAsUsing = function(serial) {

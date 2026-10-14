@@ -553,34 +553,33 @@ function putDeviceInfoBySerial(req: ApiRequest, res: Response) {
       }
       if (typeof body?.status === 'string') {
         const status = body.status.trim().toLowerCase()
-        const statusTimeStamp = Date.now()
 
         switch (status) {
           case 'disconnected':
             updates.push(dbapi.setDeviceAbsent(serial))
             break
           case 'offline':
-            updates.push(dbapi.saveDeviceStatus(serial, 1, statusTimeStamp))
+            updates.push(dbapi.setDeviceStatusOverride(serial, 1))
             break
           case 'available':
-            updates.push(dbapi.saveDeviceStatus(serial, 3, statusTimeStamp))
+            updates.push(dbapi.setDeviceStatusOverride(serial, 3))
             updates.push(dbapi.unsetDeviceOwner(serial))
             updates.push(dbapi.unmarkDeviceAsUsing(serial))
             break
           case 'unauthorized':
-            updates.push(dbapi.saveDeviceStatus(serial, 5, statusTimeStamp))
+            updates.push(dbapi.setDeviceStatusOverride(serial, 5))
             break
           case 'preparing':
-            updates.push(dbapi.saveDeviceStatus(serial, 6, statusTimeStamp))
+            updates.push(dbapi.setDeviceStatusOverride(serial, 6))
             break
           case 'unhealthy':
-            updates.push(dbapi.saveDeviceStatus(serial, 7, statusTimeStamp))
+            updates.push(dbapi.setDeviceStatusOverride(serial, 7))
             break
           case 'busy':
             if (typeof body.owner?.name !== 'string' || !body.owner.name.trim()) {
               return apiutil.respond(res, 400, 'Missing owner.name for busy status')
             }
-            updates.push(dbapi.saveDeviceStatus(serial, 3, statusTimeStamp))
+            updates.push(dbapi.setDeviceStatusOverride(serial, 3))
             updates.push(dbapi.setDeviceOwner(serial, {
               name: body.owner.name
             , email: body.owner.email || ''

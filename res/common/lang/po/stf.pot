@@ -964,10 +964,6 @@ msgstr ""
 msgid "Invalid credentials or user has been deactivated"
 msgstr ""
 
-#: res/app/src/features/control/panes/advanced/IosTreeCard.tsx:81
-msgid "iOS Element Tree"
-msgstr ""
-
 #: res/app/src/ui/Pager.tsx:61
 msgid "Items per page"
 msgstr ""
@@ -1197,10 +1193,6 @@ msgstr ""
 
 #: res/app/src/features/device-list/DeviceListPage.tsx:161
 msgid "No devices connected"
-msgstr ""
-
-#: res/app/src/features/control/panes/advanced/IosTreeCard.tsx:101
-msgid "No elements loaded"
 msgstr ""
 
 #: res/app/src/features/settings/groups/GroupDevices.tsx:132
@@ -1520,10 +1512,6 @@ msgstr ""
 
 #: res/app/src/features/control/device-control/DeviceMenuItems.tsx:34
 msgid "Recents"
-msgstr ""
-
-#: res/app/src/features/control/panes/advanced/IosTreeCard.tsx:93
-msgid "Refresh"
 msgstr ""
 
 #: res/app/src/features/settings/groups/GroupDetail.tsx:86

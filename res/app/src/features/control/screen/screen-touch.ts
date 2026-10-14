@@ -13,6 +13,7 @@ export interface ScreenTouchOptions {
 
 const SEQ_CYCLE = 100
 const MOUSE_PRESSURE = 0.5
+const IOS_TOUCH_PRESSURE = 0.5
 const SECONDARY_BUTTON = 3
 const IOS_SWIPE_THRESHOLD = 0.1
 
@@ -231,7 +232,8 @@ export function bindScreenTouch(options: ScreenTouchOptions): () => void {
         const scaled = scale(x, y)
 
         if (control.target.ios) {
-          control.touchMoveIosPoint(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
+          // The iOS unit treats toX/toY >= 2 as page coordinates of a finger drag
+          control.touchMoveIos(touch.pageX, touch.pageY, scaled.xP, scaled.yP, IOS_TOUCH_PRESSURE)
         }
         else {
           control.touchMove(nextSeq(), slot, scaled.xP, scaled.yP, pressure)

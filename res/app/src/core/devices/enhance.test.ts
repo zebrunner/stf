@@ -72,6 +72,23 @@ describe('enhanceDevice', () => {
     expect(ios.state).toBe('available')
     expect(ios.enhancedStatePassive).toBe('Available')
 
+    expect(ios.usable).toBe(true)
+
+    // The previous state must not stick: another user taking the device makes it busy
+    const taken = enhanceDevice({...ios, owner: {email: 'other@example.com'}, using: false})
+    expect(taken.state).toBe('busy')
+    expect(taken.usable).toBe(false)
+
+    const offline = enhanceDevice({...ios, status: 1, owner: null})
+    expect(offline.state).toBe('offline')
+    expect(offline.usable).toBe(false)
+
+    const notReady = enhanceDevice({...ios, status: 3, ready: false, owner: null})
+    expect(notReady.state).toBe('preparing')
+
+    const absentIos = enhanceDevice({...ios, present: false})
+    expect(absentIos.state).toBe('absent')
+
     const unhealthy = enhanceDevice(device({status: 7}))
     expect(unhealthy.state).toBe('unhealthy')
     expect(unhealthy.enhancedStatePassive).toBe('Unhealthy')

@@ -78,8 +78,6 @@ export function createControl(target: Device, channel: string) {
       , contact = 0
       , seq = 0
     ) => sendOneWay('input.touchMoveIos', {seq, contact, toX, toY, fromX, fromY, pressure})
-    , touchMoveIosPoint: (seq: number, contact: number, x: number, y: number, pressure?: number) =>
-      sendOneWay('input.touchMoveIos', {seq, contact, x, y, pressure})
     , touchUp: (seq: number, contact: number) => sendOneWay('input.touchUp', {seq, contact})
     , touchCommit: (seq: number) => sendOneWay('input.touchCommit', {seq})
     , touchReset: (seq: number) => sendOneWay('input.touchReset', {seq})
@@ -116,7 +114,8 @@ export function createControl(target: Device, channel: string) {
       , targetPort: Number(forward.targetPort)
     })
     , removeForward: (forward: ForwardSpec) => sendTwoWay('forward.remove', {id: forward.id})
-    , startLogcat: (filters: unknown[]) => sendTwoWay('logcat.start', {filters})
+      // Only the iOS unit takes the selected level name; Android expects LogcatFilter objects
+    , startLogcat: (filters: unknown[]) => sendTwoWay('logcat.start', {filters: target.ios ? filters : []})
     , stopLogcat: () => sendTwoWay('logcat.stop')
     , startRemoteConnect: () => sendTwoWay('connect.start')
     , stopRemoteConnect: () => sendTwoWay('connect.stop')
