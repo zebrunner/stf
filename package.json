@@ -46,7 +46,7 @@
     "@devicefarmer/stf-device-db": "^1.4.0",
     "@devicefarmer/stf-syrup": "^1.0.3",
     "@devicefarmer/stf-wiki": "^1.0.0",
-    "@dr.pogodin/csurf": "^1.14.1",
+    "@dr.pogodin/csurf": ">=1.14.1 <1.16.0",
     "@julusian/jpeg-turbo": "^2.2.0",
     "@node-saml/passport-saml": "^5.0.1",
     "@slack/web-api": "^7.9.2",
