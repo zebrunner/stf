@@ -84,10 +84,6 @@ interface KeyEventData {
   key: string
 }
 
-interface AccessTokenRemoveData {
-  id: string
-}
-
 interface GroupInviteData {
   timeout?: number | null
   requirements: DeviceRequirements
@@ -114,7 +110,7 @@ interface WebsocketClientEvents {
   'user.settings.update': (data: object) => void
   'user.settings.reset': () => void
   'user.keys.accessToken.generate': (data: {title: string}) => void
-  'user.keys.accessToken.remove': (data: AccessTokenRemoveData) => void
+  'user.keys.accessToken.remove': (data: {title: string}) => void
   'user.keys.adb.add': (data: {title: string, key: string}) => void
   'user.keys.adb.accept': (data: {title: string, fingerprint: string}) => void
   'user.keys.adb.remove': (data: {fingerprint: string}) => void
@@ -625,7 +621,7 @@ export default function(options: WebsocketOptions) {
             })
         })
         .on('user.keys.accessToken.remove', function(data) {
-          return dbapi.removeAccessToken(data.id)
+          return dbapi.removeUserAccessToken(user.email, data.title)
             .then(function() {
               socket.emit('user.keys.accessToken.updated')
             })
