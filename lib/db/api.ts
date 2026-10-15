@@ -2042,8 +2042,8 @@ dbapi.setDeviceGroupOwner = function(message) {
   return db.run(r.table('devices').get<DeviceDocument>(message.serial).update({
     group: {
       owner: {
-        email: process.env.STF_ADMIN_EMAIL
-      , name: process.env.STF_ADMIN_NAME
+        email: process.env.STF_ADMIN_EMAIL || 'administrator@fakedomain.com'
+      , name: process.env.STF_ADMIN_NAME || 'administrator'
       }
     }
   }))
