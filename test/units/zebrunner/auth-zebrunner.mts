@@ -126,6 +126,14 @@ describe('zebrunner: auth-zebrunner', function() {
     expect(await res.json()).to.eql({success: false, error: 'InvalidCredentialsError'})
   })
 
+  it('should lock a user out after five failed sign-ins', async function() {
+    for (var i = 0; i < 5; i++) {
+      expect((await signIn({username: 'brute', password: 'wrong'})).status).to.equal(400)
+    }
+    expect((await signIn({username: 'brute', password: 'right'})).status).to.equal(429)
+    expect((await signIn({username: 'jdoe', password: 'right'})).status).to.equal(200)
+  })
+
   it('should refuse a sign-in without the CSRF token', async function() {
     var current = await session()
     var res = await signIn(
