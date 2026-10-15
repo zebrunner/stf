@@ -1,0 +1,86 @@
+---
+# Fork (Zebrunner): the WDA client of the ios-device unit against WebDriverAgent on iOS simulators,
+# one leg per iOS version from 15 on. See test/zebrunner-ios/wda.mts and ZEBRUNNER.md.
+name: iOS
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    paths:
+      - "lib/units/ios-device/**"
+      - "lib/wire/**"
+      - "test/zebrunner-ios/**"
+      - "test/helpers/ios-wda.mts"
+      - ".github/scripts/zebrunner-ios-simulator.sh"
+      - ".github/workflows/zebrunner-ios.yml"
+  schedule:
+    # Monday morning, so a new Xcode or runner image is noticed within a week
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NPM_INSTALL_FLAGS: --no-audit --no-fund --ignore-scripts
+  WDA_REF: v16.15.0
+
+jobs:
+  simulator:
+    name: iOS ${{ matrix.ios }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Older runtimes are not on the images, they are downloaded for the newest Xcode 16
+          - {ios: "15", runner: macos-15, xcode: "16.4", download: "15.5"}
+          - {ios: "16", runner: macos-15, xcode: "16.4", download: "16.4"}
+          - {ios: "17", runner: macos-15, xcode: "16.4", download: "17.5"}
+          - {ios: "18", runner: macos-15, xcode: "16.4"}
+          - {ios: "26", runner: macos-26, xcode: "26.6"}
+          # The preview image of Xcode 27, its default Xcode has the iOS 27 runtime
+          - {ios: "27", runner: xcode-27}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+
+      - name: Select Xcode ${{ matrix.xcode }}
+        if: matrix.xcode
+        run: sudo xcode-select -s "/Applications/Xcode_${{ matrix.xcode }}.app"
+
+      - name: Install and compile
+        # The flags are split on purpose
+        # shellcheck disable=SC2086
+        run: |
+          npm install $NPM_INSTALL_FLAGS
+          node build.mts compile
+
+      - name: Boot the simulator and start WebDriverAgent
+        env:
+          WDA_DIR: ${{ runner.temp }}/wda
+          LOG_DIR: ios-logs
+        run: bash .github/scripts/zebrunner-ios-simulator.sh "${{ matrix.ios }}" "${{ matrix.download }}"
+
+      - name: Test the WDA client
+        env:
+          IOS_VERSION: ${{ matrix.ios }}
+        # --exit: the client keeps its MJPEG connection open, as the unit does
+        run: npx mocha --exit --reporter spec --extension mts test/zebrunner-ios
+
+      - name: Upload the logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-${{ matrix.ios }}-logs
+          path: ios-logs
+          if-no-files-found: ignore
