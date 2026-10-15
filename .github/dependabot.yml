@@ -1,17 +1,15 @@
 version: 2
 updates:
+- package-ecosystem: github-actions
+  directory: "/"
+  schedule:
+    interval: weekly
 - package-ecosystem: npm
   directory: "/"
   schedule:
     interval: daily
   open-pull-requests-limit: 10
   ignore:
-  - dependency-name: karma
-    versions:
-    - 6.0.0
-    - 6.1.0
-    - 6.1.2
-    - 6.2.0
   - dependency-name: semver
     versions:
     - 7.3.4

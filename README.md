@@ -1,15 +1,10 @@
-SmartTestFarm
-==================
+<img src="https://raw.githubusercontent.com/DeviceFarmer/stf/master/res/common/logo/exports/STF-128.png" style="width:100px;height:100px;" alt="STF">
 
-Feel free to support the development with a [**donation**](https://www.paypal.com/donate/?hosted_button_id=MNHYYCYHAKUVA) for the next improvements.
-
-<p align="center">
-  <a href="https://zebrunner.com/"><img alt="Zebrunner" src="https://github.com/zebrunner/zebrunner/raw/master/docs/img/zebrunner_intro.png"></a>
-</p>
+[![Build Status](https://travis-ci.org/DeviceFarmer/stf.svg?branch=master&status=created)](https://travis-ci.org/github/DeviceFarmer/stf)
+[![Docker Pulls](https://img.shields.io/docker/pulls/devicefarmer/stf.svg)](https://hub.docker.com/r/devicefarmer/stf/)
+[![npm](https://img.shields.io/npm/v/@devicefarmer/stf)](https://www.npmjs.com/package/@devicefarmer/stf)
 
 **STF** (or Smartphone Test Farm) is a web application for debugging smartphones, smartwatches and other gadgets remotely, from the comfort of your browser.
-## Disclaimer
-Current project <b>must be deployed only</b> as part of [Zebrunner CE](https://github.com/zebrunner/community-edition) or [MCloud](https://github.com/zebrunner/mcloud) solutions!
 
 ## Overview
 
@@ -27,7 +22,7 @@ Thank you to all the people who have already contributed to STF!
 
 * OS support
   - Android
-    * Supports versions 2.3.3 (SDK level 10) to 12 (SDK level 32)
+    * Supports versions 2.3.3 (SDK level 10) to 15 (SDK level 35)
     * Supports Wear 5.1 (but not 5.0 due to missing permissions)
     * Supports Fire OS, CyanogenMod, and other heavily Android based distributions
     * `root` is **not** required for any current functionality
@@ -91,6 +86,7 @@ Thank you to all the people who have already contributed to STF!
   - Set the default groups quotas applicable to all users
   - Set the groups quotas applicable to a specific user
 * Simple REST [API](doc/API.md)
+* Prometheus [metrics](doc/METRICS.md)
 
 ## Status
 
@@ -138,7 +134,7 @@ brew install rethinkdb graphicsmagick zeromq protobuf yasm pkg-config cmake
 On Windows you're on your own. In theory you might be able to get STF installed via [Cygwin](https://www.cygwin.com/) or similar, but we've never tried. In principle we will not provide any Windows installation support, but please do send a documentation pull request if you figure out what to do.
 
 We also provide a [Docker](http://docker.com/) container in the [Docker Hub](https://hub.docker.com/) as [devicefarmer/stf](https://hub.docker.com/r/devicefarmer/stf). You can use our [Dockerfile](Dockerfile) as guidance if you'd prefer to do the installation yourself.
-An example standalone [docker-compose.yaml](docker-compose.yaml) file is also provided.
+The [docker-compose.yaml](docker-compose.yaml) runs STF units as separate services. See the [Compose setup guide](docker/compose/README.md) for configuration and startup instructions.
 
 You should now be ready to [build](#building) or [run](#running) STF.
 
@@ -158,10 +154,16 @@ Now you're ready to [run](#running). For development, though, you should [build]
 
 After you've got all the [requirements](#requirements) installed, it's time to fetch the rest of the dependencies.
 
-First, fetch all NPM and Bower modules:
+First, fetch all NPM modules:
 
 ```bash
 npm install
+```
+
+Then compile the TypeScript sources in `lib/`, which `bin/stf` runs from:
+
+```bash
+node build.mts compile
 ```
 
 You may also wish to link the module so that you'll be able to access the `stf` command directly from the command line:
@@ -207,6 +209,20 @@ You're now ready to start up STF itself:
 stf local
 ```
 
+Later, if you want to change the values of these built-in objects, for example to change the identity of the administrator user, you must follow the below instructions or you are likely to encounter data inconsistency issues:
+1. stop the STF server (without stop the RethinkDB database)
+2. It is recommended to make a backup of the database (in case of inconsistency problem during migration)
+3. set environment variables to new desired values for built-in objects
+4. if you change the administrator identity, make sure the user does not exist in the database yet, if it does you need to delete it first via the UI or RestFul API
+5. run the `stf migrate` command
+   * If you get an STF error like `ERR/db:api..` (e.g. you tried to change the name of the current administrator or the new administrator already exists in the database), it means that no changes have been made to the database that remain consistent
+   * otherwise you get a STF message telling you the built-in objects have been updated successfully
+6. Finally if all went well you are now ready to start STF itself:
+
+```bash
+stf local
+```
+
 After the [webpack](http://webpack.github.io/) build process has finished (which can take a small while) you should have your private STF running on [http://localhost:7100](http://localhost:7100). If you had devices connected before running the command, those devices should now be available for use. If not, you should see what went wrong from your console. Feel free to plug in or unplug any devices at any time.
 
 Note that if you see your device ready to use but without a name or a proper image, we're probably missing the data for that model in [our device database](https://github.com/devicefarmer/stf-device-db). Everything should work fine either way.
@@ -219,7 +235,7 @@ stf local --public-ip <your_internal_network_ip_here>
 
 ## Updating
 
-To update your development version, simply pull the repo and run `npm install` again. You may occasionally have to remove the whole `node_modules` and `res/bower_components` folder to prevent NPM or Bower from complaining about version mismatches.
+To update your development version, simply pull the repo and run `npm install` and `node build.mts compile` again. You may occasionally have to remove the whole `node_modules` folder to prevent NPM from complaining about version mismatches.
 
 ## FAQ
 
@@ -418,30 +434,40 @@ Most powered USB 3.0 hubs we've tested have had a serious problem: the whole hub
 
 ## Translating
 
-Currently STF UI is available in English and Japanese.
+Translations are managed in the [STF Transifex project](https://app.transifex.com/devicefarmer/stf-main). If you would like to translate STF into your language, please contribute there rather than editing the `po` files directly, so that your work is not overwritten by the next sync.
 
-If you would like translate to any other language, please contribute in the [STF Transifex project](https://www.transifex.com/devicefarmer/stf-main).
+Transifex language codes are used as-is for the files in `res/common/lang/po` and the keys in `res/common/lang/langs.json`.
 
-For updating the source and all the translation files first you have to install the [Transifex client](http://docs.transifex.com/client/setup/).
+See [doc/TRANSLATING.md](doc/TRANSLATING.md) for the file layout, the status of machine translations and the list of translators.
 
-Then just run:
+The `json` catalogs the UI loads are not committed. `node build.mts webpack`, and so `npm install` and `node build.mts build`, compiles them from the `po` files first; run `node build.mts translate-compile` yourself if you serve the UI through webpack without building it.
+
+When you add or change a translatable string in the UI, run `node build.mts translate-extract` and commit the updated `stf.pot`. `node build.mts lint`, and so CI, runs `node build.mts translate-check`, which fails when `stf.pot` does not match the sources, when `langs.json` and the catalogs disagree, or when a translation uses a placeholder its source string does not have.
+
+The [Transifex GitHub integration](https://help.transifex.com/en/articles/6265125-github-installation-and-configuration), configured in [`transifex.yml`](transifex.yml), does the rest:
+
+1. A new `stf.pot` on `master` is sent to Transifex.
+2. Translations are sent back as a pull request that updates the `po` files. Run `node build.mts translate-contributors` after merging one to refresh the list of translators in `doc/TRANSLATING.md`.
+
+A language Transifex sends that is not in `langs.json` fails `translate-check`, so it can be added together with its label in the same pull request.
+
+To sync by hand instead, install the [Transifex client](https://developers.transifex.com/docs/cli), provide an API token in the `TX_TOKEN` environment variable and run:
 ```bash
-gulp translate
+node build.mts translate
 ```
 
 It will do the following:
 
-1. Convert all the `jade` files to `html`.
-2. Extract with gettext all translatable strings to `stf.pot`.
-3. Push `stf.pot` to Transifex.
-4. Pull from Transifex all `po` translations.
-5. Compile all `po` files to `json`.
+1. Extract all translatable strings from the UI sources to `stf.pot`.
+2. Push `stf.pot` to Transifex.
+3. Pull from Transifex the translations of every language that has a `po` file.
+4. Compile all `po` files to the `json` catalogs the UI loads.
+5. Update the list of current translators in `doc/TRANSLATING.md` from the `po` headers.
 
-Then in order to add it officially (only needs to be done once):
+Then in order to add a language officially (only needs to be done once):
 
 1. Add the language to `res/common/lang/langs.json`.
-2. Pull the specific language `tx pull -l <lang>`.
-3. Run `gulp translate`.
+2. Pull the specific language with `tx pull -l <lang>`.
 
 ## Testing
 

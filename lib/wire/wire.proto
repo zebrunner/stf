@@ -1,128 +1,109 @@
 //
-// Copyright © 2019 contains code contributed by Orange SA, authors: Denis Barbaron - Licensed under the Apache license 2.0
+// Copyright © 2019-2025 contains code contributed by Orange SA, authors: Denis Barbaron - Licensed under the Apache license 2.0
 //
 
 // Message wrapper
 
 enum MessageType {
-  CopyMessage                       = 33;
-  DeviceIntroductionMessage         = 74;
-  DeviceOnInstAppMessage            = 1;
-  DeviceAbsentMessage               = 111;
-  DeviceIdentityMessage             = 2;
-  DeviceLogcatEntryMessage          = 3;
-  DeviceLogMessage                  = 4;
-  DeviceReadyMessage                = 5;
-  DevicePresentMessage              = 6;
-  DevicePropertiesMessage           = 7;
-  DeviceRegisteredMessage           = 8;
-  DeviceStatusMessage               = 9;
-  DeviceTypeMessage                 = 20;
-  GroupMessage                      = 10;
-  InstallMessage                    = 30;
-  PhysicalIdentifyMessage           = 29;
-  JoinGroupMessage                  = 11;
-  JoinGroupByAdbFingerprintMessage  = 69;
+  CopyMessage                = 33;
+  DeviceIntroductionMessage  = 74;
+  DeviceAbsentMessage        = 1;
+  DeviceIdentityMessage      = 2;
+  DeviceLogcatEntryMessage   = 3;
+  DeviceLogMessage           = 4;
+  DeviceReadyMessage         = 5;
+  DevicePresentMessage       = 6;
+  DevicePropertiesMessage    = 7;
+  DeviceRegisteredMessage    = 8;
+  DeviceStatusMessage        = 9;
+  GroupMessage               = 10;
+  InstallMessage             = 30;
+  PhysicalIdentifyMessage    = 29;
+  JoinGroupMessage           = 11;
+  JoinGroupByAdbFingerprintMessage = 69;
   JoinGroupByVncAuthResponseMessage = 90;
-  VncAuthResponsesUpdatedMessage    = 91;
-  AutoGroupMessage                  = 70;
-  AdbKeysUpdatedMessage             = 71;
-  KeyDownMessage                    = 12;
-  KeyPressMessage                   = 13;
-  KeyUpMessage                      = 14;
-  LaunchActivityMessage             = 31;
-  LeaveGroupMessage                 = 15;
-  LogcatApplyFiltersMessage         = 16;
-  PasteMessage                      = 32;
-  ProbeMessage                      = 17;
-  ShellCommandMessage               = 18;
-  ShellKeepAliveMessage             = 19;
-  TouchDownMessage                  = 21;
-  TouchMoveMessage                  = 22;
-  TouchUpMessage                    = 23;
-  TouchCommitMessage                = 65;
-  TouchResetMessage                 = 66;
-  GestureStartMessage               = 67;
-  GestureStopMessage                = 68;
-  TransactionDoneMessage            = 24;
-  TransactionProgressMessage        = 25;
-  TypeMessage                       = 26;
-  UngroupMessage                    = 27;
-  UninstallMessage                  = 34;
-  RotateMessage                     = 35;
-  ForwardTestMessage                = 36;
-  ForwardCreateMessage              = 37;
-  ForwardRemoveMessage              = 38;
-  LogcatStartMessage                = 39;
-  LogcatStopMessage                 = 40;
-  BrowserOpenMessage                = 41;
-  BrowserClearMessage               = 42;
-  AirplaneModeEvent                 = 43;
-  BatteryEvent                      = 44;
-  DeviceBrowserMessage              = 45;
-  ConnectivityEvent                 = 46;
-  PhoneStateEvent                   = 47;
-  RotationEvent                     = 48;
-  StoreOpenMessage                  = 49;
-  ScreenCaptureMessage              = 50;
-  DeviceHeartbeatMessage            = 73;
-  RebootMessage                     = 52;
-  ConnectStartMessage               = 53;
-  ConnectStopMessage                = 54;
-  RingerSetMessage                  = 56;
-  RingerGetMessage                  = 64;
-  WifiSetEnabledMessage             = 57;
-  WifiGetStatusMessage              = 58;
-  AccountAddMenuMessage             = 59;
-  AccountAddMessage                 = 60;
-  AccountCheckMessage               = 63;
-  AccountGetMessage                 = 62;
-  AccountRemoveMessage              = 55;
-  SdStatusMessage                   = 61;
-  ReverseForwardsEvent              = 72;
-  FileSystemListMessage             = 81;
-  FileSystemGetMessage              = 82;
-  InstalledApplications             = 83;
-  GetInstalledApplications          = 84;
-  Applications                      = 85;
-  ConnectStartedMessage             = 92;
-  ConnectStoppedMessage             = 93;
-  SetIosDeviceDisplay               = 94;
-  IosDevicePorts                    = 95;
-  StartStreaming                    = 96;
-  TestPush                          = 97;
-  TouchDownIosMessage               = 98;
-  TouchMoveIosMessage               = 99;
-  DeviceIosIntroductionMessage      = 100;
-  ProviderIosMessage                = 101;
-  CheckIosDeviceConnected           = 102;
-  ConnectDeviceViaUSB               = 103;
-  DeleteIosDevice                   = 104;
-  SetAbsentDisconnectedDevices      = 105;
-  UninstallIosMessage               = 106;
-  SetDeviceApp                      = 107;
-  RotationIosEvent                  = 108;
-  GetIosDeviceApps                  = 109;
-  TransationGetMessage              = 110;
-  UpdateIosDevice                   = 112;
-  BatteryIosEvent                   = 113;
-  SdkIosVersion                     = 114;
-  SizeIosDevice                     = 115;
-  DashboardOpenMessage              = 116;
-  GetIosTreeElements                = 117;
-  TransactionTreeMessage            = 118;
-  TapDeviceTreeElement              = 119;
-  TemporarilyUnavailableMessage     = 120;
-  InitializeIosDeviceState          = 121;
-  UpdateRemoteConnectUrl            = 122;
-  GroupUserChangeMessage            = 1200;
-  DeviceGroupChangeMessage          = 1201;
-  DeviceOriginGroupMessage          = 1202;
-  DeleteUserMessage                 = 1203;
-  UpdateAccessTokenMessage          = 1204;
-  GroupChangeMessage                = 1205;
-  UserChangeMessage                 = 1206;
-  DeviceChangeMessage               = 1207;
+  VncAuthResponsesUpdatedMessage = 91;
+  AutoGroupMessage           = 70;
+  AdbKeysUpdatedMessage      = 71;
+  KeyDownMessage             = 12;
+  KeyPressMessage            = 13;
+  KeyUpMessage               = 14;
+  LaunchActivityMessage      = 31;
+  LeaveGroupMessage          = 15;
+  LogcatApplyFiltersMessage  = 16;
+  PasteMessage               = 32;
+  ProbeMessage               = 17;
+  ShellCommandMessage        = 18;
+  ShellKeepAliveMessage      = 19;
+  TouchDownMessage           = 21;
+  TouchMoveMessage           = 22;
+  TouchUpMessage             = 23;
+  TouchCommitMessage         = 65;
+  TouchResetMessage          = 66;
+  GestureStartMessage        = 67;
+  GestureStopMessage         = 68;
+  TransactionDoneMessage     = 24;
+  TransactionProgressMessage = 25;
+  TypeMessage                = 26;
+  UngroupMessage             = 27;
+  UninstallMessage           = 34;
+  RotateMessage              = 35;
+  ForwardTestMessage         = 36;
+  ForwardCreateMessage       = 37;
+  ForwardRemoveMessage       = 38;
+  LogcatStartMessage         = 39;
+  LogcatStopMessage          = 40;
+  BrowserOpenMessage         = 41;
+  BrowserClearMessage        = 42;
+  AirplaneModeEvent          = 43;
+  BatteryEvent               = 44;
+  DeviceBrowserMessage       = 45;
+  ConnectivityEvent          = 46;
+  PhoneStateEvent            = 47;
+  RotationEvent              = 48;
+  StoreOpenMessage           = 49;
+  ScreenCaptureMessage       = 50;
+  DeviceHeartbeatMessage     = 73;
+  RebootMessage              = 52;
+  ConnectStartMessage        = 53;
+  ConnectStopMessage         = 54;
+  RingerSetMessage           = 56;
+  RingerGetMessage           = 64;
+  WifiSetEnabledMessage      = 57;
+  WifiGetStatusMessage       = 58;
+  AccountAddMenuMessage      = 59;
+  AccountAddMessage          = 60;
+  AccountCheckMessage        = 63;
+  AccountGetMessage          = 62;
+  AccountRemoveMessage       = 55;
+  SdStatusMessage            = 61;
+  ReverseForwardsEvent       = 72;
+  FileSystemListMessage      = 81;
+  FileSystemGetMessage       = 82;
+  ConnectStartedMessage      = 92;
+  ConnectStoppedMessage      = 93;
+  BluetoothSetEnabledMessage = 94;
+  BluetoothGetStatusMessage  = 95;
+  BluetoothCleanBondedMessage = 96;
+  // Fork (Zebrunner) messages, mostly of the iOS/tvOS device unit. The codes
+  // stay out of the upstream range; the retired ones are reserved so they are
+  // never reused (test/wire/protobuf.mts pins all of them).
+  TouchDownIosMessage            = 98;
+  TouchMoveIosMessage            = 99;
+  BatteryIosEvent                = 113;
+  SdkIosVersion                  = 114;
+  DashboardOpenMessage           = 116;
+  TemporarilyUnavailableMessage  = 120;
+  InitializeIosDeviceState       = 121;
+  reserved 20, 83 to 85, 97, 100 to 112, 115, 117 to 119, 122 to 125;
+  GroupUserChangeMessage     = 1200;
+  DeviceGroupChangeMessage   = 1201;
+  DeviceOriginGroupMessage   = 1202;
+  DeleteUserMessage          = 1203;
+  UpdateAccessTokenMessage   = 1204;
+  GroupChangeMessage         = 1205;
+  UserChangeMessage          = 1206;
+  DeviceChangeMessage        = 1207;
 }
 
 message UpdateAccessTokenMessage {
@@ -155,11 +136,21 @@ message UserGroupsField {
   repeated string subscribed = 2;
 }
 
+message AlertMessageField {
+  required string activation = 1;
+  required string data = 2;
+  required string level = 3;
+}
+
+message UserSettingsField {
+  optional AlertMessageField alertMessage = 1;
+}
 message UserField {
   required string email = 1;
   required string name = 2;
   required string privilege = 3;
   required UserGroupsField groups = 4;
+  required UserSettingsField settings = 5;
 }
 
 message UserChangeMessage {
@@ -190,8 +181,11 @@ message DeviceProviderField {
 }
 
 message DeviceGroupField {
-  optional string origin = 1;
-  optional string originName = 2;
+  optional string id = 1;
+  optional string name = 2;
+  optional string origin = 3;
+  optional string originName = 4;
+  optional GroupOwnerField owner = 5;
 }
 
 message DeviceField {
@@ -269,7 +263,6 @@ message GroupUserChangeMessage {
   required string id = 3;
   required bool isDeletedLater = 4;
   repeated string devices = 5;
-
 }
 
 message ConnectStartedMessage {
@@ -310,15 +303,6 @@ message TransactionDoneMessage {
   optional string body = 5;
 }
 
-message TransactionTreeMessage {
-  required string source = 1;
-  required uint32 seq = 2;
-  required bool success = 3;
-  optional string data = 4;
-  optional string body = 5;
-}
-
-
 // Logging
 
 message DeviceLogMessage {
@@ -358,12 +342,6 @@ message ProviderMessage {
   required string name = 2;
 }
 
-message ProviderIosMessage {
-  required string channel = 1;
-  required string name = 2;
-  required string screenWsUrlPattern = 3;
-}
-
 message DeviceHeartbeatMessage {
   required string serial = 1;
 }
@@ -372,21 +350,8 @@ message DeviceIntroductionMessage {
   required string serial = 1;
   required DeviceStatus status = 2;
   required ProviderMessage provider = 3;
-  optional DeviceGroupMessage group = 4;
-}
-
-message DeviceIosIntroductionMessage {
-  required string serial = 1;
-  required DeviceStatus status = 2;
-  required ProviderMessage provider = 3;
-}
-
-message InitializeIosDeviceState {
-  required string serial = 1;
-  required DeviceStatus status = 2;
-  required ProviderIosMessage provider = 3;
-  required IosDevicePorts ports = 4;
-  required UpdateIosDevice options = 5;
+  required double statusTimeStamp = 4;
+  optional DeviceGroupMessage group = 5;
 }
 
 message DeviceRegisteredMessage {
@@ -399,7 +364,6 @@ message DevicePresentMessage {
 
 message DeviceAbsentMessage {
   required string serial = 1;
-  // optional string applications = 2;
 }
 
 message DeviceReadyMessage {
@@ -416,6 +380,7 @@ enum DeviceStatus {
   ONLINE = 3;
   CONNECTING = 4;
   AUTHORIZING = 5;
+  // Fork (Zebrunner)
   PREPARING = 6;
   UNHEALTHY = 7;
 }
@@ -423,11 +388,7 @@ enum DeviceStatus {
 message DeviceStatusMessage {
   required string serial = 1;
   required DeviceStatus status = 2;
-}
-
-message DeviceTypeMessage {
-  required string serial = 1;
-  required string type = 2;
+  required double statusTimeStamp = 3;
 }
 
 message DeviceDisplayMessage {
@@ -540,6 +501,7 @@ message JoinGroupByAdbFingerprintMessage {
   required string fingerprint = 2;
   optional string comment = 3;
   optional string currentGroup = 4;
+  optional string publicKey = 5;
 }
 
 message JoinGroupByVncAuthResponseMessage {
@@ -565,11 +527,6 @@ message LeaveGroupMessage {
 message PhysicalIdentifyMessage {
 }
 
-message TouchDownIosMessage {
- required float x = 1;
- required float y = 2;
-}
-
 message TouchDownMessage {
   required uint32 seq = 1;
   required uint32 contact = 2;
@@ -584,14 +541,6 @@ message TouchMoveMessage {
   required float x = 3;
   required float y = 4;
   optional float pressure = 5;
-}
-
-message TouchMoveIosMessage {
-  required float toX = 1;
-  required float toY = 2;
-  required float fromX = 3;
-  required float fromY = 4;
-  optional float duration = 5;
 }
 
 message TouchUpMessage {
@@ -690,10 +639,6 @@ message UninstallMessage {
   required string packageName = 1;
 }
 
-message UninstallIosMessage {
-  required string packageName = 1;
-}
-
 message LaunchActivityMessage {
   required string action = 1;
   required string component = 2;
@@ -749,6 +694,8 @@ message ScreenCaptureMessage {
 }
 
 message ConnectStartMessage {
+  optional string email = 1;
+  repeated string adbPublicKeys = 2;
 }
 
 message ConnectStopMessage {
@@ -799,6 +746,16 @@ message WifiSetEnabledMessage {
 message WifiGetStatusMessage {
 }
 
+message BluetoothSetEnabledMessage {
+  required bool enabled = 1;
+}
+
+message BluetoothGetStatusMessage {
+}
+message BluetoothCleanBondedMessage {
+}
+
+
 // Events, these must be kept in sync with STFService/wire.proto
 
 message AirplaneModeEvent {
@@ -838,83 +795,48 @@ message RotationEvent {
   required int32 rotation = 2;
 }
 
-message RotationIosEvent {
-  required string serial = 1;
-  required int32 rotation = 2;
-  required int32 width = 3;
-  required int32 height = 4;
+// Fork (Zebrunner) messages
+
+message ProviderIosMessage {
+  required string channel = 1;
+  required string name = 2;
+  required string screenWsUrlPattern = 3;
 }
 
-message SetIosDeviceDisplay {
-  required string serial = 1;
-  required string channel = 2;
-  required int32 width = 3;
-  required int32 height = 4;
-}
 message IosDevicePorts {
   required int32 screenPort = 2;
   required int32 connectPort = 3;
 }
-message StartStreaming {
-  required int32 port = 1;
-  required string channel = 2;
-}
-message TestPush {
-  required string action = 1;
-}
-message CheckIosDeviceConnected {
-  required string id = 1;
-  required string channel = 2;
-}
-message ConnectDeviceViaUSB {
-  required string id = 1;
-}
-message DeleteIosDevice {
-  required string serial = 1;
-}
-message  SetAbsentDisconnectedDevices {
-}
-message Applications {
-  required string bundleId = 1;
-  required string bundleName = 2;
-}
-message InstalledApplications {
-  required string serial = 1;
-  repeated Applications applications = 2;
-}
-message TransportInstalledApps  {
-  required string serial = 1;
-}
-message SetDeviceApp {
-  required string serial = 1;
-  required string bundleId = 2;
-  required string bundleName =3;
-  required string pathToApp = 4;
-}
-message GetIosDeviceApps {
-  required string serial = 1;
-  required string bundleId = 2;
-  required string bundleName =3;
-  required string pathToApp = 4;
-}
-message TransationGetMessage {
-  required string source = 1;
-  required string data = 2;
-}
-message GetInstalledApplications {
-  required string serial = 1;
-  // optional string channel = 2;
-}
-message DeviceOnInstAppMessage {
-  required string serial = 1;
-}
-message UpdateIosDevice{
+
+message UpdateIosDevice {
   required string id = 1;
   required string name = 2;
   required string platform = 3;
   required string architect = 4;
 }
-message BatteryIosEvent{
+
+message InitializeIosDeviceState {
+  required string serial = 1;
+  required DeviceStatus status = 2;
+  required ProviderIosMessage provider = 3;
+  required IosDevicePorts ports = 4;
+  required UpdateIosDevice options = 5;
+}
+
+message TouchDownIosMessage {
+  required float x = 1;
+  required float y = 2;
+}
+
+message TouchMoveIosMessage {
+  required float toX = 1;
+  required float toY = 2;
+  required float fromX = 3;
+  required float fromY = 4;
+  optional float duration = 5;
+}
+
+message BatteryIosEvent {
   required string id = 1;
   required string health = 2;
   required string source = 3;
@@ -923,29 +845,16 @@ message BatteryIosEvent{
   required string temp = 6;
   required int32 scale = 7;
 }
-message SdkIosVersion{
+
+message SdkIosVersion {
   required string id = 1;
   required string device = 2;
   required string sdkVersion = 3;
 }
-message SizeIosDevice{
-  required string id = 1;
-  required double height = 2;
-  required double width = 3;
-  required int32 scale = 4;
-}
+
 message DashboardOpenMessage {
-}
-message GetIosTreeElements {
-}
-message TapDeviceTreeElement {
-  required string label = 1;
 }
 
 message TemporarilyUnavailableMessage {
   required string serial = 1;
-}
-
-message UpdateRemoteConnectUrl {
-  required string serial= 1;
 }

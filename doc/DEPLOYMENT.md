@@ -327,6 +327,7 @@ ExecStart=/usr/bin/docker run --rm \
   -e "SECRET=YOUR_SESSION_SECRET_HERE" \
   -e "SAML_ID_PROVIDER_ENTRY_POINT_URL=YOUR_ID_PROVIDER_ENTRY_POINT" \
   -e "SAML_ID_PROVIDER_ISSUER=YOUR_ID_PROVIDER_ISSUER" \
+  -e "SAML_ID_PROVIDER_CALLBACK_URL=YOUR_ID_PROVIDER_CALLBACK_URL" \
   -e "SAML_ID_PROVIDER_CERT_PATH=/etc/id_provider.cert" \
   -p %i:3000 \
   devicefarmer/stf:latest \
@@ -334,20 +335,6 @@ ExecStart=/usr/bin/docker run --rm \
     --app-url https://stf.example.org/
 ExecStop=-/usr/bin/docker stop -t 10 %p-%i
 ```
-
-#### Option E: Zebrunner
-
-It uses Zebrunner for authentication.
-In order to config it, you need to provide two endpoints:
-
-```
-"ZEBRUNNER_LOGIN_URL=https://yourzebrunner.com/api/iam/v1/auth/login"
-"ZEBRUNNER_USERINFO_URL=https://yourzebrunner.com/api/iam/v1/users"
-```
-
-See `stf auth-zebrunner --help` and change one of the unit files above as required.
-
-**NOTE:** Don't forget to change the `--auth-url` option in the `stf-app` unit. The value should be `https://stf.example.org/auth/zebrunner/`
 
 #### Other options
 
@@ -978,7 +965,7 @@ http {
   upstream stf_api {
     server 192.168.255.100:3700 max_fails=0;
   }
-
+  
   upstream swagger_ui {
     server 192.168.255.100:3800 max_fails=0;
   }

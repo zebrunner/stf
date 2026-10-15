@@ -5,8 +5,8 @@
 .git/
 .idea/
 node_modules/
+**/package-lock.json
 npm-debug.log
-res/bower_components/
 res/build/
 rethinkdb_data/
 temp/

@@ -1,8 +1,11 @@
+//
+  Copyright © 2024 contains code contributed by Orange SA, authors: Denis Barbaron - Licensed under the Apache license 2.0
+//
+
 doctype html
-html(ng-app='app')
+html(lang='en')
   head
     meta(charset='utf-8')
-    base(href='/')
     meta(name='viewport', content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
     meta(name='mobile-web-app-capable', content='yes')
     meta(name='apple-mobile-web-app-capable', content='yes')
@@ -10,21 +13,8 @@ html(ng-app='app')
     meta(name='format-detection', content='telephone=no')
     meta(name='apple-mobile-web-app-status-bar-style', content='black-translucent')
     link(href='static/logo/exports/STF-128.png', rel='apple-touch-icon')
-
-    title(ng-bind='pageTitle ? "STF - " + pageTitle : "STF"') STF
-  body(ng-cloak).bg-1.fill-height.unselectable
-    div(ng-controller='LayoutCtrl', basic-mode, admin-mode, standalone, landscape).fill-height
-      .pane-top.fill-height(fa-pane)
-        .pane-top-bar(fa-pane, pane-id='menu', pane-anchor='north',
-          pane-size='{{$root.basicMode ? "88px" : "44px" }}',
-          pane-handle='')
-          div(ng-include='"menu.pug"')
-
-        .pane-center(fa-pane, pane-id='main', pane-anchor='center').fill-height
-          socket-state
-          div(growl)
-          div(ng-view).fill-height
-
-    script(src='/app/api/v1/state.js')
-    script(src='static/app/build/entry/commons.entry.js')
+    title STF
+  body.unselectable
+    #root
+    script(src='app/api/v1/state.js')
     script(src='static/app/build/entry/app.entry.js')
