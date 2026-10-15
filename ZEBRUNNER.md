@@ -55,6 +55,7 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 | `STF_STORAGE_TOKEN` | | Token the STF units send to the storage (`x-stf-internal-token`); set for `storage-temp`/`storage-s3` (mcloud `variables.env`) and for the device containers (mcloud-agent). It turns the protection of the storage on, the Zebrunner deployments must set it |
 | `STF_STORAGE_TEMP_DOWNLOAD_ALLOW` | | Private network (CIDR or address) users may install apps from by URL, e.g. an artifact server; `--download-allow` can be repeated |
 | `SSID` | `ssid` | Name of the session cookie of the app unit |
+| `STF_SESSION_TTL_SECONDS` | `86400` | Lifetime of a session after the sign-in, see [Sessions](#sessions) |
 | `ZEBRUNNER_LOGIN_URL` | | Login endpoint of Zebrunner IAM (`.../api/iam/v1/auth/login`), for `auth-zebrunner` |
 | `ZEBRUNNER_USERINFO_URL` | | User endpoint of Zebrunner IAM (`.../api/iam/v1/users`), for `auth-zebrunner` |
 | `STF_ADMIN_EMAIL`, `STF_ADMIN_NAME` | `administrator@fakedomain.com`, `administrator` | Owner of the root group and of the iOS devices |
@@ -76,6 +77,10 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 
 The device lists and `GET /api/v1/devices/{serial}` also return `name`, the model of the device.
 
+## Sessions
+
+A sign-in starts a session in the database (`sessions` table, created by `stf migrate`); the session cookie is httpOnly and SameSite=Lax (Secure behind https). The app, API and websocket units drop a session that ended or is older than `STF_SESSION_TTL_SECONDS`, the users sign in again; the logout of the UI (`POST /app/api/v1/logout`) ends the session on the server. The Zebrunner sign-in hands the user to the app with a token that expires after two minutes, and after five refused sign-ins of a user within three minutes it answers 429 for three minutes, doubled with every lock up to 30 minutes. See `lib/util/authsession.ts` and `lib/util/ratelimit.ts`.
+
 ## Storage
 
 With `STF_STORAGE_TOKEN` set, `/s/upload`, `/s/download` and `/s/blob` of the storage units answer only:
@@ -93,6 +98,7 @@ From the images built from `develop` (3.0 and earlier):
 
 - set `STF_STORAGE_TOKEN` in `variables.env` of mcloud (`./zebrunner.sh setup` generates it), the same value as `STF_STORAGE_TOKEN` of mcloud-agent; without it the storage stays open;
 - use a mcloud-device image that installs go-ios, socat and curl itself;
+- run `stf migrate` (the `stf-migrate` service of mcloud does) for the `sessions` table; the users sign in once more;
 - `stf storage-temp` still accepts the `--connect-push`/`--connect-sub` mcloud passes, they are not used.
 
 ## Development
