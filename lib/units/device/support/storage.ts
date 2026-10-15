@@ -10,6 +10,7 @@ import Promise from 'bluebird'
 import request from '@cypress/request'
 
 import logger from '../../../util/logger.js'
+import storageauth from '../../../util/storageauth.js'
 import type {Readable} from 'stream'
 import type FormData from 'form-data'
 import type {DeviceOptions, Storage, StoredFile} from '../../../types/device.js'
@@ -26,9 +27,9 @@ export default syrup.serial()
         reject_ = reject
       })
 
-      var args = {
+      var args = storageauth.sign({
         url: url.resolve(options.storageUrl, util.format('s/upload/%s', type))
-      }
+      })
 
       var req = request.post(args, function(err, res, body) {
         if (err) {

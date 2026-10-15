@@ -11,6 +11,7 @@ import request from '@cypress/request'
 
 import logger from '../../../../util/logger.js'
 import download from '../../../../util/download.js'
+import storageauth from '../../../../util/storageauth.js'
 import manifest from './task/manifest.js'
 
 interface ApkPluginOptions {
@@ -38,7 +39,7 @@ export default function(options: ApkPluginOptions) {
     )
     download(url.resolve(options.storageUrl, orig), {
         dir: options.cacheDir
-      })
+      }, {headers: storageauth.forwardHeaders(req)})
       .then(manifest)
       .then(function(data) {
         res.status(200)
@@ -61,7 +62,7 @@ export default function(options: ApkPluginOptions) {
       '/s/blob/%s/%s'
     , req.params.id
     , req.params.name
-    )))
+    )), {headers: storageauth.forwardHeaders(req)})
     .pipe(res)
   })
 

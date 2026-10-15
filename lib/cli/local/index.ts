@@ -288,6 +288,10 @@ var handler = function(argv: CommandArgv<typeof builder>) {
   // default limit of 10. So, it's not a leak, but a refactor wouldn't hurt.
   process.setMaxListeners(20)
 
+  // Fork (Zebrunner): the token of the units for the storage routes, the forked units inherit it
+  process.env.STF_STORAGE_TOKEN = process.env.STF_STORAGE_TOKEN ||
+    require('crypto').randomBytes(32).toString('hex')
+
   function run() {
     var procs = [
       // app triproxy
@@ -403,6 +407,7 @@ var handler = function(argv: CommandArgv<typeof builder>) {
     , procutil.fork(path.resolve(import.meta.dirname, '..'), [
           util.format('storage-%s', argv.storageType)
         , '--port', argv.storagePort
+        , '--secret', argv.authSecret
         ].concat(JSON.parse(argv.storageOptions)))
 
       // image processor

@@ -9,9 +9,13 @@ import url from 'url'
 import Promise from 'bluebird'
 import request from '@cypress/request'
 
-export default function(path: string, options: {storageUrl: string}) {
+export default function(
+  path: string
+, options: {storageUrl: string}
+, headers: Record<string, string> = {}
+) {
   return new Promise<stream.PassThrough>(function(resolve, reject) {
-    var res = request.get(url.resolve(options.storageUrl, path))
+    var res = request.get({url: url.resolve(options.storageUrl, path), headers: headers})
     var ret = new stream.PassThrough()
     res.pipe(ret)
 

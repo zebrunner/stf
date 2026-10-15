@@ -36,6 +36,33 @@ var builder = function(yargs: Argv) {
     , array: true
     , type: 'string'
     })
+    // Fork (Zebrunner): authentication of the storage routes and SSRF protection, see
+    // lib/util/storageauth.ts and lib/util/urlsafety.ts
+    .option('secret', {
+      describe: 'The secret of the session cookies of the app unit, the same as its --secret.'
+    , type: 'string'
+    , default: process.env.SECRET
+    , demand: true
+    })
+    .option('storage-token', {
+      describe: 'The token the STF units send to the storage, the same as the STF_STORAGE_TOKEN ' +
+        'environment variable of the device containers.'
+    , type: 'string'
+    , default: process.env.STF_STORAGE_TOKEN
+    , demand: true
+    })
+    .option('ssid', {
+      describe: 'The name of the session cookie of the app unit.'
+    , type: 'string'
+    , default: process.env.SSID || 'ssid'
+    })
+    .option('download-allow', {
+      describe: 'Private networks (CIDR or address) users may download files from, ' +
+        'e.g. an internal artifact server. Public addresses are always allowed.'
+    , array: true
+    , type: 'string'
+    , default: []
+    })
     .option('save-dir', {
       describe: 'The location where files are saved to.'
     , type: 'string'
@@ -99,6 +126,10 @@ var handler = function(argv: CommandArgv<typeof builder>) {
   , saveDir: argv.saveDir
   , maxFileSize: argv.maxFileSize
   , bundletoolPath: argv.bundletoolPath
+  , secret: argv.secret
+  , storageToken: argv.storageToken
+  , ssid: argv.ssid
+  , downloadAllow: argv.downloadAllow
   , keystore: {
       ksPath: `/tmp/${argv.ks}.keystore`
     , ksKeyAlias: argv.ksKeyAlias

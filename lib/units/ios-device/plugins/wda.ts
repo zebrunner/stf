@@ -6,6 +6,7 @@ import Promise from 'bluebird'
 import request from '@cypress/request'
 
 import logger from '../../../util/logger.js'
+import storageauth from '../../../util/storageauth.js'
 import wire from '../../../wire/index.js'
 import wirerouter from '../../../wire/router.js'
 import wireutil from '../../../wire/util.js'
@@ -121,9 +122,9 @@ export default syrup.serial()
           wdaClient.screenshot()
             .then(function(response: WdaValueResponse<string>) {
               var reply = wireutil.reply(options.serial)
-              var args = {
+              var args = storageauth.sign({
                 url: url.resolve(options.storageUrl, util.format('s/upload/%s', 'image'))
-              }
+              })
 
               var imageBuffer = Buffer.from(response.value, 'base64')
 

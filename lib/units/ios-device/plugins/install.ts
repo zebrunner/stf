@@ -1,12 +1,9 @@
 import fs from 'fs'
 import http from 'http'
 import https from 'https'
-import {Readable} from 'stream'
-import url from 'url'
 import {exec as childExec} from 'child_process'
 
 import syrup from '@devicefarmer/stf-syrup'
-import request from '@cypress/request'
 import Promise from 'bluebird'
 import * as uuid from 'uuid'
 
@@ -14,6 +11,7 @@ import logger from '../../../util/logger.js'
 import wire from '../../../wire/index.js'
 import wireutil from '../../../wire/util.js'
 import promiseutil from '../../../util/promiseutil.js'
+import storageauth from '../../../util/storageauth.js'
 import type {IosDeviceOptions, Push, Router} from '../../../types/ios-device.js'
 import routerSyrup from '../support/router.js'
 import pushSyrup from '../support/push.js'
@@ -85,14 +83,6 @@ function isSimulatorManifest(manifest: IosManifest): boolean {
   return Boolean(manifest.DTPlatformName?.includes('simulator'))
 }
 
-function uploadRequestForLogging(options: IosDeviceOptions, href: string | null) {
-  var req = request({
-    url: url.resolve(options.storageUrl, href || '')
-  })
-
-  return new Readable().wrap(req as unknown as NodeJS.ReadableStream)
-}
-
 function createProgressSender(
   options: IosDeviceOptions
 , push: Push
@@ -138,7 +128,8 @@ function downloadFile(
     }
 
     file.on('error', reject)
-    httpServer.get(downloadUrl, handleResponse).on('error', reject)
+    httpServer.get(downloadUrl, {headers: storageauth.internalHeaders()}, handleResponse)
+      .on('error', reject)
   })
 }
 
@@ -228,14 +219,12 @@ function handleInstall(
   var manifest = JSON.parse(message.manifest || '{}') as IosManifest
   var reply = wireutil.reply(options.serial)
   var sendProgress = createProgressSender(options, push, channel)
-  var reqInfo = uploadRequestForLogging(options, message.href)
   var id = uuid.v4()
   var tmpDirPath = '/tmp/' + id
   var filePath = tmpDirPath + '/' + id
   var httpServer: typeof http | typeof https = http
   var downloadUrl = options.storageUrl.replace(/\/+$/, '') + (message.href || '')
 
-  log.info('regInfo: ' + JSON.stringify(reqInfo))
   log.info('mkdir "%s"', tmpDirPath)
   if (options.storageUrl.includes('https://')) {
     httpServer = https
