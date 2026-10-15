@@ -140,7 +140,9 @@ export default function(options: ZebrunnerAuthOptions) {
       }
     , secret: options.secret
     , header: {
-        exp: Date.now() + 24 * 3600 * 1000
+        // The token only carries the user to the app, which starts a session with it right away
+        // (lib/util/authsession.ts); in the address it would otherwise sign in for a whole day
+        exp: Date.now() + 2 * 60 * 1000
       }
     })
 
