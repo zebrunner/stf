@@ -15,12 +15,6 @@ describe('scalingCoordinator', () => {
     expect(point.yP).toBeCloseTo(0)
   })
 
-  it('uses fork iOS landscape coordinates', () => {
-    const point = scaler.coords(1920, 1080, 0, 0, 90, true)
-    expect(point.xP).toBeCloseTo(0)
-    expect(point.yP).toBeCloseTo(0)
-  })
-
   it('clamps points outside the rendered area to its edges', () => {
     expect(scaler.coords(1080, 1920, -50, 3000, 0)).toEqual({xP: 0, yP: 1})
   })

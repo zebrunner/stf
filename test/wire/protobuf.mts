@@ -134,40 +134,14 @@ var pbjs5MessageType: Record<string, number> = {
 , GroupChangeMessage: 1205
 , UserChangeMessage: 1206
 , DeviceChangeMessage: 1207
-  // Fork (Zebrunner) message types
-, DeviceOnInstAppMessage: 111
-, DeviceTypeMessage: 20
-, InstalledApplications: 83
-, GetInstalledApplications: 84
-, Applications: 85
-, TestPush: 97
+  // Fork (Zebrunner) message types, the retired codes are reserved in wire.proto
 , TouchDownIosMessage: 98
 , TouchMoveIosMessage: 99
-, DeviceIosIntroductionMessage: 100
-, ProviderIosMessage: 101
-, CheckIosDeviceConnected: 102
-, ConnectDeviceViaUSB: 103
-, DeleteIosDevice: 104
-, SetAbsentDisconnectedDevices: 105
-, UninstallIosMessage: 106
-, SetDeviceApp: 107
-, RotationIosEvent: 108
-, GetIosDeviceApps: 109
-, TransationGetMessage: 110
-, UpdateIosDevice: 112
 , BatteryIosEvent: 113
 , SdkIosVersion: 114
-, SizeIosDevice: 115
 , DashboardOpenMessage: 116
-, GetIosTreeElements: 117
-, TransactionTreeMessage: 118
-, TapDeviceTreeElement: 119
 , TemporarilyUnavailableMessage: 120
 , InitializeIosDeviceState: 121
-, UpdateRemoteConnectUrl: 122
-, SetIosDeviceDisplay: 123
-, IosDevicePorts: 124
-, StartStreaming: 125
 }
 
 var pbjs5Encodings = [

@@ -18,7 +18,8 @@ import s3sdk from '@aws-sdk/client-s3'
 import credentialProviders from '@aws-sdk/credential-providers'
 
 import logger from '../../util/logger.js'
-import download from '../../util/download.js'
+import storageauth, {type StorageSecurityOptions} from '../../util/storageauth.js'
+import urlsafety from '../../util/urlsafety.js'
 import requtil from '../../util/requtil.js'
 import type {Readable} from 'stream'
 
@@ -41,7 +42,7 @@ interface UploadedFile {
   name?: string | null
 }
 
-export default function(options: S3StorageOptions) {
+export default function(options: S3StorageOptions & StorageSecurityOptions) {
   var log = logger.createLogger('storage:s3')
   var app = express()
   var server = http.createServer(app)
@@ -60,6 +61,7 @@ export default function(options: S3StorageOptions) {
   app.set('case sensitive routing', true)
   app.set('trust proxy', true)
 
+  app.use(storageauth.middleware(options))
   app.use(bodyParser.json())
 
   app.disable('x-powered-by')
@@ -140,7 +142,6 @@ export default function(options: S3StorageOptions) {
           log.info('Uploaded "%s" to "%s"', file.name, file.path)
           return putObject(plugin, file)
             .then(function(id) {
-              log.info('Stored upload "%s" for plugin "%s"', file.path, plugin)
               return {
                 field: field
               , id: id
@@ -194,9 +195,9 @@ export default function(options: S3StorageOptions) {
       var plugin = req.params.plugin
       requtil.validate(req)
         .then(function() {
-          return download(req.body.url, {
+          return urlsafety.download(req.body.url, {
             dir: options.cacheDir
-          })
+          }, options)
         })
         .then(function(file) {
           file.name = crypto.createHash('md5').update(req.body.url).digest('hex')

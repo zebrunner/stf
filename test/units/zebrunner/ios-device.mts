@@ -3,10 +3,10 @@ import type {AddressInfo} from 'node:net'
 
 import {expect} from 'chai'
 
-import iosutil from '../../lib/units/ios-device/plugins/util/iosutil.js'
-import rp from '../../lib/units/ios-device/plugins/util/rp.js'
+import iosutil from '../../../lib/units/ios-device/plugins/util/iosutil.js'
+import rp from '../../../lib/units/ios-device/plugins/util/rp.js'
 
-describe('ios-device utility mappings', function() {
+describe('zebrunner: ios-device utility mappings', function() {
   it('should map keyboard keys to WDA control characters', function() {
     expect(iosutil.asciiparser('tab')).to.equal('\x09')
     expect(iosutil.asciiparser('enter')).to.equal('\r')
@@ -60,7 +60,7 @@ describe('ios-device utility mappings', function() {
   })
 })
 
-describe('ios-device request promise helper', function() {
+describe('zebrunner: ios-device request promise helper', function() {
   var server: http.Server, origin: string
 
   before(function(done) {

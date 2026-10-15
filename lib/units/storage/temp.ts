@@ -16,7 +16,8 @@ import Promise from 'bluebird'
 import logger from '../../util/logger.js'
 import Storage from '../../util/storage.js'
 import requtil from '../../util/requtil.js'
-import download from '../../util/download.js'
+import storageauth, {type StorageSecurityOptions} from '../../util/storageauth.js'
+import urlsafety from '../../util/urlsafety.js'
 import bundletool from '../../util/bundletool.js'
 
 var require = createRequire(import.meta.url)
@@ -33,7 +34,7 @@ interface TempStorageOptions {
   cacheDir?: string
 }
 
-export default function(options: TempStorageOptions) {
+export default function(options: TempStorageOptions & StorageSecurityOptions) {
   var log = logger.createLogger('storage:temp')
   var app = express()
   var server = http.createServer(app)
@@ -43,6 +44,7 @@ export default function(options: TempStorageOptions) {
   app.set('case sensitive routing', true)
   app.set('trust proxy', true)
 
+  app.use(storageauth.middleware(options))
   app.use(bodyParser.json())
 
   app.disable('x-powered-by')
@@ -57,9 +59,9 @@ export default function(options: TempStorageOptions) {
   ) {
     requtil.validate(req)
       .then(function() {
-        return download(req.body.url, {
+        return urlsafety.download(req.body.url, {
           dir: options.cacheDir
-        })
+        }, options)
       })
       .then(function(file) {
         file.name = crypto.createHash('md5').update(req.body.url).digest('hex')
@@ -209,7 +211,6 @@ export default function(options: TempStorageOptions) {
           'attachment; filename="' + path.basename(file.name as string) + '"')
       }
       res.set('Content-Type', file.type as string)
-      log.info('Serving stored file "%s"', file.path)
       res.sendFile(file.path)
     }
     else {

@@ -36,6 +36,7 @@ import {useStandalone} from '@/ui/modes'
 import {usePageTitle} from '@/ui/page-title'
 import {stateColor} from '@/ui/device-state'
 import {ControlRedirect} from './ControlRedirect'
+import {TemporarilyUnavailableModal} from './TemporarilyUnavailableModal'
 import DeviceControlPanel from './device-control/DeviceControlPanel'
 import type {PaneProps} from './types'
 import classes from './ControlPage.module.css'
@@ -120,36 +121,6 @@ function DeviceLostModal({device, onReconnect, onLeave, onDismiss}: {
   )
 }
 
-function TemporarilyUnavailableModal({message, onReconnect, onLeave, onDismiss}: {
-  message: string
-  onReconnect: () => void
-  onLeave: () => void
-  onDismiss: () => void
-}) {
-  const {t} = useTranslation()
-  return (
-    <Modal
-      opened
-      onClose={onDismiss}
-      centered
-      title={<Text fw={600} c='red'>{t('Disconnected')}</Text>}
-      classNames={{content: 'temporarily-unavailable-modal'}}
-    >
-      <Stack align='center' gap='md' id='temporarily-unavailable'>
-        <IconSitemap size={44} stroke={1.3} />
-        <Text ta='center'>{t(message)}</Text>
-        <Group justify='space-between' w='100%' mt='md'>
-          <Button leftSection={<IconRefresh size={16} />} onClick={onReconnect}>
-            {t('Try to reconnect')}
-          </Button>
-          <Button variant='light' color='green' leftSection={<IconSitemap size={16} />} onClick={onLeave}>
-            {t('Go to Device List')}
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
-  )
-}
 
 function useSplit(initial: number) {
   const [width, setWidth] = useState(initial)
@@ -329,15 +300,13 @@ function ControlSession() {
     )
   }
 
-  const content = standalone ? (
-    <Box className='fill-height'>
-      <DeviceControlPanel device={device} control={control} standalone />
-    </Box>
-  ) : <ControlWorkspace device={device} control={control} />
-
   return (
     <>
-      {content}
+      {standalone ?
+        <Box className='fill-height'>
+          <DeviceControlPanel device={device} control={control} standalone />
+        </Box> :
+        <ControlWorkspace device={device} control={control} />}
       {lost && (
         <DeviceLostModal
           device={device}

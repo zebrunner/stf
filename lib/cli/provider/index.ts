@@ -204,6 +204,9 @@ var builder = function(yargs: Argv) {
     , demand: true
     , default: 5900
     })
+    // Fork (Zebrunner): the device containers set STF_PROVIDER_DEVICE_NAME and STF_PROVIDER_HOST, which
+    // .env() turns into options, so they have to be declared for .strict(). The device name is read
+    // by lib/util/devutil.ts, the host only by the container scripts.
     .option('device-name', {
       describe: 'Device name.'
     , type: 'string'
@@ -267,9 +270,7 @@ var handler = function(argv: CommandArgv<typeof builder, {serial: (string | numb
       , '--boot-complete-timeout', argv.bootCompleteTimeout
       , '--vnc-initial-size', argv.vncInitialSize.join('x')
       , '--mute-master', argv.muteMaster
-      , '--host', argv.host
       ]
-      .concat(argv.deviceName ? ['--device-name', argv.deviceName] : [])
       .concat(argv.connectSub.reduce<CliArg[]>(function(all, val) {
         return all.concat(['--connect-sub', val])
       }, []))

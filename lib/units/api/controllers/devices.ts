@@ -11,6 +11,7 @@ var log = logger.createLogger('api:controllers:devices')
 
 import apiutil from '../../../util/apiutil.js'
 import lockutil from '../../../util/lockutil.js'
+import deviceStatus from '../helpers/device-status.js'
 import util from 'util'
 import * as uuid from 'uuid'
 import wire from '../../../wire/index.js'
@@ -274,22 +275,6 @@ function getDeviceBySerial(req: ApiRequest, res: Response) {
     })
 }
 
-function getDeviceSize(req: ApiRequest, res: Response) {
-  var serial = req.swagger.params.serial.value
-
-  dbapi.getDeviceSize(serial)
-    .then(function(display) {
-      if (!display) {
-        return res.status(200).json({height: 0, width: 0, scale: 0})
-      }
-      return res.status(200).json(display)
-    })
-    .catch(function(err) {
-      log.info('Failed to get device size: ', err.stack)
-      return res.status(200).json({height: 0, width: 0, scale: 0})
-    })
-}
-
 function getDeviceGroups(req: ApiRequest, res: Response) {
   const serial = req.swagger.params.serial.value
   const fields = req.swagger.params.fields.value
@@ -311,40 +296,6 @@ function getDeviceGroups(req: ApiRequest, res: Response) {
   .catch(function(err) {
     apiutil.internalError(res, 'Failed to get device groups: ', err.stack)
   })
-}
-
-function getDeviceOwner(req: ApiRequest, res: Response) {
-  var serial = req.swagger.params.serial.value
-
-  dbapi.getDeviceGroupOwner(serial)
-    .then(function(owner) {
-      if (!owner) {
-        return res.status(404).json({
-          success: false
-        , description: 'Device not found'
-        })
-      }
-      return res.status(200).json(owner)
-    })
-    .catch(function(err) {
-      log.info('Failed to get device owner: ', err.stack)
-      res.status(500).json({
-        success: false
-      })
-    })
-}
-
-function getDeviceType(req: ApiRequest, res: Response) {
-  var serial = req.swagger.params.serial.value
-
-  dbapi.getDeviceType(serial)
-    .then(function(deviceType) {
-      return res.status(200).json(deviceType)
-    })
-    .catch(function(err) {
-      log.info('Failed to get device type: ', err.stack)
-      return res.status(200).json({deviceType: null})
-    })
 }
 
 function getDeviceBookings(req: ApiRequest, res: Response) {
@@ -548,48 +499,16 @@ function putDeviceInfoBySerial(req: ApiRequest, res: Response) {
       }
       var updates: Promise<unknown>[] = []
       // Update fields based on given body
-      if (typeof body?.note !== 'undefined') {
-        updates.push(dbapi.setDeviceNote(serial, body.note))
+      if (_.has(body, 'note')) {
+        updates.push(dbapi.setDeviceNote(serial, body!.note!))
       }
+      // Fork (Zebrunner): the status of a device managed by Zebrunner
       if (typeof body?.status === 'string') {
-        const status = body.status.trim().toLowerCase()
-
-        switch (status) {
-          case 'disconnected':
-            updates.push(dbapi.setDeviceAbsent(serial))
-            break
-          case 'offline':
-            updates.push(dbapi.setDeviceStatusOverride(serial, 1))
-            break
-          case 'available':
-            updates.push(dbapi.setDeviceStatusOverride(serial, 3))
-            updates.push(dbapi.unsetDeviceOwner(serial))
-            updates.push(dbapi.unmarkDeviceAsUsing(serial))
-            break
-          case 'unauthorized':
-            updates.push(dbapi.setDeviceStatusOverride(serial, 5))
-            break
-          case 'preparing':
-            updates.push(dbapi.setDeviceStatusOverride(serial, 6))
-            break
-          case 'unhealthy':
-            updates.push(dbapi.setDeviceStatusOverride(serial, 7))
-            break
-          case 'busy':
-            if (typeof body.owner?.name !== 'string' || !body.owner.name.trim()) {
-              return apiutil.respond(res, 400, 'Missing owner.name for busy status')
-            }
-            updates.push(dbapi.setDeviceStatusOverride(serial, 3))
-            updates.push(dbapi.setDeviceOwner(serial, {
-              name: body.owner.name
-            , email: body.owner.email || ''
-            , group: ''
-            }))
-            updates.push(dbapi.markDeviceAsUsing(serial))
-            break
-          default:
-            return apiutil.respond(res, 400, 'Unknown status requested')
+        const statusUpdates = deviceStatus.updates(serial, body)
+        if (typeof statusUpdates === 'string') {
+          return apiutil.respond(res, 400, statusUpdates)
         }
+        updates.push(...statusUpdates)
       }
       if (updates.length === 0) {
         return apiutil.respond(res, 400, 'No content to update')
@@ -666,10 +585,7 @@ export {
   getDevices
 , putDeviceBySerial
 , getDeviceBySerial
-, getDeviceSize
-, getDeviceOwner
 , getDeviceGroups
-, getDeviceType
 , getDeviceBookings
 , addOriginGroupDevice
 , addOriginGroupDevices

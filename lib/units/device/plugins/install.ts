@@ -14,6 +14,7 @@ import logger from '../../../util/logger.js'
 import wire from '../../../wire/index.js'
 import wireutil from '../../../wire/util.js'
 import promiseutil from '../../../util/promiseutil.js'
+import storageauth from '../../../util/storageauth.js'
 type PushTransfer = import('@devicefarmer/adbkit/dist/src/adb/sync/pushtransfer.js').default
 import type {Adb, DevicePluginOptions, Router, ZmqSocket} from '../../../types/device-plugins.js'
 import adbSyrup from '../support/adb.js'
@@ -66,16 +67,15 @@ export default syrup.serial()
       }
 
       function pushApp() {
-        var req = request({
+        var req = request(storageauth.sign({
           url: url.resolve(options.storageUrl, message.href)
-        })
+        }))
 
         // We need to catch the Content-Length on the fly or we risk
         // losing some of the initial chunks.
         var contentLength: number | null = null
         req.on('response', function(res) {
           contentLength = parseInt(res.headers['content-length'] as string, 10)
-          log.info('Uploaded file contentLength "%s"', contentLength)
         })
 
         var source = new stream.Readable().wrap(req as unknown as NodeJS.ReadableStream)

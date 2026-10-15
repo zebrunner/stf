@@ -5,7 +5,7 @@
 import fs from 'fs'
 
 import Promise from 'bluebird'
-import request from '@cypress/request'
+import request, {type CoreOptions} from '@cypress/request'
 import temp from 'temp'
 
 interface DownloadedFile {
@@ -13,7 +13,11 @@ interface DownloadedFile {
   name?: string
 }
 
-export default function download(url: string, options: temp.AffixOptions | string) {
+export default function download(
+  url: string
+, options: temp.AffixOptions | string
+, requestOptions?: CoreOptions
+) {
   var resolve_!: (value: DownloadedFile) => void, reject_!: (reason: unknown) => void
   var promise = new Promise<DownloadedFile>(function(resolve, reject) {
     resolve_ = resolve
@@ -32,7 +36,7 @@ export default function download(url: string, options: temp.AffixOptions | strin
   }
 
   try {
-    var req = request(url)
+    var req = request(url, requestOptions)
       .on('error', errorListener)
 
     var save = req.pipe(fs.createWriteStream(path))

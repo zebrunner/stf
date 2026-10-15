@@ -4,10 +4,10 @@ import path from 'path'
 
 import {expect} from 'chai'
 
-import {parsePlistXml} from '../../lib/units/storage/plugins/apk/task/parser.js'
-import manifestTask from '../../lib/units/storage/plugins/apk/task/manifest.js'
+import {parsePlistXml} from '../../../lib/units/storage/plugins/apk/task/parser.js'
+import manifestTask from '../../../lib/units/storage/plugins/apk/task/manifest.js'
 
-describe('storage apk plist parser', function() {
+describe('zebrunner: storage apk plist parser', function() {
   it('should parse nested Info.plist data', function() {
     var plist = parsePlistXml(`<?xml version="1.0" encoding="UTF-8"?>
       <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
@@ -52,9 +52,9 @@ describe('storage apk plist parser', function() {
   })
 })
 
-describe('storage apk manifest task', function() {
+describe('zebrunner: storage apk manifest task', function() {
   it('should read the app Info.plist of an .ipa, not an embedded framework one', function() {
-    var source = path.join(import.meta.dirname, '../fixt/ios-with-framework.ipa')
+    var source = path.join(import.meta.dirname, '../../fixt/ios-with-framework.ipa')
     var copy = path.join(os.tmpdir(), 'stf-manifest-' + process.pid + '.ipa')
     fs.copyFileSync(source, copy)
     return manifestTask({path: copy})

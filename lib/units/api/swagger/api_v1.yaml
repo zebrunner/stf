@@ -2016,7 +2016,7 @@ paths:
       security:
         - accessTokenAuth: [ ]
   /devices/{serial}/size:
-    x-swagger-router-controller: devices
+    x-swagger-router-controller: zebrunner
     get:
       summary: Gets the size of a device
       description: Gets the size of a device
@@ -2131,7 +2131,7 @@ paths:
       security:
         - accessTokenAuth: []
   /devices/{serial}/owner:
-    x-swagger-router-controller: devices
+    x-swagger-router-controller: zebrunner
     get:
       summary: Gets the group owner of a device
       description: Gets the group owner of a device
@@ -2191,7 +2191,7 @@ paths:
       security:
         - accessTokenAuth: []
   /devices/{serial}/type:
-    x-swagger-router-controller: devices
+    x-swagger-router-controller: zebrunner
     get:
       summary: Gets the type of a device
       description: Gets the type of a device

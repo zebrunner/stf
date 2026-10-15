@@ -84,15 +84,6 @@ var builder = function(yargs: Argv) {
     , type: 'number'
     , default: 10000
     })
-    .option('device-name', {
-      describe: 'Device name override.'
-    , type: 'string'
-    })
-    .option('host', {
-      describe: 'Provider hostname.'
-    , type: 'string'
-    , default: '127.0.0.1'
-    })
     .option('lock-rotation', {
       describe: 'Whether to lock rotation when devices are being used. ' +
         'Otherwise changing device orientation may not always work due to ' +
@@ -230,8 +221,6 @@ var handler = function(argv: CommandArgv<typeof builder>) {
   , cleanupBluetoothBonds: argv.cleanupBluetoothBonds
   , cleanupFolder: argv.cleanupFolder
   , screenReset: argv.screenReset
-  , deviceName: argv.deviceName
-  , host: argv.host
   })
 }
 

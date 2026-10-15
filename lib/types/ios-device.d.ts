@@ -11,7 +11,6 @@ import type {DeviceDocument, InstalledAppEntry} from './stf.js'
 import type {
   BrowserOpenMessageFields
 , OwnerMessage
-, TapDeviceTreeElementFields
 , TouchDownIosMessageFields
 , TouchMoveIosMessageFields
 } from './wire.js'
@@ -200,11 +199,6 @@ export interface WdaScreenInfo {
   scale: number
 }
 
-export interface WdaElementValue {
-  ELEMENT?: string
-  'element-6066-11e4-a52e-4f735466cecf'?: string
-}
-
 export interface WdaErrorBody {
   value?: {
     message?: string
@@ -234,7 +228,6 @@ export interface WdaClientPlugin {
   homeBtn(): Bluebird<unknown>
   swipe(params: TouchMoveIosMessageFields): void
   touchUp(): Bluebird<unknown> | void
-  tapDeviceTreeElement(message: TapDeviceTreeElementFields): Bluebird<unknown>
   doubleClick(): Bluebird<unknown> | void
   size(): IosDeviceSize | Bluebird<IosDeviceSize | null | void>
   setVersion(currentSession: WdaSessionResponse): void

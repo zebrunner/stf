@@ -18,7 +18,7 @@ import {
 import {IconAlertCircle, IconLock, IconMail, IconUser} from '@tabler/icons-react'
 import {api, ApiError} from '@/core/api'
 import {useContactEmail} from '@/core/contact'
-import {useTranslation} from '@/core/i18n'
+import {gettext, useTranslation} from '@/core/i18n'
 import classes from './SignInForm.module.css'
 
 type Mode = 'mock' | 'ldap' | 'zebrunner'
@@ -27,24 +27,17 @@ type SignInError = 'invalid' | 'incorrect' | 'server' | null
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-function usernameLabel(mode: Mode): string {
-  if (mode === 'mock') {
-    return 'Name'
-  }
-  if (mode === 'zebrunner') {
-    return 'Username or email'
-  }
-  return 'LDAP Username'
+// Fork (Zebrunner): the sign-in form of auth-zebrunner takes a Zebrunner user name or email
+const usernameLabels: Record<Mode, string> = {
+  mock: gettext('Name')
+  , ldap: gettext('LDAP Username')
+  , zebrunner: gettext('Username or email')
 }
 
-function usernameRequiredMessage(mode: Mode): string {
-  if (mode === 'mock') {
-    return 'Please enter your name'
-  }
-  if (mode === 'zebrunner') {
-    return 'Please enter your username or email'
-  }
-  return 'Please enter your LDAP username'
+const usernameRequired: Record<Mode, string> = {
+  mock: 'Please enter your name'
+  , ldap: 'Please enter your LDAP username'
+  , zebrunner: 'Please enter your username or email'
 }
 
 export function SignInForm({mode}: {mode: Mode}) {
@@ -56,8 +49,9 @@ export function SignInForm({mode}: {mode: Mode}) {
   const [submitting, setSubmitting] = useState(false)
   const contactEmail = useContactEmail()
 
-  const userLabel = usernameLabel(mode)
-  const usernameError = touched.username && !username ? t(usernameRequiredMessage(mode)) : null
+  const usernameError = touched.username && !username ?
+    t(usernameRequired[mode]) :
+    null
 
   let secretError: string | null = null
   if (touched.secret) {
@@ -127,8 +121,8 @@ export function SignInForm({mode}: {mode: Mode}) {
             )}
             <TextInput
               name='username'
-              label={t(userLabel)}
-              placeholder={t(userLabel)}
+              label={t(usernameLabels[mode])}
+              placeholder={t(usernameLabels[mode])}
               leftSection={<IconUser size={16} />}
               value={username}
               onChange={(event) => setUsername(event.currentTarget.value)}

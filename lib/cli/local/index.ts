@@ -306,12 +306,19 @@ var handler = function(argv: CommandArgv<typeof builder>) {
         , '--bind-pull', argv.bindDevPull
         ])
 
-      // processor one (fork: a single processor is enough for local use)
+      // processor one
     , procutil.fork(path.resolve(import.meta.dirname, '..'), [
           'processor', 'proc001'
         , '--connect-app-dealer', argv.bindAppDealer
         , '--connect-dev-dealer', argv.bindDevDealer
-        , '--public-ip', argv.publicIp
+        ]
+        .concat(argv.autoRestoreOwner ? ['--auto-restore-owner'] : []))
+
+      // processor two
+    , procutil.fork(path.resolve(import.meta.dirname, '..'), [
+          'processor', 'proc002'
+        , '--connect-app-dealer', argv.bindAppDealer
+        , '--connect-dev-dealer', argv.bindDevDealer
         ]
         .concat(argv.autoRestoreOwner ? ['--auto-restore-owner'] : []))
 
@@ -396,6 +403,7 @@ var handler = function(argv: CommandArgv<typeof builder>) {
     , procutil.fork(path.resolve(import.meta.dirname, '..'), [
           util.format('storage-%s', argv.storageType)
         , '--port', argv.storagePort
+        , '--secret', argv.authSecret
         ].concat(JSON.parse(argv.storageOptions)))
 
       // image processor

@@ -7,6 +7,7 @@ import Promise from 'bluebird'
 import request from '@cypress/request'
 
 import logger from '../../../util/logger.js'
+import storageauth from '../../../util/storageauth.js'
 import type {
   IosDeviceOptions
 , IosStorageMeta
@@ -30,9 +31,9 @@ export default syrup.serial()
         reject_ = reject
       })
 
-      var args = {
+      var args = storageauth.sign({
         url: url.resolve(options.storageUrl, util.format('s/upload/%s', type))
-      }
+      })
 
       var req = request.post(args, function(err, res, body) {
         if (err) {

@@ -11,6 +11,7 @@ import request from '@cypress/request'
 
 import logger from '../../../../util/logger.js'
 import download from '../../../../util/download.js'
+import storageauth from '../../../../util/storageauth.js'
 import manifest from './task/manifest.js'
 
 interface ApkPluginOptions {
@@ -38,7 +39,7 @@ export default function(options: ApkPluginOptions) {
     )
     download(url.resolve(options.storageUrl, orig), {
         dir: options.cacheDir
-      })
+      }, {headers: storageauth.forwardHeaders(req)})
       .then(manifest)
       .then(function(data) {
         res.status(200)
@@ -57,22 +58,11 @@ export default function(options: ApkPluginOptions) {
   })
 
   app.get('/s/apk/:id/:name', function(req, res) {
-    log.info('Proxying APK/app "%s" from storage', req.params.id)
     request(url.resolve(options.storageUrl, util.format(
       '/s/blob/%s/%s'
     , req.params.id
     , req.params.name
-    )))
-    .pipe(res)
-  })
-
-  app.get('/s/app/:id/:name', function(req, res) {
-    log.info('Proxying iOS app "%s" from storage', req.params.id)
-    request(url.resolve(options.storageUrl, util.format(
-      '/s/blob/%s/%s'
-    , req.params.id
-    , req.params.name
-    )))
+    )), {headers: storageauth.forwardHeaders(req)})
     .pipe(res)
   })
 

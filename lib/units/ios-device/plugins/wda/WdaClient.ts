@@ -20,7 +20,6 @@ import type {
 , RpOptions
 , WdaBatteryInfo
 , WdaClientPlugin
-, WdaElementValue
 , WdaErrorBody
 , WdaSessionResponse
 , WdaStatusResponse
@@ -28,7 +27,6 @@ import type {
 } from '../../../../types/ios-device.js'
 import type {
   BrowserOpenMessageFields
-, TapDeviceTreeElementFields
 , TouchDownIosMessageFields
 , TouchMoveIosMessageFields
 } from '../../../../types/wire.js'
@@ -424,40 +422,6 @@ export default syrup.serial()
         }
 
         return NO_RESULT
-      }
-
-    , tapDeviceTreeElement: function(message: TapDeviceTreeElementFields) {
-        var params = {
-          using: 'link text'
-        , value: 'label=' + message.label
-        }
-
-        return new Promise<unknown>((resolve) => {
-          this.handleRequest<WdaValueResponse<WdaElementValue[]>>({
-            method: 'POST'
-          , uri: `${this.baseUrl}/session/${this.sessionId}/elements`
-          , body: params
-          , json: true
-          })
-            .then((response) => {
-              var element = response.value[0]
-              var elementId = element?.ELEMENT || element?.['element-6066-11e4-a52e-4f735466cecf']
-              if (!elementId) {
-                return NO_RESULT
-              }
-              return this.handleRequest({
-                method: 'POST'
-              , uri: `${this.baseUrl}/session/${this.sessionId}/element/${elementId}/click`
-              , body: {}
-              , json: true
-              })
-            })
-            .then(resolve)
-            .catch(function(err) {
-              log.error(err)
-              resolve(NO_RESULT)
-            })
-        })
       }
 
     , doubleClick: function() {

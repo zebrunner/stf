@@ -83,6 +83,8 @@ export default syrup.serial()
     }
 
     plugin.capture = function() {
+      log.info('Capturing screenshot')
+
       var file = util.format('/data/local/tmp/minicap_%d.jpg', Date.now())
       return minicap.run('minicap-apk', util.format(
           '-P %s -s >%s', projectionFormat(), file))

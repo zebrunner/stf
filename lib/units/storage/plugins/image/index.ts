@@ -9,6 +9,7 @@ import express from 'express'
 
 import logger from '../../../../util/logger.js'
 import requtil from '../../../../util/requtil.js'
+import storageauth from '../../../../util/storageauth.js'
 
 import parseCrop from './param/crop.js'
 import parseGravity from './param/gravity.js'
@@ -41,8 +42,7 @@ export default function(options: ImagePluginOptions) {
       , req.params.id
       , req.params.name
       )
-      log.info('Serving image resource "%s"', orig)
-      return get(orig, options)
+      return get(orig, options, storageauth.forwardHeaders(req))
         .then(function(stream) {
           return transform(stream, {
             crop: parseCrop(req.query.crop as string | undefined)
