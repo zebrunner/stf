@@ -396,9 +396,7 @@ class VncConnection extends EventEmitter.EventEmitter<VncConnectionEvents> {
             }
             switch (this._clientSecurity) {
             case VncConnection.SECURITY_NONE:
-              this._changeState(VncConnection.STATE_NEED_CLIENT_INIT)
-              this._writeSecurityResult(VncConnection.SECURITYRESULT_OK)
-              this.emit('authenticated')
+              this._auth(VncConnection.SECURITY_NONE)
               return
             case VncConnection.SECURITY_VNC:
               this._writeVncAuthChallenge()
