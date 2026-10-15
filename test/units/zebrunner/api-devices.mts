@@ -1,4 +1,8 @@
-// Fork (Zebrunner): the device routes the fork adds to the REST API, lib/units/api/controllers/devices.ts
+// Fork (Zebrunner): the device routes the fork adds to the REST API,
+// lib/units/api/controllers/zebrunner.ts and the status of lib/units/api/helpers/device-status.ts
+import {readFile} from 'node:fs/promises'
+import {createRequire} from 'node:module'
+
 import {expect} from 'chai'
 import sinon from 'sinon'
 
@@ -29,6 +33,9 @@ var restoreDbApi = mockModule(new URL('../../../lib/db/api.js', import.meta.url)
 var devices = await importFresh(
   new URL('../../../lib/units/api/controllers/devices.js', import.meta.url)
 )
+var zebrunner = await importFresh(
+  new URL('../../../lib/units/api/controllers/zebrunner.js', import.meta.url)
+)
 restoreDbApi()
 restoreDb()
 
@@ -55,7 +62,8 @@ function call(route: string, params: Record<string, unknown>): Promise<Reply> {
         return res
       }
     }
-    devices[route](request(params), res)
+    var controller = route in zebrunner ? zebrunner : devices
+    controller[route](request(params), res)
   })
 }
 
@@ -63,7 +71,28 @@ function putStatus(status: unknown, extra: object = {}) {
   return call('putDeviceBySerial', {serial: 'serial', device: {status: status, ...extra}})
 }
 
+// js-yaml comes with the swagger middleware of the API unit
+var yaml = createRequire(import.meta.url)('js-yaml') as {load(text: string): unknown}
+
 describe('zebrunner: device API', function() {
+  it('should route the paths of the zebrunner controller to its functions', async function() {
+    var swagger = yaml.load(await readFile(
+      new URL('../../../lib/units/api/swagger/api_v1.yaml', import.meta.url)
+    , 'utf8'
+    )) as {paths: Record<string, Record<string, {operationId?: string}>>}
+    var routed = Object.values(swagger.paths).filter(function(path) {
+      return (path['x-swagger-router-controller'] as unknown) === 'zebrunner'
+    }).flatMap(function(path) {
+      return Object.values(path).map(function(operation) {
+        return operation.operationId
+      }).filter(Boolean)
+    })
+    expect(routed).to.have.members(['getDeviceSize', 'getDeviceOwner', 'getDeviceType'])
+    routed.forEach(function(operationId) {
+      expect(zebrunner[operationId!], operationId).to.be.a('function')
+    })
+  })
+
   beforeEach(function() {
     Object.values(dbapi).forEach(function(stub) {
       stub.reset()
