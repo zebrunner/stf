@@ -13,15 +13,12 @@ import propertiesSyrup from '../../support/properties.js'
 import displaySyrup from './display.js'
 import phoneSyrup from './phone.js'
 
-type NamedDevicePluginOptions = DevicePluginOptions & {deviceName?: string}
-type DeviceIdentityWithModule = DeviceIdentity & {module?: string}
-
 export default syrup.serial()
   .dependency(propertiesSyrup)
   .dependency(displaySyrup)
   .dependency(phoneSyrup)
   .define(function(
-    options: NamedDevicePluginOptions
+    options: DevicePluginOptions
   , properties: Properties
   , display: DeviceDisplay
   , phone: PhoneProperties
@@ -30,12 +27,9 @@ export default syrup.serial()
 
     function solve() {
       log.info('Solving identity')
-      var identity = devutil.makeIdentity(options.serial, properties) as DeviceIdentityWithModule
+      var identity = devutil.makeIdentity(options.serial, properties) as DeviceIdentity
       identity.display = display.properties
       identity.phone = phone
-      if (options.deviceName) {
-        identity.module = options.deviceName
-      }
       return identity
     }
 
