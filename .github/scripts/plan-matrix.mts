@@ -9,6 +9,8 @@
 
 import fs from 'fs'
 
+import {androidLegs} from './zebrunner-ci.mts'
+
 interface MatrixSpec {
   include?: {api: unknown}[]
 }
@@ -16,7 +18,7 @@ interface MatrixSpec {
 function main() {
   var file = process.argv[2] || '.github/android-matrix.json'
   var spec = JSON.parse(fs.readFileSync(file, 'utf8')) as MatrixSpec
-  var include = spec.include || []
+  var include = androidLegs(spec.include || [])
 
   if (!include.length) {
     throw new Error('android-matrix.json has no legs')

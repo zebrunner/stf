@@ -1,0 +1,13 @@
+{
+  "comment": [
+    "Fork (Zebrunner): the CI settings of the fork, read by",
+    ".github/scripts/zebrunner-ci.mts. android.minApi drops the Android legs of",
+    ".github/android-matrix.json below that API level from the matrix and from",
+    "the coverage check of the report: Zebrunner farms run Android 12 (API 31)",
+    "and later. The upstream matrix file stays as it is, so new upstream legs",
+    "come in with the merges."
+  ],
+  "android": {
+    "minApi": 31
+  }
+}

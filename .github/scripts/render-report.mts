@@ -7,6 +7,7 @@
 import fs from 'fs'
 import path from 'path'
 import * as layers from './checks.mts'
+import {androidLegs} from './zebrunner-ci.mts'
 
 interface Verdict {
   id: string
@@ -66,7 +67,7 @@ function expectedAndroid() {
   if (file && fs.existsSync(file)) {
     try {
       var spec = JSON.parse(fs.readFileSync(file, 'utf8')) as MatrixSpec
-      return (spec.include || []).map(function(leg) {
+      return androidLegs(spec.include || []).map(function(leg) {
         return {android: String(leg.android), api: String(leg.api)}
       })
     }
