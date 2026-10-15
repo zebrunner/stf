@@ -103,7 +103,7 @@
     "websocket-stream": "^5.5.0",
     "ws": "^3.0.0",
     "yargs": "^6.6.0",
-    "yauzl": "^2.10.0",
+    "yauzl": "^3.4.0",
     "zeromq": "^5.0.0"
   },
   "devDependencies": {
