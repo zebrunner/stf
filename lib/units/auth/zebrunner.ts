@@ -20,6 +20,7 @@ import jwtutil from '../../util/jwtutil.js'
 import pathutil from '../../util/pathutil.js'
 import urlutil from '../../util/urlutil.js'
 import lifecycle from '../../util/lifecycle.js'
+import ratelimit from '../../util/ratelimit.js'
 
 interface ZebrunnerAuthOptions {
   port: number
@@ -125,7 +126,7 @@ export default function(options: ZebrunnerAuthOptions) {
     res.render('index')
   })
 
-  app.post('/auth/api/v1/zebrunner', authMiddleware, function(
+  app.post('/auth/api/v1/zebrunner', ratelimit(), authMiddleware, function(
     req: express.Request
   , res: express.Response<unknown, ZebrunnerLocals>
   ) {
