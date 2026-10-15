@@ -2,6 +2,8 @@
 import {expect} from 'chai'
 import express from 'express'
 
+import jws from 'jws'
+
 import jwtutil from '../../../lib/util/jwtutil.js'
 import {listen, startUnit, type Running} from '../../helpers/zebrunner.mts'
 
@@ -108,6 +110,14 @@ describe('zebrunner: auth-zebrunner', function() {
     , name: 'jdoe'
     })
     expect(logins).to.eql([{username: 'jdoe', password: 'right'}])
+  })
+
+  it('should give the app a token that expires within minutes', async function() {
+    var res = await signIn({username: 'jdoe', password: 'right'})
+    var token = new URL((await res.json() as {redirect: string}).redirect).searchParams.get('jwt')!
+    var exp = Number(jws.decode(token)!.header.exp)
+    expect(exp).to.be.above(Date.now())
+    expect(exp).to.be.at.most(Date.now() + 2 * 60 * 1000)
   })
 
   it('should make up an email for a user without one', async function() {
