@@ -79,7 +79,7 @@ The device lists and `GET /api/v1/devices/{serial}` also return `name`, the mode
 
 ## Sessions
 
-A sign-in starts a session in the database (`sessions` table, created by `stf migrate`); the session cookie is httpOnly and SameSite=Lax (Secure behind https). The app, API and websocket units drop a session that ended or is older than `STF_SESSION_TTL_SECONDS`, the users sign in again; the logout of the UI (`POST /app/api/v1/logout`) ends the session on the server. The Zebrunner sign-in hands the user to the app with a token that expires after two minutes, and after five refused sign-ins of a user within three minutes it answers 429 for three minutes, doubled with every lock up to 30 minutes. See `lib/util/authsession.ts` and `lib/util/ratelimit.ts`.
+A sign-in starts a session in the database (`sessions` table, created by `stf migrate`); the session cookie is httpOnly and SameSite=Lax (Secure behind https). The app, API and websocket units drop a session that ended or is older than `STF_SESSION_TTL_SECONDS`, the users sign in again; the logout of the UI (`POST /app/api/v1/logout`) ends the session on the server. The Zebrunner and LDAP sign-ins hand the user to the app with a token that expires after two minutes, and after five refused sign-ins of a user within three minutes they answer 429 for three minutes, doubled with every lock up to 30 minutes; the sign-in form tells the user to wait. See `lib/util/authsession.ts` and `lib/util/ratelimit.ts`.
 
 ## Storage
 
