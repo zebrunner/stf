@@ -19,6 +19,7 @@ var csrf = csurf.default || (csurf as unknown as typeof csurf.default)
 import compression from 'compression'
 
 import logger from '../../util/logger.js'
+import authsession from '../../util/authsession.js'
 import pathutil from '../../util/pathutil.js'
 
 import auth from './middleware/auth.js'
@@ -102,6 +103,9 @@ export default function(options: AppOptions) {
   , keys: [options.secret]
   , httpOnly: false
   }))
+
+  // Fork (Zebrunner): sessions expire and end at logout, see lib/util/authsession.ts
+  app.use(authsession.middleware())
 
   app.use(auth({
     secret: options.secret
