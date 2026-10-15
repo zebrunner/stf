@@ -2,8 +2,6 @@
 * Copyright © 2019-2025 contains code contributed by Orange SA, authors: Denis Barbaron - Licensed under the Apache license 2.0
 **/
 
-import fs from 'fs'
-
 import Promise from 'bluebird'
 
 import logger from '../../util/logger.js'
@@ -405,64 +403,8 @@ export default db.ensureConnectivity(function(options: ProcessorOptions) {
           log.error('Unable to initialize iOS device "%s"', message.serial, err.stack)
         })
     })
-    .on(wire.DeviceOnInstAppMessage, function(channel, message) {
-      dbapi.getInstalledApplications(message)
-        .then(function(device) {
-          if (!device || !device.owner) {
-            return
-          }
-          appDealer.send([
-            device.owner.group
-          , wireutil.envelope(new wire.InstalledApplications(
-              message.serial
-            , wireutil.toInstalledApps(device.installedApps || [])
-            ))
-          ])
-        })
-        .catch(function(err) {
-          log.error('Unable to load installed applications of "%s"', message.serial, err.stack)
-        })
-    })
-    .on(wire.TransactionTreeMessage, function(channel, message, data) {
-      appDealer.send([channel, data])
-    })
     .on(wire.TemporarilyUnavailableMessage, function(channel, message, data) {
       appDealer.send([channel, data])
-    })
-    .on(wire.UpdateRemoteConnectUrl, function(channel, message, data) {
-      appDealer.send([channel, data])
-    })
-    .on(wire.InstalledApplications, function(channel, message, data) {
-      appDealer.send([channel, data])
-    })
-    .on(wire.RotationIosEvent, function(channel, message) {
-      dbapi.setIosDeviceRotation(message)
-    })
-    .on(wire.SetIosDeviceDisplay, function(channel, message) {
-      dbapi.setDeviceSocketDisplay(message)
-        .catch(function(err) {
-          log.error('setDeviceSocketDisplay', err)
-        })
-    })
-    .on(wire.CheckIosDeviceConnected, function(channel, message) {
-      dbapi.checkIosDeviceConnected(message)
-        .then(function(device) {
-          if (device === null || device.present === false) {
-            devDealer.send([
-              message.channel
-            , wireutil.envelope(new wire.ConnectDeviceViaUSB(message.id))
-            ])
-          }
-        })
-        .catch(function(err) {
-          log.info(err)
-        })
-    })
-    .on(wire.UpdateIosDevice, function(channel, message) {
-      dbapi.updateIosDevice(message)
-        .catch(function(err) {
-          log.info(err)
-        })
     })
     .on(wire.BatteryIosEvent, function(channel, message) {
       dbapi.setDeviceIosBattery(message)
@@ -474,37 +416,6 @@ export default db.ensureConnectivity(function(options: ProcessorOptions) {
       dbapi.setDeviceIosVersion(message)
         .catch(function(err) {
           log.info(err)
-        })
-    })
-    .on(wire.SizeIosDevice, function(channel, message, data) {
-      dbapi.sizeIosDevice(message.id, message.height, message.width, message.scale)
-        .catch(function(err) {
-          log.info(err)
-        })
-      appDealer.send([channel, data])
-    })
-    .on(wire.DeviceTypeMessage, function(channel, message) {
-      dbapi.setDeviceType(message.serial, message.type)
-        .catch(function(err) {
-          log.info(err)
-        })
-    })
-    .on(wire.DeleteIosDevice, function(channel, message) {
-      dbapi.deleteIosDevice(message)
-    })
-    .on(wire.SetAbsentDisconnectedDevices, function() {
-      dbapi.setAbsentDisconnectedDevices()
-    })
-    .on(wire.SetDeviceApp, function(channel, message) {
-      dbapi.setDeviceApp(message)
-        .then(function(result) {
-          if (result.removePathApp !== '') {
-            return fs.promises.rm(result.removePathApp, {recursive: true, force: true})
-          }
-          return Promise.resolve()
-        })
-        .catch(function(err) {
-          log.error(err)
         })
     })
     .handler())

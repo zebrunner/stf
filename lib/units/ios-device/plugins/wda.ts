@@ -74,9 +74,6 @@ export default syrup.serial()
         .on(wire.TouchDownIosMessage, function(_channel, message) {
           wdaClient.tap(message)
         })
-        .on(wire.TapDeviceTreeElement, function(_channel, message) {
-          wdaClient.tapDeviceTreeElement(message)
-        })
         .on(wire.TouchMoveIosMessage, function(_channel, message) {
           wdaClient.swipe(message)
         })

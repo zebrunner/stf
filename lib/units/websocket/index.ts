@@ -53,7 +53,6 @@ import type {
 , RotateMessageFields
 , ShellCommandMessageFields
 , ShellKeepAliveMessageFields
-, TapDeviceTreeElementFields
 , TouchCommitMessageFields
 , TouchDownMessageFields
 , TouchDownIosMessageFields
@@ -118,7 +117,6 @@ interface WebsocketClientEvents {
   'input.touchMove': ChannelEvent<TouchMoveMessageFields>
   'input.touchDownIos': ChannelEvent<TouchDownIosMessageFields>
   'input.touchMoveIos': ChannelEvent<IosTouchMoveData>
-  'tapDeviceTreeElement': ChannelEvent<TapDeviceTreeElementFields>
   'input.touchUp': ChannelEvent<TouchUpMessageFields>
   'input.touchCommit': ChannelEvent<TouchCommitMessageFields>
   'input.touchReset': ChannelEvent<TouchCommitMessageFields>
@@ -148,7 +146,6 @@ interface WebsocketClientEvents {
   'bluetooth.cleanBonds': TransactionEvent
   'group.invite': TransactionDataEvent<GroupInviteData>
   'group.kick': TransactionDataEvent<GroupKickData>
-  'getTreeElementsIos': TransactionEvent
   'tx.cleanup': (channel: string) => void
   'tx.punch': (channel: string) => void
   'shell.command': TransactionDataEvent<ShellCommandMessageFields>
@@ -454,9 +451,6 @@ export default function(options: WebsocketOptions) {
       .on(wire.TransactionDoneMessage, function(channel, message) {
         socket.emit('tx.done', channel.toString(), message)
       })
-      .on(wire.TransactionTreeMessage, function(channel, message) {
-        socket.emit('tx.tree', channel.toString(), message)
-      })
       .on(wire.DeviceLogcatEntryMessage, function(channel, message) {
         socket.emit('logcat.entry', message)
       })
@@ -537,14 +531,6 @@ export default function(options: WebsocketOptions) {
         socket.emit('temporarily-unavailable', {
           data: {
             removeConnectUrl: message.serial
-          }
-        })
-      })
-      .on(wire.UpdateRemoteConnectUrl, function(channel, message) {
-        socket.emit('device.change', {
-          important: true
-        , data: {
-            serial: message.serial
           }
         })
       })
@@ -767,12 +753,6 @@ export default function(options: WebsocketOptions) {
           catch(err) {
             log.error('input.touchMoveIos had an error', (err as Error).stack)
           }
-        })
-        .on('tapDeviceTreeElement', function(channel, data) {
-          push.send([
-            channel
-          , wireutil.envelope(new wire.TapDeviceTreeElement(data.label))
-          ])
         })
         .on('input.touchUp', function(channel, data) {
           push.send([
@@ -1032,16 +1012,6 @@ export default function(options: WebsocketOptions) {
             , new wire.UngroupMessage(
                 wireutil.toDeviceRequirements(data.requirements)
               )
-            )
-          ])
-        })
-        .on('getTreeElementsIos', function(channel, responseChannel) {
-          joinChannel(responseChannel)
-          push.send([
-            channel
-          , wireutil.transaction(
-              responseChannel
-            , new wire.GetIosTreeElements()
             )
           ])
         })

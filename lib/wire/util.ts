@@ -28,13 +28,6 @@ interface Reply {
   okay(data?: string | null, body?: unknown): Buffer
   fail(data?: string, body?: unknown): Buffer
   progress(data?: string, progress?: number): Buffer
-  tree(data?: string | null, body?: unknown): Buffer
-  device(data?: string | null, body?: unknown): Buffer
-}
-
-interface InstalledApp {
-  bundleId: string
-  bundleName: string
 }
 
 var wireutil = {
@@ -59,14 +52,6 @@ var wireutil = {
         name
       , item.value
       , wire.RequirementType[item.match.toUpperCase() as keyof RequirementTypeValues]
-      )
-    })
-  }
-, toInstalledApps: function(installedApps: InstalledApp[]) {
-    return installedApps.map(function(instApp) {
-      return new wire.Applications(
-        instApp.bundleId
-      , instApp.bundleName
       )
     })
   }
@@ -110,21 +95,6 @@ var wireutil = {
         , ~~(progress as number)
         ))
       }
-    , tree: function(data?: string | null, body?: unknown) {
-        return wireutil.envelope(new wire.TransactionTreeMessage(
-          source
-        , seq++
-        , true
-        , data === null ? null : (data || 'success')
-        , body ? JSON.stringify(body) : null
-        ))
-      }
-    , device: function(_data?: string | null, body?: unknown) {
-        return wireutil.envelope(new wire.TransationGetMessage(
-          source
-        , body ? JSON.stringify(body) : null
-        ))
-      }
     }
   }
 }
@@ -133,7 +103,6 @@ namespace wireutil {
   export type Message = WireMessage
   export type TransactionReply = Reply
   export type RequirementSpec = DeviceRequirementSpec
-  export type InstalledApplication = InstalledApp
 }
 
 export default wireutil

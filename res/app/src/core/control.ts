@@ -88,8 +88,6 @@ export function createControl(target: Device, channel: string) {
     , shell: (command: string) => sendTwoWay('shell.command', {command, timeout: 10000})
     , identify: () => sendTwoWay('device.identify')
     , install: (options: InstallOptions) => sendTwoWay('device.install', options)
-    , getTreeElements: () => sendTwoWay('getTreeElementsIos')
-    , tapDeviceTreeElement: (label: string) => sendOneWay('tapDeviceTreeElement', {label})
     , uninstall: (packageName: string) => sendTwoWay('device.uninstall', {packageName})
     , reboot: () => sendTwoWay('device.reboot')
     , rebootAndKeep: () =>
