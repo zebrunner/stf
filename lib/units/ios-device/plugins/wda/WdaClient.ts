@@ -22,7 +22,6 @@ import type {
 , WdaClientPlugin
 , WdaErrorBody
 , WdaSessionResponse
-, WdaStatusResponse
 , WdaValueResponse
 } from '../../../../types/ios-device.js'
 import type {
@@ -31,6 +30,7 @@ import type {
 , TouchMoveIosMessageFields
 } from '../../../../types/wire.js'
 import notifierSyrup from '../devicenotifier.js'
+import activeOrNewSession from './session.js'
 import pushSyrup from '../../support/push.js'
 
 const LOG_REQUEST_MSG = 'Request has been sent to WDA with data: '
@@ -64,6 +64,7 @@ export default syrup.serial()
     var WdaClient: WdaClientPlugin = {
       baseUrl: iosutil.getUri(options.wdaHost, options.wdaPort)
     , sessionId: null
+    , ownSession: false
     , deviceSize: null
     , orientation: null
     , touchDownParams: {}
@@ -101,78 +102,37 @@ export default syrup.serial()
 
         this.getDeviceType()
 
-        var params = {
-          capabilities: {}
-        }
+        return activeOrNewSession(this.baseUrl, (requestOpt) => this.handleRequest(requestOpt))
+          .then((session) => {
+            this.sessionId = session.response.sessionId
+            this.ownSession = session.created
+            log.info(`${session.created ? 'started' : 'reusing'} wda session: ${this.sessionId}`)
 
-        return this.handleRequest<WdaSessionResponse>({
-          method: 'POST'
-        , uri: `${this.baseUrl}/session`
-        , body: params
-        , json: true
-        })
-          .then((sessionResponse) => {
-            return this.handleRequest<WdaStatusResponse>({
-              method: 'GET'
-            , uri: `${this.baseUrl}/status`
-            , json: true
-            })
-              .then((statusResponse) => {
-                log.info(`status response: ${JSON.stringify(statusResponse)}`)
-
-                if (statusResponse.sessionId) {
-                  this.sessionId = statusResponse.sessionId
-                  log.info(`reusing existing wda session: ${this.sessionId}`)
-
-                  this.setStatus(3)
-                  if (this.deviceType !== 'Apple TV') {
-                    this.getOrientation()
-                    this.batteryIosEvent()
-                  }
-
-                  this.setVersion(sessionResponse)
-                  return this.size()
-                }
-
-                log.info('starting wda session...')
-
-                return this.handleRequest<WdaSessionResponse>({
-                  method: 'POST'
-                , uri: `${this.baseUrl}/session`
-                , body: params
-                , json: true
-                })
-                  .then((newSessionResponse) => {
-                    log.info(`startSession response: ${JSON.stringify(newSessionResponse)}`)
-                    this.setVersion(newSessionResponse)
-
-                    this.sessionId = newSessionResponse.sessionId
-                    log.info(`sessionId: ${this.sessionId}`)
-
-                    if (this.deviceType !== 'Apple TV') {
-                      this.getOrientation()
-                      this.batteryIosEvent()
-                    }
-                    this.setStatus(3)
-                    return this.size()
-                  })
-                  .catch((err) => {
-                    log.error('"startSession" No valid response from web driver!', err)
-                    return Promise.reject(err)
-                  })
-              })
+            this.setVersion(session.response)
+            if (this.deviceType !== 'Apple TV') {
+              this.getOrientation()
+              this.batteryIosEvent()
+            }
+            this.setStatus(3)
+            return this.size()
+          })
+          .catch((err) => {
+            log.error('"startSession" No valid response from web driver!', err)
+            return Promise.reject(err)
           })
       }
 
     , stopSession: function() {
-        log.info('stopping wda session: ', this.sessionId)
         var currentSessionId = this.sessionId
         this.sessionId = null
 
-        if (currentSessionId === null) {
+        // A session of somebody else (an Appium test) is left to its owner
+        if (currentSessionId === null || !this.ownSession) {
           return Promise.resolve()
         }
 
+        log.info('stopping wda session: ', currentSessionId)
+        this.ownSession = false
         return this.handleRequest({
           method: 'DELETE'
         , uri: `${this.baseUrl}/session/${currentSessionId}`
