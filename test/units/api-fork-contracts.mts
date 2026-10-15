@@ -1,4 +1,5 @@
 import {readFile} from 'node:fs/promises'
+import {createRequire} from 'node:module'
 
 import {expect} from 'chai'
 
@@ -31,14 +32,17 @@ interface SwaggerDoc {
   definitions: Record<string, Definition>
 }
 
+// js-yaml comes with the swagger middleware of the API unit, which loads the same file
+var yaml = createRequire(import.meta.url)('js-yaml') as {load(text: string): unknown}
+
 describe('fork API contract', function() {
   var swagger: SwaggerDoc
 
   before(async function() {
-    swagger = JSON.parse(await readFile(
-      new URL('../../lib/units/api/swagger/api_v1_generated.json', import.meta.url)
+    swagger = yaml.load(await readFile(
+      new URL('../../lib/units/api/swagger/api_v1.yaml', import.meta.url)
     , 'utf8'
-    )) as unknown as SwaggerDoc
+    )) as SwaggerDoc
   })
 
   it('should expose fork device helper routes', function() {
