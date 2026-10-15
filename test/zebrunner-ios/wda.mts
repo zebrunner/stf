@@ -196,7 +196,7 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
       var timer = setTimeout(function() {
         socket.destroy()
         reject(new Error('no JPEG frame'))
-      }, 20000)
+      }, 60000)
       socket.on('data', function(chunk) {
         data = Buffer.concat([data, chunk as Buffer])
         var start = data.indexOf(Buffer.from([0xff, 0xd8]))

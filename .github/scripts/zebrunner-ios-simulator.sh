@@ -3,6 +3,7 @@
 # see .github/workflows/zebrunner-ios.yml. Prints the UDID of the simulator.
 #
 # usage: zebrunner-ios-simulator.sh <ios-major> [<runtime-version-to-download>]
+# The simulator and WebDriverAgent keep running; stop them with `xcrun simctl shutdown <udid>`.
 # env:   WDA_REF (the WebDriverAgent tag), WDA_DIR (where to clone it), LOG_DIR
 set -euo pipefail
 
@@ -90,11 +91,11 @@ xcodebuild build-for-testing \
   }
 
 note "starting WebDriverAgent"
-nohup xcodebuild test-without-building \
-  -project "$wda_dir/WebDriverAgent.xcodeproj" \
-  -scheme WebDriverAgentRunner \
-  -destination "$destination" \
-  -derivedDataPath "$wda_dir/build" > "$log_dir/wda.log" 2>&1 &
+# The runner app starts its tests itself when launched, `xcodebuild test` hung on iOS 16
+runner="$wda_dir/build/Build/Products/Debug-iphonesimulator/WebDriverAgentRunner-Runner.app"
+xcrun simctl install "$udid" "$runner"
+xcrun simctl launch --console-pty "$udid" com.facebook.WebDriverAgentRunner.xctrunner \
+  > "$log_dir/wda.log" 2>&1 &
 echo $! > "$log_dir/wda.pid"
 
 # The first launch on an older runtime takes minutes
