@@ -104,6 +104,17 @@ From the images built from `develop` (3.0 and earlier):
 | `npm run test:unit` | the mocha tests of `test/`, the fork ones are in `test/units/zebrunner/` |
 | `npm run test:component` | the vitest tests of the UI, the fork ones are `*.zebrunner.test.ts` and `device-list/zebrunner.test.ts` |
 
+### CI
+
+- The upstream workflows run as they are, except that the Android emulator legs start at Android 12 (API 31): `.github/zebrunner-ci.json` sets the lowest API level and `.github/scripts/zebrunner-ci.mts` applies it to the matrix and to the coverage check of the report; `.github/android-matrix.json` stays the upstream file.
+- `.github/workflows/zebrunner-ios.yml` tests the WDA client of the `ios-device` unit against WebDriverAgent on iOS simulators: iOS 15, 16, 17 (runtimes downloaded for Xcode 16), 18, 26 and 27 (the `xcode-27` preview image). It runs on changes of the iOS code, weekly and by hand. Locally, on a Mac with Xcode:
+
+  ```bash
+  node build.mts compile
+  bash .github/scripts/zebrunner-ios-simulator.sh 27
+  IOS_VERSION=27 npx mocha --exit --extension mts test/zebrunner-ios
+  ```
+
 ### Keeping up with upstream
 
 The fork merges [DeviceFarmer/stf](https://github.com/DeviceFarmer/stf) `master` (remote `upstream`) regularly, so its changes are kept where a merge does not reach them:
