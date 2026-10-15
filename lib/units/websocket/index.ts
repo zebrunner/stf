@@ -12,6 +12,7 @@ import _ from 'lodash'
 import * as uuid from 'uuid'
 
 import logger from '../../util/logger.js'
+import authsession from '../../util/authsession.js'
 import wire from '../../wire/index.js'
 import wireutil from '../../wire/util.js'
 import wirerouter from '../../wire/router.js'
@@ -231,6 +232,8 @@ export default function(options: WebsocketOptions) {
     }
   }))
 
+  // Fork (Zebrunner): sessions expire and end at logout, see lib/util/authsession.ts
+  io.use(authsession.socketMiddleware)
   io.use(auth)
 
   io.on('connection', function(socket) {

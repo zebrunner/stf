@@ -25,6 +25,13 @@ export default {
       email: null
     }
   }
+  // Fork (Zebrunner): the sessions of lib/util/authsession.ts
+, sessions: {
+    primaryKey: 'id'
+  , indexes: {
+      email: null
+    }
+  }
 , vncauth: {
     primaryKey: 'password'
   , indexes: {

@@ -23,7 +23,7 @@ import classes from './SignInForm.module.css'
 
 type Mode = 'mock' | 'ldap' | 'zebrunner'
 
-type SignInError = 'invalid' | 'incorrect' | 'server' | null
+type SignInError = 'invalid' | 'incorrect' | 'locked' | 'server' | null
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -87,6 +87,10 @@ export function SignInForm({mode}: {mode: Mode}) {
       else if (code === 'InvalidCredentialsError') {
         setError('incorrect')
       }
+      // Fork (Zebrunner): the sign-in limit of lib/util/ratelimit.ts
+      else if (code === 'TooManyRequestsError') {
+        setError('locked')
+      }
       else {
         setError('server')
       }
@@ -98,6 +102,7 @@ export function SignInForm({mode}: {mode: Mode}) {
     invalid: t('Check errors below')
     , incorrect: mode === 'zebrunner' ?
       t('Invalid credentials or user has been deactivated') : t('Incorrect login details')
+    , locked: t('Too many failed sign-ins. Try again in a few minutes.')
     , server: t('Server error. Check log output.')
   }
 

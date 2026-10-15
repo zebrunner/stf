@@ -880,9 +880,13 @@ jobs:
           retention-days: 3
           if-no-files-found: warn
 
+  # Fork (Zebrunner): the iOS simulator legs, see .github/workflows/zebrunner-ios.yml
+  ios:
+    uses: ./.github/workflows/zebrunner-ios.yml
+
   report:
     name: Report
-    needs: [plan, build, lint, unit, component, integration, android, compose]
+    needs: [plan, build, lint, unit, component, integration, android, compose, ios]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10

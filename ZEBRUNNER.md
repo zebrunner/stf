@@ -55,6 +55,7 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 | `STF_STORAGE_TOKEN` | | Token the STF units send to the storage (`x-stf-internal-token`); set for `storage-temp`/`storage-s3` (mcloud `variables.env`) and for the device containers (mcloud-agent). It turns the protection of the storage on, the Zebrunner deployments must set it |
 | `STF_STORAGE_TEMP_DOWNLOAD_ALLOW` | | Private network (CIDR or address) users may install apps from by URL, e.g. an artifact server; `--download-allow` can be repeated |
 | `SSID` | `ssid` | Name of the session cookie of the app unit |
+| `STF_SESSION_TTL_SECONDS` | `86400` | Lifetime of a session after the sign-in, see [Sessions](#sessions) |
 | `ZEBRUNNER_LOGIN_URL` | | Login endpoint of Zebrunner IAM (`.../api/iam/v1/auth/login`), for `auth-zebrunner` |
 | `ZEBRUNNER_USERINFO_URL` | | User endpoint of Zebrunner IAM (`.../api/iam/v1/users`), for `auth-zebrunner` |
 | `STF_ADMIN_EMAIL`, `STF_ADMIN_NAME` | `administrator@fakedomain.com`, `administrator` | Owner of the root group and of the iOS devices |
@@ -76,6 +77,10 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 
 The device lists and `GET /api/v1/devices/{serial}` also return `name`, the model of the device.
 
+## Sessions
+
+A sign-in starts a session in the database (`sessions` table, created by `stf migrate`); the session cookie is httpOnly and SameSite=Lax (Secure behind https). The app, API and websocket units drop a session that ended or is older than `STF_SESSION_TTL_SECONDS`, the users sign in again; the logout of the UI (`POST /app/api/v1/logout`) ends the session on the server. The Zebrunner and LDAP sign-ins hand the user to the app with a token that expires after two minutes, and after five refused sign-ins of a user within three minutes they answer 429 for three minutes, doubled with every lock up to 30 minutes; the sign-in form tells the user to wait. See `lib/util/authsession.ts` and `lib/util/ratelimit.ts`.
+
 ## Storage
 
 With `STF_STORAGE_TOKEN` set, `/s/upload`, `/s/download` and `/s/blob` of the storage units answer only:
@@ -93,6 +98,7 @@ From the images built from `develop` (3.0 and earlier):
 
 - set `STF_STORAGE_TOKEN` in `variables.env` of mcloud (`./zebrunner.sh setup` generates it), the same value as `STF_STORAGE_TOKEN` of mcloud-agent; without it the storage stays open;
 - use a mcloud-device image that installs go-ios, socat and curl itself;
+- run `stf migrate` (the `stf-migrate` service of mcloud does) for the `sessions` table; the users sign in once more;
 - `stf storage-temp` still accepts the `--connect-push`/`--connect-sub` mcloud passes, they are not used.
 
 ## Development
@@ -103,6 +109,17 @@ From the images built from `develop` (3.0 and earlier):
 | `npm run lint` | eslint, type checks, JSON and the translation template |
 | `npm run test:unit` | the mocha tests of `test/`, the fork ones are in `test/units/zebrunner/` |
 | `npm run test:component` | the vitest tests of the UI, the fork ones are `*.zebrunner.test.ts` and `device-list/zebrunner.test.ts` |
+
+### CI
+
+- The upstream workflows run as they are, except that the Android emulator legs start at Android 12 (API 31): `.github/zebrunner-ci.json` sets the lowest API level and `.github/scripts/zebrunner-ci.mts` applies it to the matrix and to the coverage check of the report; `.github/android-matrix.json` stays the upstream file.
+- `.github/workflows/zebrunner-ios.yml` tests the WDA client of the `ios-device` unit against WebDriverAgent on iOS simulators: iOS 15 (runtime from `xcodes`), 16, 17 (runtimes downloaded for Xcode 16.4), 18, 26 and 27 (the `xcode-27` preview image); the matrix is `ios.include` of `.github/zebrunner-ci.json`. `ci.yml` runs it with its other legs, and its report shows an iOS matrix next to the Android one (`render-report.mts` with `zebrunner-ci.mts`); it also runs weekly and by hand. Locally, on a Mac with Xcode:
+
+  ```bash
+  node build.mts compile
+  bash .github/scripts/zebrunner-ios-simulator.sh 27
+  IOS_VERSION=27 npx mocha --exit --extension mts test/zebrunner-ios
+  ```
 
 ### Keeping up with upstream
 

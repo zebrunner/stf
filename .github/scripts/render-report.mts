@@ -7,6 +7,7 @@
 import fs from 'fs'
 import path from 'path'
 import * as layers from './checks.mts'
+import {androidLegs, iosMissing, iosReport} from './zebrunner-ci.mts'
 
 interface Verdict {
   id: string
@@ -66,7 +67,7 @@ function expectedAndroid() {
   if (file && fs.existsSync(file)) {
     try {
       var spec = JSON.parse(fs.readFileSync(file, 'utf8')) as MatrixSpec
-      return (spec.include || []).map(function(leg) {
+      return androidLegs(spec.include || []).map(function(leg) {
         return {android: String(leg.android), api: String(leg.api)}
       })
     }
@@ -117,7 +118,8 @@ function addMissing(verdicts: Verdict[]) {
     }
   })
 
-  return verdicts.concat(missing)
+  // Fork (Zebrunner): the iOS legs of .github/zebrunner-ci.json
+  return verdicts.concat(missing, iosMissing(seen))
 }
 
 function collect(dir: string) {
@@ -179,7 +181,7 @@ function main() {
     return Number(a.api) - Number(b.api)
   })
   var core = verdicts.filter(function(v) {
-    return v.group !== 'android'
+    return v.group !== 'android' && v.group !== 'ios'
   }).sort(function(a, b) {
     var ai = CORE_ORDER.indexOf(a.id)
     var bi = CORE_ORDER.indexOf(b.id)
@@ -188,7 +190,9 @@ function main() {
 
   var coreCounts = tally(core)
   var androidCounts = tally(android)
-  var failed = coreCounts.fail + androidCounts.fail
+  // Fork (Zebrunner): the iOS simulator legs, see zebrunner-ci.mts
+  var ios = iosReport(verdicts)
+  var failed = coreCounts.fail + androidCounts.fail + ios.failed
   var lines: string[] = []
 
   // Nothing reported at all means the run died before any job could speak.
@@ -211,6 +215,7 @@ function main() {
       coreCounts.fail + ' fail / ' + coreCounts.skip + ' skip)'
   , android.length + ' Android versions (' + androidReady +
       ' with a usable device in STF)'
+  , ios.summary
   ].join(' &nbsp;·&nbsp; '))
   lines.push('')
 
@@ -252,6 +257,8 @@ function main() {
     lines.push('<sub>' + layers.legend() + '</sub>')
     lines.push('')
   }
+
+  lines.push(...ios.lines)
 
   var problems = verdicts.filter(function(v) {
     return v.status === 'fail' && v.details

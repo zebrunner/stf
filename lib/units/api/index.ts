@@ -15,6 +15,7 @@ import Promise from 'bluebird'
 import _ from 'lodash'
 
 import logger from '../../util/logger.js'
+import authsession from '../../util/authsession.js'
 import zmqutil from '../../util/zmqutil.js'
 import srv from '../../util/srv.js'
 import lifecycle from '../../util/lifecycle.js'
@@ -146,6 +147,9 @@ export default function(options: ApiUnitOptions) {
     name: options.ssid
   , keys: [options.secret]
   }))
+
+  // Fork (Zebrunner): sessions expire and end at logout, see lib/util/authsession.ts
+  app.use(authsession.middleware())
 
   app.disable('x-powered-by')
 

@@ -11,6 +11,7 @@ import lifecycle from '../../../util/lifecycle.js'
 import dbapi from '../../../db/api.js'
 import request from './util/rp.js'
 import iosutil from './util/iosutil.js'
+import activeOrNewSession from './wda/session.js'
 import type {
   IosDeviceOptions
 , IosGroupPlugin
@@ -21,7 +22,6 @@ import type {
 , Channels
 , WdaBatteryInfo
 , WdaScreenInfo
-, WdaSessionResponse
 , WdaValueResponse
 , WdaWindowSize
 } from '../../../types/ios-device.js'
@@ -159,13 +159,9 @@ export default syrup.serial()
                 lifecycle.fatal(err)
               })
 
-            request<WdaSessionResponse>({
-              method: 'POST'
-            , uri: `${baseUrl}/session`
-            , body: {capabilities: {}}
-            , json: true
-            })
-              .then(function(sessionResponse) {
+            activeOrNewSession(baseUrl, request)
+              .then(function(session) {
+                var sessionResponse = session.response
                 var sessionId = sessionResponse.sessionId
 
                 log.info('Storing device version')

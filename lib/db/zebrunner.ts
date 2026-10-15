@@ -29,7 +29,17 @@ const DEFAULT_IOS_DEVICE_ARGS = {
 , YDPI: 295.56298828125
 }
 
+export interface SessionDocument {
+  id: string
+  email: string
+  // ms since the epoch
+  expiresAt: number
+}
+
 export interface ZebrunnerDbApi {
+  saveSession(session: SessionDocument): Promise<void>
+  loadSession(id: string): Promise<SessionDocument | null>
+  deleteSession(id: string): Promise<r.WriteResult>
   setDeviceStatusOverride(serial: string, status: number): Promise<r.WriteResult>
   markDeviceAsUsing(serial: string): Promise<r.WriteResult>
   unmarkDeviceAsUsing(serial: string): Promise<r.WriteResult>
@@ -54,6 +64,25 @@ export interface ZebrunnerDbApi {
 
 // db is passed in rather than imported, so the module follows the db of lib/db/api.ts
 export default function extendDbApi(dbapi: DbApi, db: Db) {
+  // The sessions of lib/util/authsession.ts; a new session also drops the expired ones of the user
+  dbapi.saveSession = function(session) {
+    return db.run(r.table('sessions').insert(session))
+      .then(function() {
+        return db.run(r.table('sessions').getAll(session.email, {index: 'email'})
+          .filter(r.row('expiresAt').lt(Date.now()))
+          .delete())
+      })
+      .then(function() {})
+  }
+
+  dbapi.loadSession = function(id) {
+    return db.run(r.table('sessions').get<SessionDocument>(id))
+  }
+
+  dbapi.deleteSession = function(id) {
+    return db.run(r.table('sessions').get<SessionDocument>(id).delete())
+  }
+
   // Administrative status change from the REST API. Unlike saveDeviceStatus it does not compare
   // timestamps, which come from the device units' monotonic clock and can't be produced here.
   dbapi.setDeviceStatusOverride = function(serial, status) {

@@ -42,6 +42,9 @@ export function NavigationCard({device, control}: {device: Device, control: Cont
   }
 
   function clearBrowser() {
+    // Fork (Zebrunner): the reset also forgets the address it typed (#807)
+    setTextUrl('')
+    setFavicon(null)
     control.clearBrowser(browser ? {...browser} : null).catch(notifyFailure)
   }
 

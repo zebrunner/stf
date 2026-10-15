@@ -20,6 +20,7 @@ import jwtutil from '../../util/jwtutil.js'
 import pathutil from '../../util/pathutil.js'
 import urlutil from '../../util/urlutil.js'
 import lifecycle from '../../util/lifecycle.js'
+import ratelimit from '../../util/ratelimit.js'
 
 interface ZebrunnerAuthOptions {
   port: number
@@ -125,7 +126,7 @@ export default function(options: ZebrunnerAuthOptions) {
     res.render('index')
   })
 
-  app.post('/auth/api/v1/zebrunner', authMiddleware, function(
+  app.post('/auth/api/v1/zebrunner', ratelimit(), authMiddleware, function(
     req: express.Request
   , res: express.Response<unknown, ZebrunnerLocals>
   ) {
@@ -139,7 +140,9 @@ export default function(options: ZebrunnerAuthOptions) {
       }
     , secret: options.secret
     , header: {
-        exp: Date.now() + 24 * 3600 * 1000
+        // The token only carries the user to the app, which starts a session with it right away
+        // (lib/util/authsession.ts); in the address it would otherwise sign in for a whole day
+        exp: Date.now() + 2 * 60 * 1000
       }
     })
 

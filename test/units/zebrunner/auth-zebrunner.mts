@@ -2,6 +2,8 @@
 import {expect} from 'chai'
 import express from 'express'
 
+import jws from 'jws'
+
 import jwtutil from '../../../lib/util/jwtutil.js'
 import {listen, startUnit, type Running} from '../../helpers/zebrunner.mts'
 
@@ -110,6 +112,14 @@ describe('zebrunner: auth-zebrunner', function() {
     expect(logins).to.eql([{username: 'jdoe', password: 'right'}])
   })
 
+  it('should give the app a token that expires within minutes', async function() {
+    var res = await signIn({username: 'jdoe', password: 'right'})
+    var token = new URL((await res.json() as {redirect: string}).redirect).searchParams.get('jwt')!
+    var exp = Number(jws.decode(token)!.header.exp)
+    expect(exp).to.be.above(Date.now())
+    expect(exp).to.be.at.most(Date.now() + 2 * 60 * 1000)
+  })
+
   it('should make up an email for a user without one', async function() {
     var res = await signIn({username: 'noemail', password: 'right'})
     var body = await res.json() as {redirect: string}
@@ -124,6 +134,14 @@ describe('zebrunner: auth-zebrunner', function() {
     var res = await signIn({username: 'jdoe', password: 'wrong'})
     expect(res.status).to.equal(400)
     expect(await res.json()).to.eql({success: false, error: 'InvalidCredentialsError'})
+  })
+
+  it('should lock a user out after five failed sign-ins', async function() {
+    for (var i = 0; i < 5; i++) {
+      expect((await signIn({username: 'brute', password: 'wrong'})).status).to.equal(400)
+    }
+    expect((await signIn({username: 'brute', password: 'right'})).status).to.equal(429)
+    expect((await signIn({username: 'jdoe', password: 'right'})).status).to.equal(200)
   })
 
   it('should refuse a sign-in without the CSRF token', async function() {

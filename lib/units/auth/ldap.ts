@@ -21,6 +21,7 @@ import jwtutil from '../../util/jwtutil.js'
 import pathutil from '../../util/pathutil.js'
 import urlutil from '../../util/urlutil.js'
 import lifecycle from '../../util/lifecycle.js'
+import ratelimit from '../../util/ratelimit.js'
 
 import dbapi from '../../db/api.js'
 
@@ -95,7 +96,8 @@ export default function(options: LdapAuthOptions) {
     res.render('index')
   })
 
-  app.post('/auth/api/v1/ldap', requtil.validators.ldapLoginValidator, function(
+  // Fork (Zebrunner): ratelimit() limits the failed sign-ins, see lib/util/ratelimit.ts
+  app.post('/auth/api/v1/ldap', ratelimit(), requtil.validators.ldapLoginValidator, function(
     req: express.Request
   , res: express.Response
   ) {
@@ -120,7 +122,9 @@ export default function(options: LdapAuthOptions) {
               }
             , secret: options.secret
             , header: {
-                exp: Date.now() + 24 * 3600 * 1000
+                // Fork (Zebrunner): the app starts a session with the token right away
+                // (lib/util/authsession.ts), it need not sign in from the address for a day
+                exp: Date.now() + 2 * 60 * 1000
               }
             })
             res.status(200)

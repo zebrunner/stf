@@ -15,6 +15,8 @@ import {listen, sessionCookie, startUnit, type Running} from '../../helpers/zebr
 
 var SECRET = 'storage-test-secret'
 var TOKEN = 'storage-test-token'
+// A session of lib/util/authsession.ts, valid for an hour
+var USER = {email: 'user@example.com', name: 'U', sid: 'sid', expiresAt: Date.now() + 3600000}
 
 async function upload(origin: string, headers: Record<string, string> = {}) {
   var form = new FormData()
@@ -124,15 +126,26 @@ describe('zebrunner: storage auth', function() {
       })
 
       it('should let a signed-in user in', async function() {
-        var cookie = await sessionCookie(SECRET, {jwt: {email: 'user@example.com', name: 'U'}})
+        var cookie = await sessionCookie(SECRET, {jwt: USER})
         var res = await fetch(server.origin + '/s/blob/a/b', {headers: {cookie: cookie}})
         expect(res.status).to.equal(200)
       })
 
       it('should refuse a session signed with another secret', async function() {
-        var cookie = await sessionCookie('other', {jwt: {email: 'user@example.com', name: 'U'}})
+        var cookie = await sessionCookie('other', {jwt: USER})
         var res = await fetch(server.origin + '/s/blob/a/b', {headers: {cookie: cookie}})
         expect(res.status).to.equal(401)
+      })
+
+      it('should refuse an expired session or a cookie from before the sessions', async function() {
+        for (var jwt of [
+          Object.assign({}, USER, {expiresAt: Date.now() - 1000})
+        , {email: 'user@example.com', name: 'U'}
+        ]) {
+          var cookie = await sessionCookie(SECRET, {jwt: jwt})
+          var res = await fetch(server.origin + '/s/blob/a/b', {headers: {cookie: cookie}})
+          expect(res.status, JSON.stringify(jwt)).to.equal(401)
+        }
       })
 
       it('should refuse a session without a signed-in user', async function() {
@@ -142,7 +155,7 @@ describe('zebrunner: storage auth', function() {
       })
 
       it('should refuse a session cookie without its signature', async function() {
-        var cookie = await sessionCookie(SECRET, {jwt: {email: 'user@example.com', name: 'U'}})
+        var cookie = await sessionCookie(SECRET, {jwt: USER})
         var unsigned = cookie.split('; ').filter(function(part) {
           return !part.startsWith('ssid.sig=')
         }).join('; ')
@@ -184,7 +197,7 @@ describe('zebrunner: storage auth', function() {
       unsafe = await listen(function(req, res) {
         res.end('internal')
       })
-      userCookie = await sessionCookie(SECRET, {jwt: {email: 'user@example.com', name: 'U'}})
+      userCookie = await sessionCookie(SECRET, {jwt: USER})
     })
 
     after(async function() {

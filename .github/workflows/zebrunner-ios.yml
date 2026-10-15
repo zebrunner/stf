@@ -1,0 +1,117 @@
+---
+# Fork (Zebrunner): the WDA client of the ios-device unit against WebDriverAgent on iOS simulators,
+# one leg per iOS version of .github/zebrunner-ci.json. ci.yml runs it with its other legs, and the
+# report of ci.yml shows the legs next to the Android ones. See test/zebrunner-ios/wda.mts.
+name: iOS
+
+on:
+  workflow_call:
+  schedule:
+    # Monday morning, so a new Xcode or runner image is noticed within a week
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NPM_INSTALL_FLAGS: --no-audit --no-fund --ignore-scripts
+  WDA_REF: v16.15.0
+
+jobs:
+  plan:
+    name: iOS plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+
+      - name: Read the iOS matrix
+        id: plan
+        run: node .github/scripts/zebrunner-ci.mts ios-matrix
+
+  simulator:
+    name: iOS ${{ matrix.ios }}
+    needs: plan
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+
+      - name: Select Xcode ${{ matrix.xcode }}
+        if: matrix.xcode
+        run: sudo xcode-select -s "/Applications/Xcode_${{ matrix.xcode }}.app"
+
+      - name: Install and compile
+        # The flags are split on purpose
+        # shellcheck disable=SC2086
+        run: |
+          npm install $NPM_INSTALL_FLAGS
+          node build.mts compile
+
+      - name: Boot the simulator and start WebDriverAgent
+        id: setup
+        env:
+          WDA_DIR: ${{ runner.temp }}/wda
+          LOG_DIR: ios-logs
+        run: bash .github/scripts/zebrunner-ios-simulator.sh "${{ matrix.ios }}" "${{ matrix.download }}"
+
+      - name: Test the WDA client
+        id: tests
+        env:
+          IOS_VERSION: ${{ matrix.ios }}
+        # --exit: the client keeps its MJPEG connection open, as the unit does
+        run: npx mocha --exit --reporter json --reporter-option output=ios-results.json --extension mts test/zebrunner-ios
+
+      - name: Verdict
+        id: verdict
+        if: always()
+        env:
+          IOS_VERSION: ${{ matrix.ios }}
+          SETUP_OUTCOME: ${{ steps.setup.outcome }}
+          TEST_OUTCOME: ${{ steps.tests.outcome }}
+          STAGES_FILE: ios-logs/stages
+          RESULTS_FILE: ios-results.json
+        run: node .github/scripts/zebrunner-ci.mts ios-verdict
+
+      - name: Record verdict
+        if: always()
+        env:
+          VERDICT_GROUP: ios
+          VERDICT_EXTRA: ${{ steps.verdict.outputs.extra }}
+          STATUS: ${{ steps.verdict.outputs.status }}
+          DETAILS: ${{ steps.verdict.outputs.details }}
+        run: bash .github/scripts/verdict.sh "ios-${{ matrix.ios }}" "iOS ${{ matrix.ios }}" "${STATUS:-fail}" "$DETAILS"
+
+      - name: Upload verdict
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: verdict-ios-${{ matrix.ios }}
+          path: verdict.json
+          retention-days: 3
+          if-no-files-found: warn
+
+      - name: Upload the logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-${{ matrix.ios }}-logs
+          path: |
+            ios-logs
+            ios-results.json
+          retention-days: 5
+          if-no-files-found: ignore
