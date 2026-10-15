@@ -25,10 +25,6 @@ function runActivity(control: Control, command: string) {
   return control.shell(`${command} --activity-clear-top`)
 }
 
-function openSetting(control: Control, activity: string) {
-  return runActivity(control, `am start -a android.intent.action.MAIN -n com.android.settings/.Settings\\$${activity}`)
-}
-
 const shortcuts: AppShortcut[] = [
   {
     title: gettext('Settings')
@@ -61,7 +57,9 @@ const shortcuts: AppShortcut[] = [
     title: gettext('Developer')
     , icon: IconAdjustmentsHorizontal
     , color: 'green'
-    , open: (control) => openSetting(control, 'DevelopmentSettingsActivity')
+      // Fork (Zebrunner): the activity class differs between vendors and versions, the action does
+      // not (#796)
+    , open: (control) => runActivity(control, 'am start -a android.settings.APPLICATION_DEVELOPMENT_SETTINGS')
   }
 ]
 
