@@ -35,12 +35,12 @@ interface SwaggerDoc {
 // js-yaml comes with the swagger middleware of the API unit, which loads the same file
 var yaml = createRequire(import.meta.url)('js-yaml') as {load(text: string): unknown}
 
-describe('fork API contract', function() {
+describe('zebrunner: API contract', function() {
   var swagger: SwaggerDoc
 
   before(async function() {
     swagger = yaml.load(await readFile(
-      new URL('../../lib/units/api/swagger/api_v1.yaml', import.meta.url)
+      new URL('../../../lib/units/api/swagger/api_v1.yaml', import.meta.url)
     , 'utf8'
     )) as SwaggerDoc
   })
