@@ -630,8 +630,18 @@ export default syrup.serial()
                 return
               }
 
-              if (errMes.includes('Session does not exist')) {
-                this.startSession()
+              // Fork (Zebrunner): a session can also end while a request is pending (an Appium
+              // test ends, STF closes the screen); only the loss of the current session starts
+              // the next one, a request of an older session is dropped
+              if (
+                errMes.includes('Session does not exist') ||
+                errMes.includes('was deleted while this request was still pending')
+              ) {
+                var current = this.sessionId !== null &&
+                  String(requestOpt.uri || '').includes(`/session/${this.sessionId}`)
+                if (current) {
+                  this.startSession()
+                }
                 return
               }
 
