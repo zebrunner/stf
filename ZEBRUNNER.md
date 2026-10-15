@@ -113,7 +113,7 @@ From the images built from `develop` (3.0 and earlier):
 ### CI
 
 - The upstream workflows run as they are, except that the Android emulator legs start at Android 12 (API 31): `.github/zebrunner-ci.json` sets the lowest API level and `.github/scripts/zebrunner-ci.mts` applies it to the matrix and to the coverage check of the report; `.github/android-matrix.json` stays the upstream file.
-- `.github/workflows/zebrunner-ios.yml` tests the WDA client of the `ios-device` unit against WebDriverAgent on iOS simulators: iOS 15, 16, 17 (runtimes downloaded for Xcode 16), 18, 26 and 27 (the `xcode-27` preview image). It runs on changes of the iOS code, weekly and by hand. Locally, on a Mac with Xcode:
+- `.github/workflows/zebrunner-ios.yml` tests the WDA client of the `ios-device` unit against WebDriverAgent on iOS simulators: iOS 15 (runtime from `xcodes`), 16, 17 (runtimes downloaded for Xcode 16.4), 18, 26 and 27 (the `xcode-27` preview image); the matrix is `ios.include` of `.github/zebrunner-ci.json`. `ci.yml` runs it with its other legs, and its report shows an iOS matrix next to the Android one (`render-report.mts` with `zebrunner-ci.mts`); it also runs weekly and by hand. Locally, on a Mac with Xcode:
 
   ```bash
   node build.mts compile
