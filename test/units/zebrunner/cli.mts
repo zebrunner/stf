@@ -80,13 +80,15 @@ describe('zebrunner: CLI', function() {
   })
 
   describe('storage-temp', function() {
-    it('should require the secret and the storage token', function() {
+    it('should start without a storage token, as upstream', function() {
+      var argv = parse(storageTemp, [])
+      expect(typeof argv.storageToken).to.equal('undefined')
+    })
+
+    it('should require the secret with a storage token', function() {
       expect(function() {
-        parse(storageTemp, [])
-      }).to.throw(/secret|storage-token/)
-      expect(function() {
-        parse(storageTemp, [], {SECRET: 'secret'})
-      }).to.throw(/storage-token/)
+        parse(storageTemp, [], {STF_STORAGE_TOKEN: 'token'})
+      }).to.throw(/needs --secret/)
     })
 
     it('should take them from SECRET and STF_STORAGE_TOKEN', function() {
@@ -117,10 +119,10 @@ describe('zebrunner: CLI', function() {
   describe('storage-s3', function() {
     var s3Args = ['--bucket', 'b', '--endpoint', 'http://s3', '--profile', 'p']
 
-    it('should require the secret and the storage token', function() {
+    it('should require the secret with a storage token', function() {
       expect(function() {
-        parse(storageS3, s3Args)
-      }).to.throw(/secret|storage-token/)
+        parse(storageS3, s3Args, {STF_STORAGE_TOKEN: 'token'})
+      }).to.throw(/needs --secret/)
       expect(parse(storageS3, s3Args, storageEnv).storageToken).to.equal('token')
     })
   })

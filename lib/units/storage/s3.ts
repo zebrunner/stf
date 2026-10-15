@@ -197,7 +197,7 @@ export default function(options: S3StorageOptions & StorageSecurityOptions) {
         .then(function() {
           return urlsafety.download(req.body.url, {
             dir: options.cacheDir
-          }, options.downloadAllow)
+          }, options)
         })
         .then(function(file) {
           file.name = crypto.createHash('md5').update(req.body.url).digest('hex')

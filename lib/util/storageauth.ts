@@ -70,16 +70,19 @@ function sameToken(given: unknown, expected: Buffer) {
   return buffer.length === expected.length && crypto.timingSafeEqual(buffer, expected)
 }
 
-// The middleware of the storage units. Without a secret and a token, e.g. in the unit tests of
-// upstream, the routes stay open; the CLIs of the storage units require both.
+// The middleware of the storage units. Without a storage token the routes stay open as in
+// upstream (its tests and CI rely on it); the Zebrunner deployments always set one.
 function middleware(options: StorageAuthOptions): express.RequestHandler {
   const log = logger.createLogger('storage:auth')
 
-  if (!options.secret || !options.storageToken) {
-    log.warn('The storage routes are not authenticated, set a secret and a storage token')
+  if (!options.storageToken) {
+    log.warn('The storage routes are not authenticated, set STF_STORAGE_TOKEN to protect them')
     return function(req, res, next) {
       next()
     }
+  }
+  if (!options.secret) {
+    throw new Error('The storage token needs the secret of the session cookies (SECRET)')
   }
 
   const expectedToken = Buffer.from(options.storageToken)

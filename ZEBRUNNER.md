@@ -52,7 +52,7 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 | Variable | Default | Description |
 | --- | --- | --- |
 | `SECRET` | | Secret of the session cookies and tokens: `--secret` of `app`, `auth-*`, `websocket` and, in the fork, of `storage-temp`/`storage-s3` |
-| `STF_STORAGE_TOKEN` | | Token the STF units send to the storage (`x-stf-internal-token`); set for `storage-temp`/`storage-s3` (mcloud `variables.env`) and for the device containers (mcloud-agent); required |
+| `STF_STORAGE_TOKEN` | | Token the STF units send to the storage (`x-stf-internal-token`); set for `storage-temp`/`storage-s3` (mcloud `variables.env`) and for the device containers (mcloud-agent). It turns the protection of the storage on, the Zebrunner deployments must set it |
 | `STF_STORAGE_TEMP_DOWNLOAD_ALLOW` | | Private network (CIDR or address) users may install apps from by URL, e.g. an artifact server; `--download-allow` can be repeated |
 | `SSID` | `ssid` | Name of the session cookie of the app unit |
 | `ZEBRUNNER_LOGIN_URL` | | Login endpoint of Zebrunner IAM (`.../api/iam/v1/auth/login`), for `auth-zebrunner` |
@@ -78,18 +78,20 @@ The device lists and `GET /api/v1/devices/{serial}` also return `name`, the mode
 
 ## Storage
 
-`/s/upload`, `/s/download` and `/s/blob` of the storage units answer only:
+With `STF_STORAGE_TOKEN` set, `/s/upload`, `/s/download` and `/s/blob` of the storage units answer only:
 
 - the STF units, with `x-stf-internal-token: <STF_STORAGE_TOKEN>`;
 - signed-in users, with the session cookie of the app unit.
 
 The apk and image plugins forward the credentials of their caller, so `/s/apk/...` and `/s/image/...` are protected the same way. Scripts that used the storage without a session (e.g. with an access token of the API) are refused. `/s/download` (install from URL) downloads only from public addresses over http(s), checked after the DNS lookup, when connecting and on every redirect; `STF_STORAGE_TEMP_DOWNLOAD_ALLOW` lets private networks in.
 
+Without the token the storage works as in upstream (open routes, any download URL) and logs a warning at start: the upstream tests and CI use it that way. `--storage-token` needs `--secret` (`SECRET`), the secret of the session cookies of the app unit.
+
 ## Upgrade
 
 From the images built from `develop` (3.0 and earlier):
 
-- set `STF_STORAGE_TOKEN` in `variables.env` of mcloud (`./zebrunner.sh setup` generates it), the same value as `STF_STORAGE_TOKEN` of mcloud-agent; `storage-temp` does not start without it;
+- set `STF_STORAGE_TOKEN` in `variables.env` of mcloud (`./zebrunner.sh setup` generates it), the same value as `STF_STORAGE_TOKEN` of mcloud-agent; without it the storage stays open;
 - use a mcloud-device image that installs go-ios, socat and curl itself;
 - `stf storage-temp` still accepts the `--connect-push`/`--connect-sub` mcloud passes, they are not used.
 

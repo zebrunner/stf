@@ -56,14 +56,17 @@ var builder = function(yargs: Argv) {
       describe: 'The secret of the session cookies of the app unit, the same as its --secret.'
     , type: 'string'
     , default: process.env.SECRET
-    , demand: true
     })
     .option('storage-token', {
-      describe: 'The token the STF units send to the storage, the same as the STF_STORAGE_TOKEN ' +
-        'environment variable of the device containers.'
+      describe: 'The token the STF units send to the storage (STF_STORAGE_TOKEN of the device ' +
+        'containers). With it the routes need the token or a session and downloads are limited ' +
+        'to public addresses; without it they stay open as in upstream.'
     , type: 'string'
     , default: process.env.STF_STORAGE_TOKEN
-    , demand: true
+    })
+    .check(function(argv) {
+      return !argv.storageToken || Boolean(argv.secret) ||
+        'The storage token needs --secret (SECRET)'
     })
     .option('ssid', {
       describe: 'The name of the session cookie of the app unit.'

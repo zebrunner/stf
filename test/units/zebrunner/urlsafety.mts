@@ -227,14 +227,28 @@ describe('zebrunner: urlsafety', function() {
       hits.length = 0
     })
 
+    var protectedStorage = {storageToken: 'token'}
+    var allowLoopback = {storageToken: 'token', downloadAllow: ['127.0.0.1']}
+
+    it('should download any URL as upstream does without a storage token', async function() {
+      var file = await urlsafety.download(target.origin + '/app.apk', {}, {})
+      try {
+        expect(await fs.readFile(file.path, 'utf8')).to.equal('apk content')
+      }
+      finally {
+        await fs.rm(file.path, {force: true})
+      }
+    })
+
     it('should refuse a restricted URL without requesting it', async function() {
-      var err = await rejection(urlsafety.download(target.origin + '/app.apk', {}))
+      var url = target.origin + '/app.apk'
+      var err = await rejection(urlsafety.download(url, {}, protectedStorage))
       expect(err).to.be.instanceOf(requtil.ValidationError)
       expect(hits).to.eql([])
     })
 
     it('should download from a network of the allow list', async function() {
-      var file = await urlsafety.download(target.origin + '/app.apk', {}, ['127.0.0.1'])
+      var file = await urlsafety.download(target.origin + '/app.apk', {}, allowLoopback)
       try {
         expect(await fs.readFile(file.path, 'utf8')).to.equal('apk content')
       }
@@ -244,7 +258,7 @@ describe('zebrunner: urlsafety', function() {
     })
 
     it('should not follow a redirect to a restricted literal address', async function() {
-      var file = await urlsafety.download(target.origin + '/to-literal', {}, ['127.0.0.1'])
+      var file = await urlsafety.download(target.origin + '/to-literal', {}, allowLoopback)
       await fs.rm(file.path, {force: true})
       expect(hits).to.eql(['target /to-literal'])
     })
@@ -252,7 +266,7 @@ describe('zebrunner: urlsafety', function() {
     it('should not connect to a redirect host that resolves to a restricted address',
       async function() {
         var err = await rejection(
-          urlsafety.download(target.origin + '/to-hostname', {}, ['127.0.0.1'])
+          urlsafety.download(target.origin + '/to-hostname', {}, allowLoopback)
         )
         expect(err).to.be.instanceOf(Error)
         expect(hits).to.eql(['target /to-hostname'])

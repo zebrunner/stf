@@ -84,9 +84,16 @@ describe('zebrunner: storage auth', function() {
       await server.close()
     })
 
-    it('should leave the routes open without a secret and a token', async function() {
-      await serve({})
+    it('should leave the routes open without a token, as upstream', async function() {
+      await serve({secret: SECRET})
       expect((await fetch(server.origin + '/s/blob/a/b')).status).to.equal(200)
+    })
+
+    it('should refuse a token without the secret of the sessions', function() {
+      expect(function() {
+        storageauth.middleware({storageToken: TOKEN})
+      }).to.throw(/secret of the session cookies/)
+      server = {origin: '', close: () => Promise.resolve()}
     })
 
     describe('with a secret and a token', function() {

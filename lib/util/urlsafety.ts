@@ -3,7 +3,8 @@
 *
 * A URL is accepted when it is http(s) and every address its host resolves to is public, or is in
 * the networks the deployment allows explicitly. The addresses are checked again when the socket
-* connects (DNS rebinding) and on every redirect.
+* connects (DNS rebinding) and on every redirect. Like the authentication of lib/util/storageauth.ts
+* it applies when the storage has a storage token, the Zebrunner deployments always set one.
 **/
 
 import dns from 'dns'
@@ -13,6 +14,7 @@ import Promise from 'bluebird'
 import type request from '@cypress/request'
 
 import download from './download.js'
+import type {StorageSecurityOptions} from './storageauth.js'
 import requtil from './requtil.js'
 
 type Family = 'ipv4' | 'ipv6'
@@ -198,9 +200,16 @@ function requestOptions(allowList?: net.BlockList): request.CoreOptions {
   }
 }
 
-// download() of a URL a user asked for; allowed: see createAllowList
-function safeDownload(url: string, options: Parameters<typeof download>[1], allowed?: string[]) {
-  const allowList = createAllowList(allowed)
+// download() of a URL a user asked for, checked when the storage has a storage token
+function safeDownload(
+  url: string
+, options: Parameters<typeof download>[1]
+, security: StorageSecurityOptions
+) {
+  if (!security.storageToken) {
+    return download(url, options)
+  }
+  const allowList = createAllowList(security.downloadAllow)
   return assertSafeUrl(url, allowList)
     .then(function() {
       return download(url, options, requestOptions(allowList))
