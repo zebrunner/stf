@@ -34,12 +34,6 @@ export function createControl(target: Device, channel: string) {
 
   function sendTwoWay(action: string, data?: unknown): TxPromise {
     const tx = createTransaction(target)
-    emit(target.ios ? `${action}Ios` : action, channel, tx.channel, data)
-    return tx.promise
-  }
-
-  function sendTwoWayRaw(action: string, data?: unknown): TxPromise {
-    const tx = createTransaction(target)
     emit(action, channel, tx.channel, data)
     return tx.promise
   }
@@ -94,8 +88,7 @@ export function createControl(target: Device, channel: string) {
     , shell: (command: string) => sendTwoWay('shell.command', {command, timeout: 10000})
     , identify: () => sendTwoWay('device.identify')
     , install: (options: InstallOptions) => sendTwoWay('device.install', options)
-    , installIos: (options: InstallOptions) => sendTwoWayRaw('deviceIos.install', options)
-    , getTreeElements: () => sendTwoWay('getTreeElements')
+    , getTreeElements: () => sendTwoWay('getTreeElementsIos')
     , tapDeviceTreeElement: (label: string) => sendOneWay('tapDeviceTreeElement', {label})
     , uninstall: (packageName: string) => sendTwoWay('device.uninstall', {packageName})
     , reboot: () => sendTwoWay('device.reboot')
@@ -114,8 +107,7 @@ export function createControl(target: Device, channel: string) {
       , targetPort: Number(forward.targetPort)
     })
     , removeForward: (forward: ForwardSpec) => sendTwoWay('forward.remove', {id: forward.id})
-      // Only the iOS unit takes the selected level name; Android expects LogcatFilter objects
-    , startLogcat: (filters: unknown[]) => sendTwoWay('logcat.start', {filters: target.ios ? filters : []})
+    , startLogcat: (filters: unknown[]) => sendTwoWay('logcat.start', {filters})
     , stopLogcat: () => sendTwoWay('logcat.stop')
     , startRemoteConnect: () => sendTwoWay('connect.start')
     , stopRemoteConnect: () => sendTwoWay('connect.stop')

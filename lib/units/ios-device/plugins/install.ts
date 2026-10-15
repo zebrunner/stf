@@ -274,12 +274,4 @@ export default syrup.serial()
     router.on(wire.InstallMessage, function(channel, message) {
       handleInstall(options, push, log, channel, message)
     })
-
-    router.on(wire.UninstallIosMessage, function(channel, message) {
-      log.info('UnistallIosMessage, channel', channel)
-      log.info('UnistallIosMessage, message', message)
-      var _args = [
-        '--id', options.serial, ''
-      ]
-    })
   })

@@ -46,7 +46,6 @@ import type {
 , ForwardCreateMessageFields
 , ForwardRemoveMessageFields
 , ForwardTestMessageFields
-, InstalledApplications
 , LogcatStartMessageFields
 , PasteMessageFields
 , PhoneStateEvent
@@ -62,11 +61,9 @@ import type {
 , TouchMoveIosMessageFields
 , TouchUpMessageFields
 , TypeMessageFields
-, UninstallIosMessageFields
 , UninstallMessageFields
 , WifiSetEnabledMessageFields
 } from '../../types/wire.js'
-import type {DeviceDocument} from '../../types/stf.js'
 import type {WebsocketOptions, WebsocketRequest} from '../../types/units-websocket.js'
 
 var request = Promise.promisifyAll(cypressRequest) as unknown as PromisifiedRequest
@@ -106,13 +103,8 @@ interface InstallData {
   manifest: unknown
 }
 
-interface IosLogcatStartData {
-  filters: string[]
-}
-
 type IosTouchMoveData = Omit<TouchMoveIosMessageFields, 'duration'> & {duration?: number | null}
 
-type DeviceApplications = DeviceDocument | null
 type ChannelEvent<D> = (channel: string, data: D) => void
 type TransactionEvent = (channel: string, responseChannel: string) => void
 type TransactionDataEvent<D> = (channel: string, responseChannel: string, data: D) => void
@@ -143,10 +135,8 @@ interface WebsocketClientEvents {
   'display.rotate': ChannelEvent<RotateMessageFields>
   'clipboard.paste': TransactionDataEvent<PasteMessageFields>
   'clipboard.copy': TransactionEvent
-  'clipboard.copyIos': TransactionEvent
   'device.identify': TransactionEvent
   'device.reboot': TransactionEvent
-  'device.rebootIos': TransactionEvent
   'account.check': TransactionDataEvent<AccountCheckMessageFields>
   'account.remove': TransactionDataEvent<AccountRemoveMessageFields>
   'account.addmenu': TransactionEvent
@@ -168,28 +158,20 @@ interface WebsocketClientEvents {
   'shell.command': TransactionDataEvent<ShellCommandMessageFields>
   'shell.keepalive': ChannelEvent<ShellKeepAliveMessageFields>
   'device.install': TransactionDataEvent<InstallData>
-  'device.installIos': TransactionDataEvent<InstallData>
   'device.uninstall': TransactionDataEvent<UninstallMessageFields>
-  'device.uninstallIos': TransactionDataEvent<UninstallIosMessageFields>
   'storage.upload': TransactionDataEvent<{url: string}>
   'forward.test': TransactionDataEvent<ForwardTestMessageFields>
   'forward.create': TransactionDataEvent<ForwardCreateMessageFields>
   'forward.remove': TransactionDataEvent<ForwardRemoveMessageFields>
   'logcat.start': TransactionDataEvent<LogcatStartMessageFields>
-  'logcat.startIos': TransactionDataEvent<IosLogcatStartData>
   'logcat.stop': TransactionEvent
-  'logcat.stopIos': TransactionEvent
   'connect.start': TransactionEvent
-  'connect.startIos': TransactionEvent
   'connect.stop': TransactionEvent
   'browser.open': TransactionDataEvent<BrowserOpenMessageFields>
-  'browser.openIos': TransactionDataEvent<BrowserOpenMessageFields>
   'browser.clear': TransactionDataEvent<BrowserClearMessageFields>
   'store.open': TransactionEvent
-  'store.openIos': TransactionEvent
   'settings.open': TransactionEvent
   'screen.capture': TransactionEvent
-  'screen.captureIos': TransactionEvent
   'fs.retrieve': TransactionDataEvent<FileSystemGetMessageFields>
   'fs.list': TransactionDataEvent<FileSystemListMessageFields>
 }
@@ -425,46 +407,17 @@ export default function(options: WebsocketOptions) {
           }
         })
       })
-      .on(wire.InstalledApplications, function(channel, message: InstalledApplications) {
-        socket.emit('device.applications', {
-          important: true
-        , data: {
-            serial: message.serial
-          , applications: message.applications
-          }
-        })
-      })
       .on(wire.JoinGroupMessage, function(channel, message) {
-        dbapi.getInstalledApplications({serial: message.serial})
-          .then(function(applications: DeviceApplications) {
-            socket.emit(`device.application-${message.serial}`, {
-              applications: applications
-            })
-            socket.emit('device.change', {
-              important: true
-            , data: datautil.applyOwner({
-                serial: message.serial
-              , owner: message.owner
-              , likelyLeaveReason: 'owner_change'
-              , usage: message.usage
-              , applications: applications
-              }
-            , user
-            )
-            })
-          })
-          .catch(function() {
-            socket.emit('device.change', {
-              important: true
-            , data: datautil.applyOwner({
-                serial: message.serial
-              , owner: message.owner
-              , likelyLeaveReason: 'owner_change'
-              , usage: message.usage
-              }
-            , user
-            )
-            })
+        socket.emit('device.change', {
+          important: true
+        , data: datautil.applyOwner({
+              serial: message.serial
+            , owner: message.owner
+            , likelyLeaveReason: 'owner_change'
+            , usage: message.usage
+            }
+          , user
+          )
         })
       })
       .on(wire.JoinGroupByAdbFingerprintMessage, function(channel, message) {
@@ -484,26 +437,6 @@ export default function(options: WebsocketOptions) {
           , user
           )
         })
-      })
-      .on(wire.DeviceOnInstAppMessage, function(channel, message) {
-        dbapi.getInstalledApplications({serial: message.serial})
-          .then(function(applications: DeviceApplications) {
-            socket.emit(`device.application-${message.serial}`, {
-              applications: applications
-            })
-            socket.emit('device.change', {
-              important: true
-            , data: {
-                serial: message.serial
-              , applications: applications
-              }
-            })
-          })
-          .catch(function() {
-            socket.emit('device.change', {
-              importatnt: true
-            })
-          })
       })
       .on(wire.DeviceStatusMessage, function(channel, message: LabelledStatusMessage) {
         message.likelyLeaveReason = 'status_change'
@@ -585,17 +518,6 @@ export default function(options: WebsocketOptions) {
         })
       })
       .on(wire.RotationEvent, function(channel, message) {
-        socket.emit('device.change', {
-          important: false
-        , data: {
-            serial: message.serial
-          , display: {
-              rotation: message.rotation
-            }
-          }
-        })
-      })
-      .on(wire.RotationIosEvent, function(channel, message) {
         socket.emit('device.change', {
           important: false
         , data: {
@@ -938,16 +860,6 @@ export default function(options: WebsocketOptions) {
             )
           ])
         })
-        .on('clipboard.copyIos', function(channel, responseChannel) {
-          joinChannel(responseChannel)
-          push.send([
-            channel
-          , wireutil.transaction(
-              responseChannel
-            , new wire.CopyMessage()
-            )
-          ])
-        })
         .on('device.identify', function(channel, responseChannel) {
           push.send([
             channel
@@ -958,16 +870,6 @@ export default function(options: WebsocketOptions) {
           ])
         })
         .on('device.reboot', function(channel, responseChannel) {
-          joinChannel(responseChannel)
-          push.send([
-            channel
-          , wireutil.transaction(
-              responseChannel
-            , new wire.RebootMessage()
-            )
-          ])
-        })
-        .on('device.rebootIos', function(channel, responseChannel) {
           joinChannel(responseChannel)
           push.send([
             channel
@@ -1184,20 +1086,6 @@ export default function(options: WebsocketOptions) {
             )
           ])
         })
-        .on('device.installIos', function(channel, responseChannel, data) {
-          joinChannel(responseChannel)
-          push.send([
-            channel
-          , wireutil.transaction(
-              responseChannel
-            , new wire.InstallMessage(
-                data.href
-              , data.launch === true
-              , JSON.stringify(data.manifest)
-              )
-            )
-          ])
-        })
         .on('device.uninstall', function(channel, responseChannel, data) {
           joinChannel(responseChannel)
           push.send([
@@ -1206,13 +1094,6 @@ export default function(options: WebsocketOptions) {
               responseChannel
             , new wire.UninstallMessage(data)
             )
-          ])
-        })
-        .on('device.uninstallIos', function(channel, responseChannel, data) {
-          joinChannel(responseChannel)
-          push.send([
-            channel
-          , wireutil.envelope(new wire.UninstallIosMessage(data.packageName))
           ])
         })
         .on('storage.upload', function(channel, responseChannel, data) {
@@ -1283,30 +1164,7 @@ export default function(options: WebsocketOptions) {
             )
           ])
         })
-        .on('logcat.startIos', function(channel, responseChannel, data) {
-          joinChannel(responseChannel)
-          push.send([
-            channel
-          , wireutil.transaction(
-              responseChannel
-            , new wire.LogcatStartMessage([{
-                tag: data.filters[0] || '*'
-              , priority: 1
-              }])
-            )
-          ])
-        })
         .on('logcat.stop', function(channel, responseChannel) {
-          joinChannel(responseChannel)
-          push.send([
-            channel
-          , wireutil.transaction(
-              responseChannel
-            , new wire.LogcatStopMessage()
-            )
-          ])
-        })
-        .on('logcat.stopIos', function(channel, responseChannel) {
           joinChannel(responseChannel)
           push.send([
             channel
@@ -1334,16 +1192,6 @@ export default function(options: WebsocketOptions) {
               ])
             })
         })
-        .on('connect.startIos', function(channel, responseChannel) {
-          joinChannel(responseChannel)
-          push.send([
-            channel
-          , wireutil.transaction(
-              responseChannel
-            , new wire.ConnectStartMessage()
-            )
-          ])
-        })
         .on('connect.stop', function(channel, responseChannel) {
           joinChannel(responseChannel)
           push.send([
@@ -1355,16 +1203,6 @@ export default function(options: WebsocketOptions) {
           ])
         })
         .on('browser.open', function(channel, responseChannel, data) {
-          joinChannel(responseChannel)
-          push.send([
-            channel
-          , wireutil.transaction(
-              responseChannel
-            , new wire.BrowserOpenMessage(data)
-            )
-          ])
-        })
-        .on('browser.openIos', function(channel, responseChannel, data) {
           joinChannel(responseChannel)
           push.send([
             channel
@@ -1394,16 +1232,6 @@ export default function(options: WebsocketOptions) {
             )
           ])
         })
-        .on('store.openIos', function(channel, responseChannel) {
-          joinChannel(responseChannel)
-          push.send([
-            channel
-          , wireutil.transaction(
-              responseChannel
-            , new wire.StoreOpenMessage()
-            )
-          ])
-        })
         .on('settings.open', function(channel) {
           push.send([
             channel
@@ -1411,16 +1239,6 @@ export default function(options: WebsocketOptions) {
           ])
         })
         .on('screen.capture', function(channel, responseChannel) {
-          joinChannel(responseChannel)
-          push.send([
-            channel
-          , wireutil.transaction(
-              responseChannel
-            , new wire.ScreenCaptureMessage()
-            )
-          ])
-        })
-        .on('screen.captureIos', function(channel, responseChannel) {
           joinChannel(responseChannel)
           push.send([
             channel
