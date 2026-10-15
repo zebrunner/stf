@@ -31,14 +31,20 @@ runtime() {
     })"
 }
 
-# iphone <runtime>: the newest iPhone type the runtime supports
+# iphone <runtime>: the newest iPhone type the runtime supports, by the iOS version it came with
 iphone() {
-  xcrun simctl list runtimes -j | node -e "
+  local types
+  types=$(xcrun simctl list devicetypes -j)
+  xcrun simctl list runtimes -j | TYPES="$types" node -e "
     let d = ''
     process.stdin.on('data', (c) => { d += c })
     process.stdin.on('end', () => {
+      const since = {}
+      JSON.parse(process.env.TYPES).devicetypes.forEach((t) => { since[t.identifier] = t.minRuntimeVersion || 0 })
       const r = JSON.parse(d).runtimes.find((r) => r.identifier === '$1')
-      const phones = (r.supportedDeviceTypes || []).filter((t) => t.productFamily === 'iPhone')
+      const phones = (r.supportedDeviceTypes || [])
+        .filter((t) => t.productFamily === 'iPhone')
+        .sort((a, b) => (since[a.identifier] || 0) - (since[b.identifier] || 0))
       process.stdout.write(phones.length ? phones[phones.length - 1].identifier : '')
     })"
 }
@@ -47,8 +53,9 @@ note "Xcode: $(xcodebuild -version | tr '\n' ' ')"
 runtime_id=$(runtime "$ios_major")
 if [[ -z "$runtime_id" && -n "$download_version" ]]; then
   note "downloading the iOS $download_version runtime"
+  # xcodes also has the runtimes Xcode no longer offers, and installs them as root
   xcodebuild -downloadPlatform iOS -buildVersion "$download_version" >&2 ||
-    xcodes runtimes install "iOS $download_version" >&2 ||
+    sudo xcodes runtimes install "iOS $download_version" >&2 ||
     true
   runtime_id=$(runtime "$ios_major")
 fi
@@ -70,10 +77,11 @@ if [[ ! -d "$wda_dir" ]]; then
 fi
 
 note "building WebDriverAgent"
+destination="platform=iOS Simulator,id=$udid,arch=$(uname -m)"
 xcodebuild build-for-testing \
   -project "$wda_dir/WebDriverAgent.xcodeproj" \
   -scheme WebDriverAgentRunner \
-  -destination "id=$udid" \
+  -destination "$destination" \
   -derivedDataPath "$wda_dir/build" \
   CODE_SIGNING_ALLOWED=NO > "$log_dir/wda-build.log" 2>&1 ||
   {
@@ -85,11 +93,12 @@ note "starting WebDriverAgent"
 nohup xcodebuild test-without-building \
   -project "$wda_dir/WebDriverAgent.xcodeproj" \
   -scheme WebDriverAgentRunner \
-  -destination "id=$udid" \
+  -destination "$destination" \
   -derivedDataPath "$wda_dir/build" > "$log_dir/wda.log" 2>&1 &
 echo $! > "$log_dir/wda.pid"
 
-for _ in $(seq 1 120); do
+# The first launch on an older runtime takes minutes
+for _ in $(seq 1 300); do
   if curl -sf http://127.0.0.1:8100/status > /dev/null; then
     note "WebDriverAgent is up"
     echo "$udid"
