@@ -16,6 +16,7 @@ import type http from 'http'
 import cookieSession from 'cookie-session'
 import type express from 'express'
 
+import {isFresh, type SessionJwt} from './authsession.js'
 import logger from './logger.js'
 
 export const TOKEN_HEADER = 'x-stf-internal-token'
@@ -97,8 +98,9 @@ function middleware(options: StorageAuthOptions): express.RequestHandler {
       return
     }
     parseSession(req, res, function() {
-      const session = req.session as {jwt?: {email?: string}} | null | undefined
-      if (session && session.jwt && session.jwt.email) {
+      const session = req.session as {jwt?: SessionJwt} | null | undefined
+      // The storage has no database, it checks the expiry the cookie carries
+      if (session && session.jwt && session.jwt.email && isFresh(session.jwt)) {
         next()
         return
       }

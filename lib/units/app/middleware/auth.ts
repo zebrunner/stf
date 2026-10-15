@@ -6,6 +6,7 @@ import jwtutil from '../../../util/jwtutil.js'
 import urlutil from '../../../util/urlutil.js'
 
 import dbapi from '../../../db/api.js'
+import authsession from '../../../util/authsession.js'
 import type express from 'express'
 
 interface AppAuthOptions {
@@ -29,6 +30,10 @@ export default function(options: AppAuthOptions) {
           .then(function() {
             req.session!.jwt = data
             req.sessionOptions.httpOnly = false
+            // Fork (Zebrunner): a session in the database, see lib/util/authsession.ts
+            return authsession.establish(req)
+          })
+          .then(function() {
             // Fork (Zebrunner): a redirect relative to the page keeps a path prefix the app does
             // not see, such as /stf of the Zebrunner proxy
             res.redirect(redir.includes('?') ? redir.slice(redir.indexOf('?')) : '?')

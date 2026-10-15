@@ -37,6 +37,7 @@ import {getSocket, onSocket, useSocketEvent} from '@/core/socket'
 import {useSetting, useSettingsStore} from '@/core/settings'
 import {acceptAdbKey} from '@/core/user'
 import {usersApi} from '@/core/users-api'
+import {endSession} from '@/core/zebrunner-session'
 import {basicMode, useAdminMode, usePlatform, useStandalone} from './modes'
 import {openAddAdbKey, openSocketDisconnected, openVersionUpdate} from './modals'
 import classes from './AppLayout.module.css'
@@ -144,7 +145,9 @@ function useAlertMessage(): AlertMessage | null {
   return isAdmin() ? adminAlert || userAlert : userAlert
 }
 
-function logout() {
+async function logout() {
+  // Fork (Zebrunner): the session also ends on the server
+  await endSession()
   for (const part of document.cookie.split(';')) {
     const name = part.split('=')[0]!.trim()
     if (name) {
