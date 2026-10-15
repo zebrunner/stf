@@ -208,6 +208,8 @@ export interface WdaErrorBody {
 export interface WdaClientPlugin {
   baseUrl: string
   sessionId: string | null
+  // Whether the session was created by STF (see plugins/wda/session.ts)
+  ownSession: boolean
   deviceSize: IosDeviceSize | null
   orientation: IosOrientation | null
   touchDownParams: Partial<TouchDownIosMessageFields>
