@@ -93,7 +93,7 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     await noSession()
   })
 
-  it('should start a session and report the iOS version', async function() {
+  it('[check:session] should start a session and report the iOS version', async function() {
     await ios.client.startSession()
     expect(ios.client.ownSession).to.equal(true)
     var version = ios.sent().find(function(entry) {
@@ -108,7 +108,7 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     })).to.equal(true)
   })
 
-  it('should keep the session of an Appium test and its app', async function() {
+  it('[check:appium] should keep the session of an Appium test and its app', async function() {
     await ios.client.stopSession()
     var appium = await wda<{capabilities: object}>('POST', '/session', {
       capabilities: {alwaysMatch: {bundleId: 'com.apple.Preferences'}}
@@ -128,7 +128,7 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     await wda('DELETE', `/session/${appium.sessionId}`)
   })
 
-  it('should know the size of the screen in points', async function() {
+  it('[check:size] should know the size of the screen in points', async function() {
     await ios.client.startSession()
     var sessionId = ios.client.sessionId
     var size = (await wda<{width: number, height: number}>(
@@ -142,7 +142,7 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     expect(await ios.client.size()).to.eql({width: size.width, height: size.height})
   })
 
-  it('should read the orientation and the battery', async function() {
+  it('[check:device] should read the orientation and the battery', async function() {
     await ios.client.getOrientation()
     expect(ios.client.orientation).to.equal('PORTRAIT')
     await ios.client.batteryIosEvent()
@@ -151,7 +151,7 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     })).to.equal(true)
   })
 
-  it('should go to the home screen', async function() {
+  it('[check:home] should go to the home screen', async function() {
     await wda('POST', `/session/${ios.client.sessionId}/wda/apps/launch`, {
       bundleId: 'com.apple.Preferences'
     })
@@ -161,7 +161,7 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     })
   })
 
-  it('should tap and swipe', async function() {
+  it('[check:touch] should tap and swipe', async function() {
     ios.client.tap({x: 0.5, y: 0.5})
     await ios.client.touchUp()
 
@@ -172,12 +172,12 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     expect(failures(ios.fatal)).to.eql([])
   })
 
-  it('should take a screenshot', async function() {
+  it('[check:screenshot] should take a screenshot', async function() {
     var screenshot = await ios.client.screenshot()
     expect(Buffer.from(screenshot.value, 'base64').subarray(1, 4).toString()).to.equal('PNG')
   })
 
-  it('should open an address in Safari from iOS 17 on, as the UI allows', async function() {
+  it('[check:url] should open an address in Safari from iOS 17 on, like the UI', async function() {
     if (IOS_VERSION && Number(IOS_VERSION) < 17) {
       this.skip()
     }
@@ -187,7 +187,7 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     })
   })
 
-  it('should stream the screen as MJPEG', async function() {
+  it('[check:stream] should stream the screen as MJPEG', async function() {
     var frame = await new Promise<Buffer>(function(resolve, reject) {
       var data = Buffer.alloc(0)
       var socket = net.connect(MJPEG_PORT, WDA_HOST, function() {
@@ -212,7 +212,7 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     expect(frame[1]).to.equal(0xd8)
   })
 
-  it('should not have stopped the unit or reported the device absent', function() {
+  it('[check:stable] should not have stopped the unit or reported the device absent', function() {
     expect(failures(ios.fatal)).to.eql([])
     expect(failures(ios.absent)).to.eql([])
   })

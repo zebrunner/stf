@@ -1,13 +1,30 @@
 {
   "comment": [
     "Fork (Zebrunner): the CI settings of the fork, read by",
-    ".github/scripts/zebrunner-ci.mts. android.minApi drops the Android legs of",
-    ".github/android-matrix.json below that API level from the matrix and from",
-    "the coverage check of the report: Zebrunner farms run Android 12 (API 31)",
-    "and later. The upstream matrix file stays as it is, so new upstream legs",
-    "come in with the merges."
+    ".github/scripts/zebrunner-ci.mts.",
+    "",
+    "android.minApi drops the Android legs of .github/android-matrix.json below",
+    "that API level from the matrix and from the coverage check of the report:",
+    "Zebrunner farms run Android 12 (API 31) and later. The upstream matrix file",
+    "stays as it is, so new upstream legs come in with the merges.",
+    "",
+    "ios.include is the matrix of .github/workflows/zebrunner-ios.yml, which ci.yml",
+    "runs, and the iOS legs the report expects. download: the simulator runtime",
+    "to install when the image has none of that version (iOS 15 comes from",
+    "xcodes). xcode: the Xcode of the runner image, its default without it",
+    "(the xcode-27 preview image)."
   ],
   "android": {
     "minApi": 31
+  },
+  "ios": {
+    "include": [
+      {"ios": "15", "runner": "macos-15", "xcode": "16.4", "download": "15.5"},
+      {"ios": "16", "runner": "macos-15", "xcode": "16.4", "download": "16.4"},
+      {"ios": "17", "runner": "macos-15", "xcode": "16.4", "download": "17.5"},
+      {"ios": "18", "runner": "macos-15", "xcode": "16.4"},
+      {"ios": "26", "runner": "macos-26", "xcode": "26.6"},
+      {"ios": "27", "runner": "xcode-27"}
+    ]
   }
 }

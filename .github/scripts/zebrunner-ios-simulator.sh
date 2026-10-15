@@ -13,6 +13,9 @@ wda_ref="${WDA_REF:-v16.15.0}"
 wda_dir="${WDA_DIR:-$PWD/.wda}"
 log_dir="${LOG_DIR:-$PWD/ios-logs}"
 mkdir -p "$log_dir"
+# The stages reached, for the verdict of the leg (zebrunner-ci.mts ios-verdict)
+stages="$log_dir/stages"
+: > "$stages"
 
 note() {
   echo "=== $* ===" >&2
@@ -51,6 +54,7 @@ iphone() {
 }
 
 note "Xcode: $(xcodebuild -version | tr '\n' ' ')"
+echo "xcode=$(xcodebuild -version | head -1 | sed 's/^Xcode //')" >> "$stages"
 runtime_id=$(runtime "$ios_major")
 if [[ -z "$runtime_id" && -n "$download_version" ]]; then
   note "downloading the iOS $download_version runtime"
@@ -66,11 +70,13 @@ if [[ -z "$runtime_id" ]]; then
   exit 1
 fi
 
+echo "runtime=$(echo "$runtime_id" | sed -e 's/.*iOS-//' -e 's/-/./g')" >> "$stages"
 device_type=$(iphone "$runtime_id")
 note "runtime $runtime_id, device $device_type"
 udid=$(xcrun simctl create "stf-ios-$ios_major" "$device_type" "$runtime_id")
 xcrun simctl boot "$udid"
 xcrun simctl bootstatus "$udid" -b >&2
+echo "simulator=$udid" >> "$stages"
 
 if [[ ! -d "$wda_dir" ]]; then
   note "cloning WebDriverAgent $wda_ref"
@@ -102,6 +108,7 @@ echo $! > "$log_dir/wda.pid"
 for _ in $(seq 1 300); do
   if curl -sf http://127.0.0.1:8100/status > /dev/null; then
     note "WebDriverAgent is up"
+    echo "wda=up" >> "$stages"
     echo "$udid"
     exit 0
   fi
