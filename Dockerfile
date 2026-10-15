@@ -11,17 +11,9 @@ ENV PATH=/app/bin:$PATH
 WORKDIR /app
 COPY . /tmp/build/
 
-# Export default app port
+# Export default app port, not enough for all processes but it should do
+# for now.
 EXPOSE 3000
-
-ENV DEVICE_UDID=
-
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && \
-        apt-get install -y curl wget unzip iputils-ping nano telnet libimobiledevice-utils libimobiledevice6 cmake git build-essential jq libplist-utils socat
-
-# jq - jquery command line to operate with go-ios utility
-# libplist-utils - plistutil to convert binary Info.plist into the xml
 
 ARG TARGETARCH
 
@@ -77,14 +69,7 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
       .eslintrc .nvmrc .tool-versions res/.eslintrc && \
     cd && \
     rm -rf .npm .cache .config .local && \
-    cd /app && \
-    echo '--- Installing go-ios' && \
-    # go-ios utility to manage iOS devices connected to Linux provider host
-    wget --no-cache -O /tmp/go-ios-linux.zip https://github.com/danielpaulus/go-ios/releases/download/v1.0.182/go-ios-linux.zip && \
-    unzip /tmp/go-ios-linux.zip -d /tmp/go-ios && \
-    cp /tmp/go-ios/ios-amd64 /usr/local/bin/ios && \
-    ios --version && \
-    rm -rf /tmp/go-ios-linux.zip /tmp/go-ios; \
+    cd /app; \
   fi
   
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
@@ -128,13 +113,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     mv bundletool-all-1.2.0.jar /app/bundletool/bundletool.jar && \
     mv node_modules /app && \
     chown -R root:root /app && \
-    echo '--- Installing go-ios' && \
-    # go-ios utility to manage iOS devices connected to Linux provider host
-    wget --no-cache -O /tmp/go-ios-linux.zip https://github.com/danielpaulus/go-ios/releases/download/v1.0.182/go-ios-linux.zip && \
-    unzip /tmp/go-ios-linux.zip -d /tmp/go-ios && \
-    cp /tmp/go-ios/ios-arm64 /usr/local/bin/ios && \
-    ios --version && \
-    rm -rf /tmp/go-ios-linux.zip /tmp/go-ios && \
     echo '--- Cleaning up' && \
     echo 'npm cache clean --force' | su stf -s /bin/bash && \
     rm -rf ~/.node-gyp && \
@@ -150,17 +128,22 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     rm -rf /tmp/*; \
   fi
 
-RUN cp ./icon/x120/iOS.jpg /app/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/iOS && \
-    cp ./icon/x24/iOS.jpg /app/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/iOS && \
-    cp ./icon/x120/Android.jpg /app/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/Android && \
-    cp ./icon/x24/Android.jpg /app/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/Android && \
-    cp ./icon/x24/tvOS.png /app/node_modules/@devicefarmer/stf-device-db/dist/icon/x24/tvOS && \
-    cp ./icon/x120/tvOS.png /app/node_modules/@devicefarmer/stf-device-db/dist/icon/x120/tvOS
+# Fork (Zebrunner): plistutil reads the binary Info.plist of uploaded .ipa
+# files (storage-plugin-apk), the platform icons replace the generic ones of
+# stf-device-db. The iOS tools (go-ios, socat) are in the mcloud-device image.
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends libplist-utils && \
+    rm -rf /var/cache/apt/* /var/lib/apt/lists/* && \
+    cd /app/node_modules/@devicefarmer/stf-device-db/dist/icon && \
+    cp /app/icon/x120/iOS.jpg x120/iOS && \
+    cp /app/icon/x24/iOS.jpg x24/iOS && \
+    cp /app/icon/x120/Android.jpg x120/Android && \
+    cp /app/icon/x24/Android.jpg x24/Android && \
+    cp /app/icon/x120/tvOS.png x120/tvOS && \
+    cp /app/icon/x24/tvOS.png x24/tvOS
 
 # Switch to the app user.
 USER stf
-##Use root user only for debug
-#USER root
 
 # Show help by default.
 CMD ["stf", "--help"]
