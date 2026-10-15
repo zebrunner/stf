@@ -29,7 +29,6 @@ export default syrup.serial()
       var args = {
         url: url.resolve(options.storageUrl, util.format('s/upload/%s', type))
       }
-      log.info('Uploading "%s" resource to "%s"', type, args.url)
 
       var req = request.post(args, function(err, res, body) {
         if (err) {

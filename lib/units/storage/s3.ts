@@ -140,7 +140,6 @@ export default function(options: S3StorageOptions) {
           log.info('Uploaded "%s" to "%s"', file.name, file.path)
           return putObject(plugin, file)
             .then(function(id) {
-              log.info('Stored upload "%s" for plugin "%s"', file.path, plugin)
               return {
                 field: field
               , id: id

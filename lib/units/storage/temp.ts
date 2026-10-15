@@ -209,7 +209,6 @@ export default function(options: TempStorageOptions) {
           'attachment; filename="' + path.basename(file.name as string) + '"')
       }
       res.set('Content-Type', file.type as string)
-      log.info('Serving stored file "%s"', file.path)
       res.sendFile(file.path)
     }
     else {

@@ -41,7 +41,6 @@ export default function(options: ImagePluginOptions) {
       , req.params.id
       , req.params.name
       )
-      log.info('Serving image resource "%s"', orig)
       return get(orig, options)
         .then(function(stream) {
           return transform(stream, {
