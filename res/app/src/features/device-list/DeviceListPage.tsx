@@ -30,44 +30,14 @@ import {
 } from './list-model'
 import {parseQuery} from './query-parser'
 import classes from './DeviceList.module.css'
+import {
+  readStoredDeviceFilter
+  , useStoredDeviceFilter
+  , useStoredScrollPosition
+  , viewTabsInBasicMode
+} from './zebrunner'
 
 type ViewMode = 'icons' | 'details'
-
-function readStoredDeviceFilter(): string {
-  try {
-    const direct = window.localStorage.getItem('deviceFilter')
-    if (direct) {
-      return direct
-    }
-    const legacy = window.localStorage.getItem('deviceFilters')
-    const filters = legacy ? JSON.parse(legacy) : null
-    const filter = Array.isArray(filters) ? filters[0] : null
-    if (filter && typeof filter === 'object') {
-      const field = typeof filter.field === 'string' ? `${filter.field}: ` : ''
-      const query = typeof filter.query === 'string' ? filter.query : ''
-      return `${field}${query}`.trim()
-    }
-  }
-  catch {
-    return ''
-  }
-  return ''
-}
-
-function storeDeviceFilter(value: string): void {
-  try {
-    if (value) {
-      window.localStorage.setItem('deviceFilter', value)
-    }
-    else {
-      window.localStorage.removeItem('deviceFilter')
-      window.localStorage.setItem('deviceFilters', JSON.stringify([]))
-    }
-  }
-  catch {
-    // localStorage can be disabled or full; filtering must still work.
-  }
-}
 
 export default function DeviceListPage() {
   const {t, language} = useTranslation()
@@ -126,26 +96,8 @@ export default function DeviceListPage() {
     }
   }, [view])
 
-  useEffect(() => {
-    storeDeviceFilter(search)
-  }, [search])
-
-  useEffect(() => {
-    const content = contentRef.current
-    if (!content || basicMode) {
-      content?.scrollTo(0, 0)
-      return undefined
-    }
-    const stored = window.localStorage.getItem('scrollPosition')
-    if (stored) {
-      content.scrollTo(0, Number(stored))
-    }
-    function saveScroll() {
-      window.localStorage.setItem('scrollPosition', String(content!.scrollTop))
-    }
-    content.addEventListener('scroll', saveScroll, {passive: true})
-    return () => content.removeEventListener('scroll', saveScroll)
-  }, [])
+  useStoredDeviceFilter(search)
+  useStoredScrollPosition(contentRef)
 
   function reset() {
     setSearch('')
@@ -211,32 +163,34 @@ export default function DeviceListPage() {
             autoComplete='off'
             spellCheck={false}
           />
-          <SegmentedControl
-            size='xs'
-            className='device-list-active-tabs'
-            value={view}
-            onChange={(value) => setActiveTabs({icons: value === 'icons', details: value === 'details'})}
-            data={[
-              {
-                value: 'icons'
-                , label: (
-                  <Group gap={6} wrap='nowrap'>
-                    <IconLayoutGrid size={14} />
-                    {!basicMode && <span>{t('Devices')}</span>}
-                  </Group>
-                )
-              }
-              , {
-                value: 'details'
-                , label: (
-                  <Group gap={6} wrap='nowrap'>
-                    <IconList size={14} />
-                    {!basicMode && <span>{t('Details')}</span>}
-                  </Group>
-                )
-              }
-            ]}
-          />
+          {(!basicMode || viewTabsInBasicMode) && (
+            <SegmentedControl
+              size='xs'
+              className='device-list-active-tabs'
+              value={view}
+              onChange={(value) => setActiveTabs({icons: value === 'icons', details: value === 'details'})}
+              data={[
+                {
+                  value: 'icons'
+                  , label: (
+                    <Group gap={6} wrap='nowrap'>
+                      <IconLayoutGrid size={14} />
+                      {!basicMode && <span>{t('Devices')}</span>}
+                    </Group>
+                  )
+                }
+                , {
+                  value: 'details'
+                  , label: (
+                    <Group gap={6} wrap='nowrap'>
+                      <IconList size={14} />
+                      {!basicMode && <span>{t('Details')}</span>}
+                    </Group>
+                  )
+                }
+              ]}
+            />
+          )}
           {view === 'details' && (
             <ColumnChoice
               reorderable
