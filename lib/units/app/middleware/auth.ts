@@ -29,8 +29,9 @@ export default function(options: AppAuthOptions) {
           .then(function() {
             req.session!.jwt = data
             req.sessionOptions.httpOnly = false
-            // Fork (Zebrunner): the app is served under /stf behind the Zebrunner proxy
-            res.redirect(redir.includes('stf') ? redir : '/stf')
+            // Fork (Zebrunner): a redirect relative to the page keeps a path prefix the app does
+            // not see, such as /stf of the Zebrunner proxy
+            res.redirect(redir.includes('?') ? redir.slice(redir.indexOf('?')) : '?')
           })
           .catch(next)
       }
