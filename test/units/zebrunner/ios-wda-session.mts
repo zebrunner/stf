@@ -51,12 +51,28 @@ function fakeWda(state: FakeWda) {
     res.json({value: null})
   })
   app.get('/session/:id/orientation', function(req, res) {
+    if (req.params.id !== state.active) {
+      res.status(404).json({
+        value: {error: 'invalid session id', message: 'Session does not exist'}
+      })
+      return
+    }
     res.json({value: 'PORTRAIT'})
   })
   app.get('/session/:id/wda/batteryInfo', function(req, res) {
     res.json({value: {state: 2, level: 0.8}})
   })
   return app
+}
+
+// until <check>: waits up to 2 s for the check to pass
+async function until(check: () => boolean) {
+  for (var i = 0; i < 40 && !check(); i++) {
+    await new Promise(function(resolve) {
+      setTimeout(resolve, 50)
+    })
+  }
+  expect(check()).to.equal(true)
 }
 
 describe('zebrunner: iOS WDA session', function() {
@@ -142,6 +158,41 @@ describe('zebrunner: iOS WDA session', function() {
       await wdaClient.client.stopSession()
       expect(state.calls).to.include('DELETE /session/' + own)
       expect(state.active).to.equal(null)
+    })
+
+    it('should take the next session when its session ends under it', async function() {
+      state.active = 'appium'
+      await wdaClient.client.startSession()
+      state.active = null
+      state.calls.length = 0
+
+      // The request of the lost session never settles, the client starts the next one instead
+      wdaClient.client.getOrientation()
+      await until(function() {
+        return state.calls.includes('POST /session')
+      })
+      expect(wdaClient.client.sessionId).to.equal(state.active)
+      expect(wdaClient.fatal).to.eql([])
+    })
+
+    it('should drop the failure of a request of an older session', async function() {
+      await wdaClient.client.startSession()
+      var current = wdaClient.client.sessionId
+      state.calls.length = 0
+
+      await Promise.race([
+        wdaClient.client.handleRequest({
+          method: 'GET'
+        , uri: `${wdaClient.client.baseUrl}/session/older/orientation`
+        , json: true
+        })
+      , new Promise(function(resolve) {
+          setTimeout(resolve, 200)
+        })
+      ])
+      expect(state.calls).to.not.include('POST /session')
+      expect(wdaClient.client.sessionId).to.equal(current)
+      expect(wdaClient.fatal).to.eql([])
     })
 
     it('should report the version, the status and the size of the device', async function() {
