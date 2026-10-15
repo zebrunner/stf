@@ -2064,6 +2064,10 @@ msgstr ""
 msgid "Title"
 msgstr ""
 
+#: res/app/src/features/auth/SignInForm.tsx:105
+msgid "Too many failed sign-ins. Try again in a few minutes."
+msgstr ""
+
 #: res/app/src/features/device-list/DeviceStats.tsx:39
 msgid "Total Devices"
 msgstr ""
