@@ -17,7 +17,8 @@ export default function DashboardPane({device, control}: PaneProps) {
       <NavigationCard device={device} control={control} />
       <ClipboardCard control={control} />
       <InstallCard control={control} />
-      {platform === 'native' && !ios && <ShellCard control={control} />}
+      {/* Fork (Zebrunner): go-ios commands on iOS */}
+      {platform === 'native' && <ShellCard control={control} />}
       <AppsCard control={control} />
       {!ios && <RemoteDebugCard device={device} control={control} />}
     </SimpleGrid>

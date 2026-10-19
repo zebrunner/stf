@@ -69,6 +69,7 @@ export const IOS_CHECKS = [
 , {key: 'home', label: 'Home', failure: 'the home button did not work'}
 , {key: 'touch', label: 'Touch', failure: 'tap or swipe failed'}
 , {key: 'screenshot', label: 'Screenshot', failure: 'no screenshot'}
+, {key: 'settings', label: 'Settings', failure: 'Settings did not open or the app was lost'}
 , {key: 'url', label: 'URL', failure: 'Safari did not open the address'}
 , {key: 'stream', label: 'Stream', failure: 'no MJPEG frame'}
 , {key: 'stable', label: 'Stable', failure: 'the unit would have stopped'}

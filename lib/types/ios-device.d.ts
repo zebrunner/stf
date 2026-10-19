@@ -1,4 +1,3 @@
-import type {ChildProcess} from 'child_process'
 import type {EventEmitter} from 'events'
 import type {Readable} from 'stream'
 import type Bluebird from 'bluebird'
@@ -7,9 +6,10 @@ import type deviceData from '@devicefarmer/stf-device-db'
 import type zmqutil from '../util/zmqutil.js'
 import type wirerouter from '../wire/router.js'
 import type ChannelManager from '../wire/channelmanager.js'
-import type {DeviceDocument, InstalledAppEntry} from './stf.js'
+import type {DeviceDocument} from './stf.js'
 import type {
   BrowserOpenMessageFields
+, LogcatFilterFields
 , OwnerMessage
 , TouchDownIosMessageFields
 , TouchMoveIosMessageFields
@@ -149,6 +149,7 @@ export interface RpOptions {
   body?: unknown
   json?: boolean
   headers?: Record<string, string>
+  timeout?: number
 }
 
 export interface RpRequestError extends Error {
@@ -247,13 +248,22 @@ export interface WdaClientPlugin {
   handleRequest<T = unknown>(requestOpt: RpOptions): Bluebird<T>
 }
 
-export interface DeviceLoggerPlugin {
-  appOptions: Record<string, unknown>
-  channel: string
-  stream: ChildProcess | null
-  setChannel(channel: string): void
-  startLoggging(channel: string, deviceData?: InstalledAppEntry): void
-  killLoggingProcess(): void
+export interface IosLogcatPlugin {
+  start(filters: LogcatFilterFields[]): Bluebird<void>
+  stop(): Bluebird<void>
+  reset(filters: LogcatFilterFields[]): Bluebird<void>
+  isRunning(): boolean
+}
+
+export interface IosFileEntry {
+  name: string
+  mode: number
+  size: number
+}
+
+export interface IosFilesystemPlugin {
+  list(dir: string): Bluebird<IosFileEntry[]>
+  retrieve(file: string): Bluebird<IosStoredFile>
 }
 
 export interface DisplayProperties {

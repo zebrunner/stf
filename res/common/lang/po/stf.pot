@@ -1272,6 +1272,10 @@ msgstr ""
 msgid "Number of repetitions per group"
 msgstr ""
 
+#: res/app/src/features/control/panes/automation/zebrunner-ios-settings.tsx:86
+msgid "Off"
+msgstr ""
+
 #: res/app/src/core/devices/enhance.ts:21
 #: res/app/src/core/devices/enhance.ts:8
 msgid "Offline"
@@ -1281,6 +1285,10 @@ msgstr ""
 #: res/app/src/ui/modals.tsx:67
 #: res/app/src/ui/modals.tsx:88
 msgid "OK"
+msgstr ""
+
+#: res/app/src/features/control/panes/automation/zebrunner-ios-settings.tsx:87
+msgid "On"
 msgstr ""
 
 #: res/app/src/core/common.ts:20
@@ -1478,6 +1486,11 @@ msgstr ""
 msgid "RAM"
 msgstr ""
 
+#: res/app/src/features/control/panes/automation/zebrunner-ios-settings.tsx:66
+#: res/app/src/features/control/panes/automation/zebrunner-ios-settings.tsx:72
+msgid "Read the state from the device"
+msgstr ""
+
 #: res/app/src/core/devices/enhance.ts:11
 #: res/app/src/core/devices/enhance.ts:24
 #: res/app/src/features/group-list/columns.tsx:37
@@ -1634,6 +1647,10 @@ msgstr ""
 
 #: res/app/src/features/control/panes/dashboard/remote-debug/RemoteDebugCard.tsx:33
 msgid "Run the following on your command line to debug the device from your Browser"
+msgstr ""
+
+#: res/app/src/features/control/panes/dashboard/shell/ShellCard.tsx:16
+msgid "Runs go-ios commands, e.g. apps --list"
 msgstr ""
 
 #: res/app/src/features/control/panes/dashboard/remote-debug/RemoteDebugCard.tsx:32
@@ -1896,6 +1913,10 @@ msgstr ""
 
 #: res/app/src/features/control/screen/DeviceScreen.tsx:163
 msgid "The current view is marked secure and cannot be viewed remotely."
+msgstr ""
+
+#: res/app/src/features/control/panes/automation/zebrunner-ios-settings.tsx:104
+msgid "The device switches them in its Settings app, which takes the screen for a few seconds"
 msgstr ""
 
 #: res/app/src/features/control/panes/advanced/MaintenanceCard.tsx:11

@@ -9,6 +9,7 @@ import net from 'node:net'
 import {expect} from 'chai'
 
 import rp from '../../lib/units/ios-device/plugins/util/rp.js'
+import SettingsAutomation from '../../lib/units/ios-device/plugins/wda/settings.js'
 import {loadWdaClient, type IosWda} from '../helpers/ios-wda.mts'
 
 var WDA_HOST = process.env.WDA_HOST || '127.0.0.1'
@@ -175,6 +176,31 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
   it('[check:screenshot] should take a screenshot', async function() {
     var screenshot = await ios.client.screenshot()
     expect(Buffer.from(screenshot.value, 'base64').subarray(1, 4).toString()).to.equal('PNG')
+  })
+
+  // A simulator has no Wi-Fi in Settings: the radio is either read, or missing (not a WDA error)
+  it('[check:settings] should look for Wi-Fi in Settings and bring back the app', async function() {
+    await ios.client.homeBtn()
+    await until(async function() {
+      return await activeBundle() === 'com.apple.springboard'
+    })
+    var settings = new SettingsAutomation({
+      baseUrl: BASE
+    , sessionId: function() {
+        return ios.client.sessionId
+      }
+    , waitTimeout: 5000
+    })
+    try {
+      expect(await settings.isEnabled('wifi')).to.be.a('boolean')
+    }
+    catch (err) {
+      expect((err as Error).message).to.equal('Settings has no Wi-Fi item')
+    }
+    await until(async function() {
+      return await activeBundle() === 'com.apple.springboard'
+    })
+    expect(failures(ios.fatal)).to.eql([])
   })
 
   it('[check:url] should open an address in Safari from iOS 17 on, like the UI', async function() {

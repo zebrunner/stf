@@ -8,7 +8,7 @@ The image `public.ecr.aws/zebrunner/stf` runs the STF units of [mcloud](https://
 
 | Feature | Where |
 | --- | --- |
-| iOS/tvOS device unit: screen, touch, keys, install of `.ipa`, logs, clipboard through WebDriverAgent and go-ios | `lib/units/ios-device/`, `lib/cli/ios-device/` |
+| iOS/tvOS device unit: screen, touch, keys, install of `.ipa`, clipboard, Wi-Fi and Bluetooth through WebDriverAgent; device log, shell and files through go-ios, see [iOS devices](#ios-devices) | `lib/units/ios-device/`, `lib/cli/ios-device/` |
 | iOS messages of the wire protocol, codes 98-125 (the retired ones are reserved) | `lib/wire/wire.proto` (after the upstream messages) |
 | iOS device state in the database | `lib/db/zebrunner.ts`, `lib/units/processor/` |
 | Sign-in through the Zebrunner IAM service | `lib/units/auth/zebrunner.ts`, `lib/cli/auth-zebrunner/`, `res/app/src/entries/auth-zebrunner.tsx` |
@@ -16,7 +16,21 @@ The image `public.ecr.aws/zebrunner/stf` runs the STF units of [mcloud](https://
 | Authentication of the storage routes and SSRF protection of downloads | `lib/util/storageauth.ts`, `lib/util/urlsafety.ts` |
 | One provider per device container: fixed VNC port, `UNHEALTHY` and exit when the device cannot be provided | `lib/cli/provider/`, `lib/units/provider/` |
 | `.ipa` manifests (Info.plist) in the apk storage plugin | `lib/units/storage/plugins/apk/task/` |
-| UI: iOS/tvOS controls, the app under `/stf`, device list filter and scroll position | `res/app/src/` |
+| UI: iOS/tvOS controls, the app under `/stf`, device list filter and scroll position | `res/app/src/` (`zebrunner` in the file name, or marked `Fork (Zebrunner)`) |
+
+## iOS devices
+
+The device page of an iOS device has the tabs of an Android one, served by `lib/units/ios-device/plugins/`:
+
+| Feature | How | Limits |
+| --- | --- | --- |
+| Logs | `ios syslog`, the process is the tag (`devicelog.ts`) | the time is the one the unit received the line |
+| Shell (Dashboard) | go-ios commands, `ios` in front is optional: `apps --list`, `info`, `ps`, `launch <bundle id>`, `kill <bundle id>`, `crash ls`, `lang`, `setlocation`, ... (`shell.ts`) | only the commands, subcommands (right after the command) and options of the allow list of `util/goios.ts`, an option value after `=`; `--udid`, tunnels, credentials and files of the container are refused |
+| File Explorer | the media directory (AFC: `DCIM`, `Downloads`, ...) through `ios fsync tree` and `ios fsync pull` (`filesystem.ts`) | no sizes, dates or permissions; a directory is listed with its whole tree, a large one takes a while |
+| Wi-Fi, Bluetooth (Advanced) | opens their page of Settings through WDA, reads or taps the switch, then brings back the app that was in front (`radio.ts`, `wda/settings.ts`) | takes the screen for a few seconds, so the state is read on demand only; Wi-Fi is turned off only on a device connected by USB (`ios list --details`); not on tvOS |
+| Screenshots | WDA | |
+
+There is no port forwarding (iOS cannot run the reverse proxy of Android), no remote debug, ringer mode or bonded Bluetooth devices. go-ios reaches the device through usbmuxd (`USBMUXD_SOCKET_ADDRESS` of mcloud-device) without a tunnel, so only the lockdown services work: the commands that need the tunnel of iOS 17+ (e.g. `ps`, `launch`, `kill` there) fail, and a device with `WIRELESS=true` has no go-ios features at all.
 
 ## Image contents
 

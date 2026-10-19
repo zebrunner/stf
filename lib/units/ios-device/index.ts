@@ -35,6 +35,9 @@ export default function(options: IosDeviceOptions) {
         .dependency(require('./plugins/install.js').default)
         .dependency(require('./plugins/reboot.js').default)
         .dependency(require('./plugins/clipboard.js').default)
+        .dependency(require('./plugins/shell.js').default)
+        .dependency(require('./plugins/filesystem.js').default)
+        .dependency(require('./plugins/radio.js').default)
         .define(function(
           options: IosDeviceOptions
         , heartbeat: unknown
