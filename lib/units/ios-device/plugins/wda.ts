@@ -66,8 +66,11 @@ export default syrup.serial()
         .on(wire.StoreOpenMessage, function() {
           iosutil.pressButton.call(wdaClient, 'store')
         })
-        .on(wire.DashboardOpenMessage, function() {
-          iosutil.pressButton.call(wdaClient, 'settings')
+        .on(wire.DashboardOpenMessage, function(_channel, message) {
+          // A page of Settings is opened by radio.ts
+          if (!message.page) {
+            iosutil.pressButton.call(wdaClient, 'settings')
+          }
         })
         .on(wire.PhysicalIdentifyMessage, function() {
           iosutil.pressButton.call(wdaClient, 'finder')

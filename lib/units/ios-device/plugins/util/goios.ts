@@ -374,3 +374,128 @@ export function connectedByUsb(output: string, serial: string): boolean {
     return false
   }
 }
+
+// isAgentWarning <line>: the warning go-ios logs on every command when its tunnel agent of iOS 17+
+// is not running (it is not, the unit reaches the device through usbmuxd)
+export function isAgentWarning(line: string): boolean {
+  return line.includes('"level":"WARN"') && line.includes('go-ios agent is not running')
+}
+
+// lastJson <output>: the last JSON object go-ios printed
+function lastJson(output: string): Record<string, unknown> | null {
+  var lines = output.split('\n').filter(function(line) {
+    return line.trim().startsWith('{')
+  })
+  for (var i = lines.length - 1; i >= 0; i--) {
+    try {
+      return JSON.parse(lines[i]!) as Record<string, unknown>
+    }
+    catch {
+      // not JSON
+    }
+  }
+  return null
+}
+
+function text(value: unknown): string | null {
+  return typeof value === 'string' && value ? value : null
+}
+
+function count(value: unknown): number | null {
+  return typeof value === 'number' && isFinite(value) ? value : null
+}
+
+export interface IosLockdownInfo {
+  manufacturer: string
+  product: string | null
+  version: string | null
+  sdk: string | null
+  abi: string | null
+  cpuPlatform: string | null
+  operator: string | null
+  phone: {
+    imei: string | null
+    imsi: string | null
+    phoneNumber: string | null
+    iccid: string | null
+  }
+}
+
+// parseDeviceInfo <output>: the fields of the Info tab in the output of `ios info` (lockdown)
+export function parseDeviceInfo(output: string): IosLockdownInfo | null {
+  var info = lastJson(output)
+  if (!info) {
+    return null
+  }
+  var carriers = Array.isArray(info.CarrierBundleInfoArray) ?
+    info.CarrierBundleInfoArray as Array<Record<string, unknown>> :
+    []
+  var carrier = carriers.map(function(entry) {
+    return text(entry.CFBundleIdentifier)
+  }).find(Boolean)
+  return {
+    manufacturer: 'Apple'
+  , product: text(info.ProductType)
+  , version: text(info.ProductVersion)
+  , sdk: text(info.BuildVersion)
+  , abi: text(info.CPUArchitecture)
+  , cpuPlatform: text(info.HardwarePlatform)
+  , operator: carrier ? carrier.replace(/^com\.apple\./, '').replace(/_/g, ' ') : null
+  , phone: {
+      imei: text(info.InternationalMobileEquipmentIdentity)
+    , imsi: text(info.InternationalMobileSubscriberIdentity) ||
+        text(carriers.map(function(entry) {
+          return entry.InternationalMobileSubscriberIdentity
+        }).find(Boolean))
+    , phoneNumber: text(info.PhoneNumber)
+    , iccid: text(info.IntegratedCircuitCardIdentity) ||
+        text(carriers.map(function(entry) {
+          return entry.IntegratedCircuitCardIdentity
+        }).find(Boolean))
+    }
+  }
+}
+
+// parseDiskSpace <output>: the capacity in MB in the output of `ios diskspace`
+export function parseDiskSpace(output: string): number | null {
+  var total = count(lastJson(output)?.TotalBytes)
+  return total ? Math.round(total / 1024 / 1024) : null
+}
+
+export interface IosBattery {
+  health: string
+  status: string
+  level: number
+  // degrees Celsius, as text
+  temp: string
+  // volts
+  voltage: number | null
+}
+
+// parseBattery <output>: the battery in the output of `ios batteryregistry` (the IORegistry of the
+// battery); the health is "good" down to 80% of the design capacity, where iOS asks for a service
+export function parseBattery(output: string): IosBattery | null {
+  var battery = lastJson(output)
+  var level = count(battery?.CurrentCapacity)
+  if (!battery || level === null) {
+    return null
+  }
+  var design = count(battery.DesignCapacity)
+  var nominal = count(battery.NominalChargeCapacity)
+  var temperature = count(battery.Temperature)
+  var voltage = count(battery.Voltage)
+  var status = 'discharging'
+  if (battery.IsCharging === true) {
+    status = 'charging'
+  }
+  else if (level >= 100) {
+    status = 'full'
+  }
+  return {
+    health: design && nominal && nominal / design < 0.8 ? 'dead' : 'good'
+  , status: status
+  , level: level
+  , temp: temperature === null ? '' : (temperature / 100).toFixed(1)
+  , voltage: voltage === null ? null : voltage / 1000
+  }
+}

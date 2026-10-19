@@ -25,6 +25,7 @@ var path = require('path')
 var args = process.argv.slice(2)
 var rest = args.filter(function(arg) { return !arg.startsWith('--udid=') })
 var udid = args.filter(function(arg) { return arg.startsWith('--udid=') })
+console.error(JSON.stringify({level: 'WARN', msg: 'go-ios agent is not running. Start it'}))
 function option(name) {
   var arg = rest.find(function(arg) { return arg.startsWith(name + '=') })
   return arg ? arg.slice(name.length + 1) : null
@@ -33,6 +34,17 @@ if (rest[0] === 'syslog') {
   console.log(JSON.stringify({msg: 'Oct 19 17:02:46 iPhone SpringBoard[57] <Notice>: hello'}))
   console.log(JSON.stringify({msg: 'Oct 19 17:02:47 iPhone kernel[0] <Debug>: debug line'}))
   setInterval(function() {}, 1000)
+}
+else if (rest[0] === 'info') {
+  console.log(JSON.stringify({ProductType: 'iPhone11,8', ProductVersion: '18.7.10',
+    BuildVersion: '22H374', CPUArchitecture: 'arm64e', InternationalMobileEquipmentIdentity: '35'}))
+}
+else if (rest[0] === 'diskspace') {
+  console.log(JSON.stringify({TotalBytes: 63944380416}))
+}
+else if (rest[0] === 'batteryregistry') {
+  console.log(JSON.stringify({Temperature: 2130, Voltage: 4171, IsCharging: false,
+    CurrentCapacity: 100, DesignCapacity: 2942, NominalChargeCapacity: 2769}))
 }
 else if (rest[0] === 'list') {
   var connection = process.env.FAKE_GO_IOS_CONNECTION || 'USB'
@@ -189,7 +201,14 @@ async function loadPlugin(
   ]
   try {
     var plugin = await (await importFresh(module('units/ios-device/plugins/' + name + '.js')))
-      .default.consume({serial: SERIAL})
+      .default.consume({
+        serial: SERIAL
+      , deviceName: 'iPhone XR'
+      , provider: 'provider'
+      , screenWsUrlPattern: ''
+      , screenPort: 7400
+      , connectPort: 7401
+      })
     return {plugin: plugin, unit: unit}
   }
   finally {
@@ -235,6 +254,7 @@ describe('zebrunner: ios-device go-ios plugins', function() {
       , udid: ['--udid=' + SERIAL]
       }))
       expect(output).to.include('"msg":"done"')
+      expect(output).to.not.include('agent is not running')
       expect(unit.subscribed).to.deep.equal([])
     })
 
@@ -394,6 +414,32 @@ describe('zebrunner: ios-device go-ios plugins', function() {
       var tv = (await loadPlugin('radio', 'Apple TV')).unit
       tv.send('tx-3', new wire.WifiGetStatusMessage())
       expect((await tv.done('tx-3')).message.data).to.equal('Not supported on tvOS')
+    })
+  })
+
+  describe('info', function() {
+    it('should send what lockdown tells and the battery', async function() {
+      var {plugin, unit} = await loadPlugin('info/index')
+      await plugin.manageDeviceInfo()
+      var sent: Decoded[] = []
+      for (var i = 0; i < 100 && sent.length < 3; i++) {
+        await new Promise(function(resolve) {
+          setTimeout(resolve, 20)
+        })
+        sent = unit.sent()
+      }
+      expect(sent.map(function(item) {
+        return item.type
+      })).to.deep.equal(['InitializeIosDeviceState', 'IosDeviceInfoMessage', 'BatteryIosEvent'])
+      var info = sent[1]!.message
+      expect([info.serial, info.manufacturer, info.product, info.sdk, info.abi, info.rom])
+        .to.deep.equal([SERIAL, 'Apple', 'iPhone11,8', '22H374', 'arm64e', 60982])
+      expect(info.phone.imei).to.equal('35')
+      var battery = sent[2]!.message
+      expect([battery.health, battery.status, battery.level, battery.temp, battery.voltage])
+        .to.deep.equal(['good', 'full', 100, '21.3', 4.171])
+      // the build of iOS comes from lockdown, not a made up architecture
+      expect(sent[0]!.message.options.architect).to.equal('')
     })
   })
 })

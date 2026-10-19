@@ -412,6 +412,12 @@ export default db.ensureConnectivity(function(options: ProcessorOptions) {
           log.info(err)
         })
     })
+    .on(wire.IosDeviceInfoMessage, function(channel, message) {
+      dbapi.setIosDeviceInfo(message)
+        .catch(function(err) {
+          log.error('Unable to save the info of iOS device "%s"', message.serial, err.stack)
+        })
+    })
     .on(wire.SdkIosVersion, function(channel, message) {
       dbapi.setDeviceIosVersion(message)
         .catch(function(err) {

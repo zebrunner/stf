@@ -527,13 +527,15 @@ export default syrup.serial()
 
             push.send([
               wireutil.global
+              // Fork (Zebrunner): WDA knows no health or temperature, go-ios tells them
+              // (plugins/info), the empty ones keep what it stored
             , wireutil.envelope(new wire.BatteryIosEvent(
                 options.serial
-              , 'good'
+              , ''
               , 'usb'
               , batteryState
               , batteryLevel
-              , 'n/a'
+              , ''
               , 100
               ))
             ])
@@ -593,18 +595,6 @@ export default syrup.serial()
             , uri: targetUrl
             , json: true
             })
-          })
-      }
-
-    , getClipBoard: function() {
-        return this.handleRequest<string>({
-          method: 'POST'
-        , uri: `${this.baseUrl}/session/${this.sessionId}/wda/getPasteboard`
-        })
-          .then(function(res) {
-            var parsed = JSON.parse(res) as WdaValueResponse<string>
-            var clipboard = Buffer.from(parsed.value, 'base64').toString('utf-8')
-            return clipboard || 'No clipboard data'
           })
       }
 

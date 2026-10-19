@@ -11,6 +11,7 @@ import type {DeviceDocument, DeviceGroup, GroupDocument} from '../types/stf.js'
 import type {
   BatteryIosEventFields
 , InitializeIosDeviceStateFields
+, IosDeviceInfoMessageFields
 , SdkIosVersionFields
 } from '../types/wire.js'
 
@@ -44,6 +45,7 @@ export interface ZebrunnerDbApi {
   markDeviceAsUsing(serial: string): Promise<r.WriteResult>
   unmarkDeviceAsUsing(serial: string): Promise<r.WriteResult>
   setDeviceIosBattery(message: BatteryIosEventFields): Promise<r.WriteResult>
+  setIosDeviceInfo(message: IosDeviceInfoMessageFields): Promise<r.WriteResult>
   setDeviceIosVersion(message: SdkIosVersionFields): Promise<void>
   sizeIosDevice(
     serial: string
@@ -104,17 +106,51 @@ export default function extendDbApi(dbapi: DbApi, db: Db) {
     }))
   }
 
+  // The battery from WDA (level and state) or go-ios (also health, temperature and voltage): an
+  // empty field is not known and keeps the stored one
   dbapi.setDeviceIosBattery = function(message) {
+    var battery: Record<string, unknown> = {
+      source: message.source
+    , status: message.status
+    , level: message.level
+    , scale: message.scale
+    }
+    if (message.health) {
+      battery.health = message.health
+    }
+    if (message.temp && message.temp !== 'n/a') {
+      battery.temp = Number(message.temp)
+    }
+    if (typeof message.voltage === 'number') {
+      battery.voltage = message.voltage
+    }
     return db.run(r.table('devices').get<DeviceDocument>(message.id).update({
-      battery: {
-        health: message.health
-      , source: message.source
-      , status: message.status
-      , level: message.level
-      , temp: message.temp
-      , scale: message.scale
-      }
+      battery: battery
     }))
+  }
+
+  // What go-ios reads from lockdown (plugins/info of the ios-device unit), the fields it knows
+  dbapi.setIosDeviceInfo = function(message) {
+    var info: Record<string, unknown> = {}
+    ;(['manufacturer', 'product', 'version', 'sdk', 'abi', 'cpuPlatform', 'operator'] as const)
+      .forEach(function(field) {
+        if (message[field]) {
+          info[field] = message[field]
+        }
+      })
+    if (message.phone) {
+      var phone: Record<string, string> = {}
+      ;(['imei', 'imsi', 'phoneNumber', 'iccid', 'network'] as const).forEach(function(field) {
+        if (message.phone![field]) {
+          phone[field] = message.phone![field]!
+        }
+      })
+      info.phone = phone
+    }
+    if (message.rom) {
+      info.memory = {rom: message.rom}
+    }
+    return db.run(r.table('devices').get<DeviceDocument>(message.serial).update(info))
   }
 
   dbapi.setDeviceIosVersion = function(message) {

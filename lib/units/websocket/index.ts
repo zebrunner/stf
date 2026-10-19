@@ -164,7 +164,8 @@ interface WebsocketClientEvents {
   'browser.open': TransactionDataEvent<BrowserOpenMessageFields>
   'browser.clear': TransactionDataEvent<BrowserClearMessageFields>
   'store.open': TransactionEvent
-  'settings.open': TransactionEvent
+  // Fork (Zebrunner): the page of Settings to open on iOS
+  'settings.open': ChannelEvent<{page?: string} | null | undefined>
   'screen.capture': TransactionEvent
   'fs.retrieve': TransactionDataEvent<FileSystemGetMessageFields>
   'fs.list': TransactionDataEvent<FileSystemListMessageFields>
@@ -1201,10 +1202,13 @@ export default function(options: WebsocketOptions) {
             )
           ])
         })
-        .on('settings.open', function(channel) {
+        .on('settings.open', function(channel, data) {
           push.send([
             channel
-          , wireutil.envelope(new wire.DashboardOpenMessage())
+            // Fork (Zebrunner): the page of Settings to open on iOS
+          , wireutil.envelope(new wire.DashboardOpenMessage(
+              typeof data?.page === 'string' ? data.page : null
+            ))
           ])
         })
         .on('screen.capture', function(channel, responseChannel) {

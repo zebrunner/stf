@@ -10,6 +10,7 @@ import {expect} from 'chai'
 
 import rp from '../../lib/units/ios-device/plugins/util/rp.js'
 import SettingsAutomation from '../../lib/units/ios-device/plugins/wda/settings.js'
+import PasteboardAutomation from '../../lib/units/ios-device/plugins/wda/pasteboard.js'
 import {loadWdaClient, type IosWda} from '../helpers/ios-wda.mts'
 
 var WDA_HOST = process.env.WDA_HOST || '127.0.0.1'
@@ -200,6 +201,22 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     await until(async function() {
       return await activeBundle() === 'com.apple.springboard'
     })
+    expect(failures(ios.fatal)).to.eql([])
+  })
+
+  // iOS 16+ gives the pasteboard to the app in front only, the runner of WDA comes to the front
+  it('[check:clipboard] should put text in the pasteboard and read it back', async function() {
+    var pasteboard = new PasteboardAutomation({
+      baseUrl: BASE
+    , sessionId: function() {
+        return ios.client.sessionId
+      }
+    , keyboardTimeout: 1000
+    })
+    var text = 'stf-clipboard-' + Date.now()
+    expect(await pasteboard.paste(text)).to.equal(false)
+    expect(await pasteboard.get()).to.equal(text)
+    expect(await activeBundle()).to.equal('com.apple.springboard')
     expect(failures(ios.fatal)).to.eql([])
   })
 

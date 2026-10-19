@@ -13,6 +13,7 @@ import {gettext, useTranslation} from '@/core/i18n'
 import {notifyFailure} from '@/ui/notify'
 import {WidgetCard} from '@/ui/WidgetCard'
 import classes from '../Dashboard.module.css'
+import {iosShortcutDisabled, openIosShortcut} from './zebrunner-ios-apps'
 
 interface AppShortcut {
   title: string
@@ -74,8 +75,9 @@ export function AppsCard({control}: {control: Control}) {
           <UnstyledButton
             key={title}
             className={`${classes.appTile} icon-app`}
-            disabled={ios && (title === gettext('WiFi') || title === gettext('Manage Apps') || title === gettext('Developer'))}
-            onClick={() => open(control).catch(notifyFailure)}
+            // Fork (Zebrunner): iOS opens Settings and its pages (zebrunner-ios-apps.ts)
+            disabled={ios && iosShortcutDisabled(control, title)}
+            onClick={() => (openIosShortcut(control, title) ?? open(control)).catch(notifyFailure)}
           >
             <ThemeIcon variant='light' color={color} size={40} radius='md'>
               <Icon size={22} stroke={1.7} />

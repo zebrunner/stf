@@ -5,6 +5,10 @@ import {expect} from 'chai'
 import {
   afcPath
 , connectedByUsb
+, isAgentWarning
+, parseBattery
+, parseDeviceInfo
+, parseDiskSpace
 , goIosError
 , matchesFilters
 , parseFsyncTree
@@ -236,5 +240,86 @@ describe('zebrunner: ios-device connection', function() {
     expect(connectedByUsb(list, 'net-1')).to.equal(false)
     expect(connectedByUsb(list, 'other')).to.equal(false)
     expect(connectedByUsb('', 'usb-1')).to.equal(false)
+  })
+})
+
+// The outputs of go-ios 1.3.2 on an iPhone XR with iOS 18.7.10, shortened
+var INFO = JSON.stringify({
+  BuildVersion: '22H374'
+, CPUArchitecture: 'arm64e'
+, CarrierBundleInfoArray: []
+, HardwarePlatform: 't8020'
+, InternationalMobileEquipmentIdentity: '357366097804847'
+, ProductType: 'iPhone11,8'
+, ProductVersion: '18.7.10'
+, SerialNumber: 'F71XNBGXKXK7'
+})
+
+describe('zebrunner: ios-device info', function() {
+  it('should read the fields of the Info tab from lockdown', function() {
+    expect(parseDeviceInfo(INFO)).to.deep.equal({
+      manufacturer: 'Apple'
+    , product: 'iPhone11,8'
+    , version: '18.7.10'
+    , sdk: '22H374'
+    , abi: 'arm64e'
+    , cpuPlatform: 't8020'
+    , operator: null
+    , phone: {imei: '357366097804847', imsi: null, phoneNumber: null, iccid: null}
+    })
+  })
+
+  it('should read the SIM of a device with one', function() {
+    var info = parseDeviceInfo(JSON.stringify({
+      PhoneNumber: '+48 600 000 000'
+    , CarrierBundleInfoArray: [{
+        CFBundleIdentifier: 'com.apple.Orange_PL'
+      , IntegratedCircuitCardIdentity: '8948'
+      , InternationalMobileSubscriberIdentity: '26003'
+      }]
+    }))!
+    expect(info.operator).to.equal('Orange PL')
+    expect(info.phone).to.deep.equal({
+      imei: null
+    , imsi: '26003'
+    , phoneNumber: '+48 600 000 000'
+    , iccid: '8948'
+    })
+  })
+
+  it('should read the last JSON go-ios printed', function() {
+    expect(parseDeviceInfo('not json')).to.equal(null)
+    expect(parseDiskSpace('{"Model":"iPhone11,8","TotalBytes":63944380416,"FreeBytes":1}'))
+      .to.equal(60982)
+    expect(parseDiskSpace('{}')).to.equal(null)
+  })
+
+  it('should read the battery from its IORegistry', function() {
+    expect(parseBattery(JSON.stringify({
+      Temperature: 2050
+    , Voltage: 4184
+    , IsCharging: false
+    , CurrentCapacity: 100
+    , DesignCapacity: 2942
+    , NominalChargeCapacity: 2769
+    }))).to.deep.equal({health: 'good', status: 'full', level: 100, temp: '20.5', voltage: 4.184})
+    expect(parseBattery(JSON.stringify({
+      IsCharging: true
+    , CurrentCapacity: 41
+    , DesignCapacity: 2942
+    , NominalChargeCapacity: 2000
+    }))).to.deep.equal({health: 'dead', status: 'charging', level: 41, temp: '', voltage: null})
+    expect(parseBattery(JSON.stringify({CurrentCapacity: 41})))
+      .to.include({status: 'discharging', health: 'good'})
+    expect(parseBattery('{}')).to.equal(null)
+  })
+
+  it('should tell the warning about the agent of go-ios', function() {
+    expect(isAgentWarning(JSON.stringify({
+      time: '2026-10-19T18:53:51Z'
+    , level: 'WARN'
+    , msg: 'go-ios agent is not running. You might need to start it with \'ios tunnel start\''
+    }))).to.equal(true)
+    expect(isAgentWarning('{"level":"WARN","msg":"failed to get tunnel info"}')).to.equal(false)
   })
 })

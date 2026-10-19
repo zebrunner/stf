@@ -8,7 +8,7 @@ import type {IosDeviceOptions, Push, Router, Sub} from '../../../types/ios-devic
 import pushSyrup from '../support/push.js'
 import routerSyrup from '../support/router.js'
 import subSyrup from '../support/sub.js'
-import {GoIosCommandError, shellArgs, spawnGoIos} from './util/goios.js'
+import {GoIosCommandError, isAgentWarning, shellArgs, spawnGoIos} from './util/goios.js'
 
 // The shell of the device dashboard: the go-ios commands of the allow list of util/goios.ts on the
 // device of the unit, their output (stdout and the logs of go-ios) is sent as it comes
@@ -48,8 +48,22 @@ export default syrup.serial()
         timer = setTimeout(forceStop, keepAlive.timeout)
       }
 
-      function output(chunk: Buffer) {
+      function output(chunk: Buffer | string) {
         push.send([channel, reply.progress(chunk.toString())])
+      }
+
+      // stderr goes line by line, without the warning about the agent of go-ios on every command
+      var stderr = ''
+      function errorOutput(chunk: Buffer) {
+        stderr += chunk.toString()
+        var lines = stderr.split('\n')
+        stderr = lines.pop()!
+        var shown = lines.filter(function(line) {
+          return !isAgentWarning(line)
+        })
+        if (shown.length) {
+          output(shown.join('\n') + '\n')
+        }
       }
 
       function finish(err?: Error) {
@@ -58,6 +72,9 @@ export default syrup.serial()
         }
         finished = true
         clearTimeout(timer)
+        if (stderr && !isAgentWarning(stderr)) {
+          output(stderr)
+        }
         sub.unsubscribe(channel as string)
         router.removeListener(wire.ShellKeepAliveMessage, keepAliveListener)
         if (err) {
@@ -75,7 +92,7 @@ export default syrup.serial()
       }
 
       child.stdout.on('data', output)
-      child.stderr.on('data', output)
+      child.stderr.on('data', errorOutput)
       child.on('error', finish)
       child.on('close', function() {
         finish()

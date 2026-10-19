@@ -8,13 +8,14 @@ import type {IosDeviceOptions, Push, Router, WdaClientPlugin} from '../../../typ
 import pushSyrup from '../support/push.js'
 import routerSyrup from '../support/router.js'
 import wdaClientSyrup from './wda/WdaClient.js'
-import SettingsAutomation, {type IosRadio} from './wda/settings.js'
+import SettingsAutomation, {isSettingsPage, type IosRadio} from './wda/settings.js'
+import {wdaErrorMessage} from './wda/automation.js'
 import {connectedByUsb, execGoIos} from './util/goios.js'
 
 type Channel = string | Buffer
 
 // Wi-Fi and Bluetooth of the Device Settings card, switched in the Settings app through WDA
-// (wda/settings.ts). Wi-Fi is turned off only on a device connected by USB, a device reached over
+// (wda/settings.ts), and the pages of Settings the Apps card opens. Wi-Fi is turned off only on a device connected by USB, a device reached over
 // the network (WIRELESS=true of mcloud-device) would be lost. The ringer mode and the bonded
 // Bluetooth devices have no counterpart on iOS, their requests are refused instead of being left
 // without an answer
@@ -81,7 +82,7 @@ export default syrup.serial()
         })
         .catch(function(err) {
           log.error('Switching %s failed', radio, err.stack)
-          push.send([channel, reply.fail(err.message)])
+          push.send([channel, reply.fail(wdaErrorMessage(err))])
         })
     }
 
@@ -101,6 +102,21 @@ export default syrup.serial()
       })
       .on(wire.BluetoothSetEnabledMessage, function(channel, message) {
         handle(channel, 'bluetooth', message.enabled)
+      })
+      // Settings with a page: the shortcuts of the Apps card (Settings itself is opened by wda.ts)
+      .on(wire.DashboardOpenMessage, function(_channel, message) {
+        var page = message.page
+        if (!page || !supported()) {
+          return
+        }
+        if (!isSettingsPage(page)) {
+          log.warn('Unknown page of Settings "%s"', page)
+          return
+        }
+        log.info('Opening the %s page of Settings', page)
+        settings.openPage(page).catch(function(err) {
+          log.error('Opening the %s page of Settings failed', page, err.stack)
+        })
       })
       .on(wire.BluetoothCleanBondedMessage, unsupported)
       .on(wire.RingerGetMessage, unsupported)

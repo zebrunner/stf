@@ -244,7 +244,6 @@ export interface WdaClientPlugin {
   switchCharset(): void
   appActivate(params: string): Bluebird<unknown>
   pressPower(): Bluebird<unknown>
-  getClipBoard(): Bluebird<string>
   handleRequest<T = unknown>(requestOpt: RpOptions): Bluebird<T>
 }
 

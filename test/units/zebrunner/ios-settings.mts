@@ -1,5 +1,6 @@
-// Fork (Zebrunner): Wi-Fi and Bluetooth of an iOS device, switched in its Settings app through WDA
-// (lib/units/ios-device/plugins/wda/settings.ts), against a fake WDA that models the pages of Settings
+// Fork (Zebrunner): Wi-Fi and Bluetooth of an iOS device, switched in its Settings app through WDA,
+// and the pages of Settings the Apps card opens (lib/units/ios-device/plugins/wda/settings.ts),
+// against a fake WDA that models the pages of Settings
 import {expect} from 'chai'
 import express from 'express'
 
@@ -7,12 +8,19 @@ import SettingsAutomation, {
   cellPredicate
 , switchPredicate
 } from '../../../lib/units/ios-device/plugins/wda/settings.js'
+import {wdaErrorMessage} from '../../../lib/units/ios-device/plugins/wda/automation.js'
 import {listen, type Running} from '../../helpers/zebrunner.mts'
 
 interface FakeSettings {
   active: string
   locked: boolean
-  page: 'none' | 'root' | 'wifi' | 'bluetooth'
+  page: 'none' | 'root' | 'wifi' | 'bluetooth' | 'general' | 'storage' | 'developer'
+  // How far the root page is scrolled; Developer shows up after two swipes
+  swipes: number
+  // How many of the next element lookups fail like a page that is still moving
+  stale: number
+  // false hides Developer (Developer Mode off)
+  developer?: boolean
   wifi: boolean
   bluetooth: boolean
   // The labels of the cells (localized), null hides the cell (a simulator has no Wi-Fi)
@@ -53,23 +61,49 @@ function fakeSettings(state: FakeSettings) {
   app.post('/session/:id/wda/apps/launch', function(req, res) {
     state.active = req.body.bundleId
     state.page = 'root'
+    state.swipes = 0
     res.json({value: null})
   })
   app.post('/session/:id/wda/apps/activate', function(req, res) {
     state.active = req.body.bundleId
     res.json({value: null})
   })
-  app.post('/session/:id/elements', function(req, res) {
+  // /element: the first match, like WDA
+  app.post('/session/:id/element', function(req, res) {
     var predicate = String(req.body.value)
     var found: string[] = []
-    if (state.active === 'com.apple.Preferences' && predicate.includes('XCUIElementTypeCell') &&
-      state.page === 'root') {
+    if (state.stale > 0) {
+      state.stale--
+      res.status(404).json({value: {
+        error: 'stale element reference'
+      , message: 'The previously found element is not present in the current view anymore. ' +
+          'Original error: Error getting main window kAXErrorInvalidUIElement'
+      , traceback: '(\n\t0   CoreFoundation 0x000000019b6d9f6c\n)'
+      }})
+      return
+    }
+    var settings = state.active === 'com.apple.Preferences'
+    var item = predicate.includes('XCUIElementTypeCell') && predicate.includes('label ==')
+    if (settings && predicate.includes('XCUIElementTypeCollectionView')) {
+      found.push('list')
+    }
+    if (settings && item && state.page === 'root') {
       if (predicate.includes('\'WIFI\'') && state.wifiLabel) {
         found.push('wifi-cell')
       }
       if (predicate.includes('\'Bluetooth\'') && state.bluetoothLabel) {
         found.push('bluetooth-cell')
       }
+      if (predicate.includes('\'com.apple.settings.general\'')) {
+        found.push('general-cell')
+      }
+      if (predicate.includes('\'com.apple.settings.developer\'') && state.swipes >= 2 &&
+        state.developer !== false) {
+        found.push('developer-cell')
+      }
+    }
+    if (settings && item && state.page === 'general' && predicate.includes('\'iPhone Storage\'')) {
+      found.push('storage-cell')
     }
     if (predicate.includes('XCUIElementTypeSwitch')) {
       var wifiSwitch = state.wifiSwitchLabel || state.wifiLabel
@@ -80,9 +114,17 @@ function fakeSettings(state: FakeSettings) {
         found.push('bluetooth-switch')
       }
     }
-    res.json({value: found.map(function(id) {
-      return {ELEMENT: id, 'element-6066-11e4-a52e-4f735466cecf': id}
-    })})
+    if (!found.length) {
+      res.status(404).json({value: {error: 'no such element', message: 'no element'}})
+      return
+    }
+    res.json({value: {ELEMENT: found[0], 'element-6066-11e4-a52e-4f735466cecf': found[0]}})
+  })
+  app.post('/session/:id/wda/element/:element/swipe', function(req, res) {
+    if (req.params.element === 'list' && req.body.direction === 'up') {
+      state.swipes++
+    }
+    res.json({value: null})
   })
   app.get('/session/:id/element/:element/attribute/:name', function(req, res) {
     var element = req.params.element
@@ -103,6 +145,15 @@ function fakeSettings(state: FakeSettings) {
         break
       case 'bluetooth-cell':
         state.page = 'bluetooth'
+        break
+      case 'general-cell':
+        state.page = 'general'
+        break
+      case 'storage-cell':
+        state.page = 'storage'
+        break
+      case 'developer-cell':
+        state.page = 'developer'
         break
       case 'wifi-switch':
         state.wifi = !state.wifi
@@ -138,6 +189,8 @@ describe('zebrunner: ios-device Wi-Fi and Bluetooth through Settings', function(
       active: 'com.example.app'
     , locked: false
     , page: 'none'
+    , swipes: 0
+    , stale: 0
     , wifi: true
     , bluetooth: false
     , wifiLabel: 'Wi-Fi'
@@ -240,6 +293,61 @@ describe('zebrunner: ios-device Wi-Fi and Bluetooth through Settings', function(
     expect(launches).to.have.length(2)
     // the second one starts after the first brought back the app
     expect(state.calls.slice(launches[0], launches[1])).to.include('POST /wda/apps/activate')
+  })
+
+  // The page of Wi-Fi was still moving on an iPhone XR with iOS 18.7 when its switch was looked up
+  it('should look again while a page is moving', async function() {
+    state.stale = 3
+    expect(await automation().setEnabled('wifi', false)).to.equal(false)
+    expect(state.wifi).to.equal(false)
+  })
+
+  it('should tell a short error of WDA when a page does not settle', async function() {
+    state.stale = 1000
+    try {
+      await automation().isEnabled('wifi')
+      throw new Error('isEnabled should have failed')
+    }
+    catch (err) {
+      expect((err as Error).message).to.equal('Settings has no Wi-Fi item: The previously found ' +
+        'element is not present in the current view anymore.')
+    }
+  })
+
+  it('should open a page of Settings and leave it in front', async function() {
+    await automation().openPage('wifi')
+    expect([state.active, state.page]).to.deep.equal(['com.apple.Preferences', 'wifi'])
+    await automation().openPage('storage')
+    expect(state.page).to.equal('storage')
+    expect(state.calls).to.not.include('POST /wda/apps/activate')
+  })
+
+  it('should scroll Settings to an item low on its page', async function() {
+    await automation().openPage('developer')
+    expect(state.page).to.equal('developer')
+    expect(state.swipes).to.equal(2)
+  })
+
+  it('should give up on an item that is not on its page', async function() {
+    state.developer = false
+    try {
+      await automation().openPage('developer')
+      throw new Error('openPage should have failed')
+    }
+    catch (err) {
+      expect((err as Error).message).to.equal('Settings has no Developer item')
+    }
+    expect(state.swipes).to.equal(8)
+  })
+
+  it('should keep only the message of an error of WDA', function() {
+    expect(wdaErrorMessage({error: {value: {
+      error: 'stale element reference'
+    , message: 'The element is gone.\nOriginal error: kAX'
+    , traceback: '...'
+    }}})).to.equal('The element is gone.')
+    expect(wdaErrorMessage(new Error('connect ECONNREFUSED'))).to.equal('connect ECONNREFUSED')
+    expect(wdaErrorMessage(new Error('x'.repeat(300)))).to.have.length(200)
   })
 
   it('should find the items of iOS 17 and 18 and quote the labels', function() {
