@@ -67,6 +67,7 @@ import type {
 import type {WebsocketOptions, WebsocketRequest} from '../../types/units-websocket.js'
 // Fork (Zebrunner)
 import {iosNetwork} from '../../db/zebrunner.js'
+import {touchPathIosMessage} from '../../wire/zebrunner.js'
 
 var request = Promise.promisifyAll(cypressRequest) as unknown as PromisifiedRequest
 var adb = adbutil()
@@ -121,6 +122,8 @@ interface WebsocketClientEvents {
   'input.touchDownIos': ChannelEvent<TouchDownIosMessageFields>
   'input.touchMoveIos': ChannelEvent<IosTouchMoveData>
   'input.touchUp': ChannelEvent<TouchUpMessageFields>
+  // Fork (Zebrunner): a whole gesture of an iOS device
+  'input.touchPathIos': ChannelEvent<{contacts?: unknown}>
   'input.touchCommit': ChannelEvent<TouchCommitMessageFields>
   'input.touchReset': ChannelEvent<TouchCommitMessageFields>
   'input.gestureStart': ChannelEvent<TouchCommitMessageFields>
@@ -768,6 +771,18 @@ export default function(options: WebsocketOptions) {
           }
           catch(err) {
             log.error('input.touchMoveIos had an error', (err as Error).stack)
+          }
+        })
+        // Fork (Zebrunner): a whole gesture of an iOS device
+        .on('input.touchPathIos', function(channel, data) {
+          try {
+            push.send([
+              channel
+            , wireutil.envelope(touchPathIosMessage(data?.contacts))
+            ])
+          }
+          catch(err) {
+            log.error('input.touchPathIos had an error', (err as Error).stack)
           }
         })
         .on('input.touchUp', function(channel, data) {

@@ -72,6 +72,9 @@ export function createControl(target: Device, channel: string) {
       , contact = 0
       , seq = 0
     ) => sendOneWay('input.touchMoveIos', {seq, contact, toX, toY, fromX, fromY, pressure})
+    // Fork (Zebrunner): a whole gesture of an iOS device, see features/control/screen/ios-gesture.ts
+    , touchPathIos: (contacts: Array<Array<{x: number, y: number, t: number}>>) =>
+      sendOneWay('input.touchPathIos', {contacts: contacts.map((points) => ({points}))})
     , touchUp: (seq: number, contact: number) => sendOneWay('input.touchUp', {seq, contact})
     , touchCommit: (seq: number) => sendOneWay('input.touchCommit', {seq})
     , touchReset: (seq: number) => sendOneWay('input.touchReset', {seq})

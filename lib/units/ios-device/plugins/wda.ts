@@ -22,6 +22,8 @@ import type {ScreenCaptureMessage, TypeMessageFields} from '../../../types/wire.
 import pushSyrup from '../support/push.js'
 import subSyrup from '../support/sub.js'
 import wdaClientSyrup from './wda/WdaClient.js'
+// Fork (Zebrunner)
+import {replayPath} from './wda/gesture.js'
 
 interface WdaPlugin {
   connect(): Promise<void>
@@ -80,6 +82,10 @@ export default syrup.serial()
         })
         .on(wire.TouchMoveIosMessage, function(_channel, message) {
           wdaClient.swipe(message)
+        })
+        // Fork (Zebrunner): a whole gesture, see wda/gesture.ts
+        .on(wire.TouchPathIosMessage, function(_channel, message) {
+          replayPath(wdaClient, message.contacts)
         })
         .on(wire.TypeMessage, function(_channel, message) {
           log.verbose('wire.TypeMessage: ', message)

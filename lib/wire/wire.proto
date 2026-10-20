@@ -97,6 +97,7 @@ enum MessageType {
   InitializeIosDeviceState       = 121;
   IosDeviceInfoMessage           = 126;
   IosNetworkEvent                = 127;
+  TouchPathIosMessage            = 128;
   reserved 20, 83 to 85, 97, 100 to 112, 115, 117 to 119, 122 to 125;
   GroupUserChangeMessage     = 1200;
   DeviceGroupChangeMessage   = 1201;
@@ -881,6 +882,22 @@ message IosNetworkEvent {
   optional int32 snr = 6;
   optional uint32 channel = 7;
   optional uint32 bandwidth = 8;
+}
+
+// Fork (Zebrunner): a whole gesture of an iOS device, replayed when it ends: the points of
+// every finger, x and y from 0 to 1 like TouchDownIosMessage, t in ms from the start
+message TouchPathIosPoint {
+  required float x = 1;
+  required float y = 2;
+  required uint32 t = 3;
+}
+
+message TouchPathIosContact {
+  repeated TouchPathIosPoint points = 1;
+}
+
+message TouchPathIosMessage {
+  repeated TouchPathIosContact contacts = 1;
 }
 
 // page: the page of Settings to open on iOS (wifi, bluetooth, storage, developer), none for its root
