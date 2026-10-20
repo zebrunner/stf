@@ -21,6 +21,10 @@ interface FakeSettings {
   stale: number
   // false hides Developer (Developer Mode off)
   developer?: boolean
+  airplane?: boolean
+  // A click on a switch misses it, like on the full-width switches of SwiftUI; a tap at its knob
+  // turns it
+  missClick?: boolean
   wifi: boolean
   bluetooth: boolean
   // The labels of the cells (localized), null hides the cell (a simulator has no Wi-Fi)
@@ -102,6 +106,10 @@ function fakeSettings(state: FakeSettings) {
         found.push('developer-cell')
       }
     }
+    var airplane = predicate.includes('com.apple.settings.airplaneMode')
+    if (settings && state.page === 'root' && airplane) {
+      found.push('airplane-switch')
+    }
     if (settings && item && state.page === 'general' && predicate.includes('\'iPhone Storage\'')) {
       found.push('storage-cell')
     }
@@ -120,6 +128,16 @@ function fakeSettings(state: FakeSettings) {
     }
     res.json({value: {ELEMENT: found[0], 'element-6066-11e4-a52e-4f735466cecf': found[0]}})
   })
+  app.post('/session/:id/wda/tap', function(req, res) {
+    state.calls.push('tap ' + req.body.x + ',' + req.body.y)
+    if (state.page === 'wifi') {
+      state.wifi = !state.wifi
+    }
+    else if (state.page === 'bluetooth') {
+      state.bluetooth = !state.bluetooth
+    }
+    res.json({value: null})
+  })
   app.post('/session/:id/wda/element/:element/swipe', function(req, res) {
     if (req.params.element === 'list' && req.body.direction === 'up') {
       state.swipes++
@@ -128,7 +146,13 @@ function fakeSettings(state: FakeSettings) {
   })
   app.get('/session/:id/element/:element/attribute/:name', function(req, res) {
     var element = req.params.element
-    if (req.params.name === 'label') {
+    if (req.params.name === 'rect') {
+      res.json({value: {x: 20, y: 300, width: 374, height: 45}})
+    }
+    else if (element === 'airplane-switch') {
+      res.json({value: state.airplane ? '1' : '0'})
+    }
+    else if (req.params.name === 'label') {
       res.json({value: element === 'wifi-cell' ? state.wifiLabel : state.bluetoothLabel})
     }
     else if (element === 'wifi-switch') {
@@ -156,10 +180,10 @@ function fakeSettings(state: FakeSettings) {
         state.page = 'developer'
         break
       case 'wifi-switch':
-        state.wifi = !state.wifi
+        state.wifi = state.missClick ? state.wifi : !state.wifi
         break
       case 'bluetooth-switch':
-        state.bluetooth = !state.bluetooth
+        state.bluetooth = state.missClick ? state.bluetooth : !state.bluetooth
         break
     }
     res.json({value: null})
@@ -172,15 +196,15 @@ describe('zebrunner: ios-device Wi-Fi and Bluetooth through Settings', function(
    , state: FakeSettings
    , sessionId: string | null
 
-  function automation() {
-    return new SettingsAutomation({
+  function automation(onAirplaneMode?: (enabled: boolean) => void) {
+    return new SettingsAutomation(Object.assign({
       baseUrl: server.origin
     , sessionId: function() {
         return sessionId
       }
     , waitTimeout: 300
     , pollInterval: 20
-    })
+    }, onAirplaneMode ? {onAirplaneMode: onAirplaneMode} : {}))
   }
 
   beforeEach(async function() {
@@ -338,6 +362,27 @@ describe('zebrunner: ios-device Wi-Fi and Bluetooth through Settings', function(
       expect((err as Error).message).to.equal('Settings has no Developer item')
     }
     expect(state.swipes).to.equal(8)
+  })
+
+  it('should tell Airplane Mode whenever Settings shows its root page', async function() {
+    var told: boolean[] = []
+    state.airplane = true
+    await automation(function(enabled) {
+      told.push(enabled)
+    }).isEnabled('bluetooth')
+    state.airplane = false
+    await automation(function(enabled) {
+      told.push(enabled)
+    }).openPage('storage')
+    expect(told).to.deep.equal([true, false])
+  })
+
+  // A click at the middle of a full-width switch of SwiftUI missed it on an iPhone XR with iOS 18.7
+  it('should tap a switch at its knob when a click misses it', async function() {
+    state.missClick = true
+    expect(await automation().setEnabled('wifi', false)).to.equal(false)
+    expect(state.wifi).to.equal(false)
+    expect(state.calls).to.include('tap 369,322.5')
   })
 
   it('should keep only the message of an error of WDA', function() {

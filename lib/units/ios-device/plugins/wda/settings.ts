@@ -98,6 +98,24 @@ export function switchPredicate(radio: IosRadio, itemLabel: string | null): stri
 }
 
 var SCROLL_VIEW = 'type == \'XCUIElementTypeCollectionView\' OR type == \'XCUIElementTypeTable\''
+// The Airplane Mode switch of the root page of Settings
+export var AIRPLANE_MODE = 'type == \'XCUIElementTypeSwitch\' AND (name IN ' +
+  predicateList(['com.apple.settings.airplaneMode', 'AIRPLANE_MODE', 'Airplane Mode']) +
+  ' OR label == \'Airplane Mode\')'
+// How long a tapped switch is given to turn before it is tapped at its knob
+var TURN_TIMEOUT = 2000
+
+interface Rect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export interface SettingsAutomationOptions extends WdaAutomationOptions {
+  // Called with the state of Airplane Mode whenever the root page of Settings shows it
+  onAirplaneMode?: (enabled: boolean) => void
+}
 
 function isOn(value: unknown): boolean {
   return value === '1' || value === 1 || value === true || value === 'true'
@@ -107,8 +125,11 @@ function isOn(value: unknown): boolean {
 // Settings through WDA and taps its items; iOS has no API for it without MDM. A switch is read or
 // tapped, then the app that was in front comes back
 export default class SettingsAutomation extends WdaAutomation {
-  constructor(options: WdaAutomationOptions) {
+  private onAirplaneMode: ((enabled: boolean) => void) | null
+
+  constructor(options: SettingsAutomationOptions) {
     super(options)
+    this.onAirplaneMode = options.onAirplaneMode || null
   }
 
   // isEnabled <radio>: whether the switch of the radio is on
@@ -126,7 +147,8 @@ export default class SettingsAutomation extends WdaAutomation {
     return this.serial(() => {
       return this.unlock()
         .then(() => this.openSettings())
-        .then(() => Promise.each(PAGES[page], (spec) => this.findItem(spec)
+        .then(() => Promise.each(PAGES[page], (spec, index) => this.findItem(spec)
+          .then((item) => (index ? Promise.resolve() : this.reportAirplaneMode()).then(() => item))
           .then((item) => this.click(item))))
     })
   }
@@ -137,22 +159,66 @@ export default class SettingsAutomation extends WdaAutomation {
     }), 'The switch cannot be read')
   }
 
-  // The switch is found again for every step: its page may still be moving when it is first found
+  // The switch is found again for every step: its page may still be moving when it is first found.
+  // A switch of SwiftUI (iOS 18+) spans its row and a tap at the middle of the row may miss it, so
+  // a switch that does not turn is tapped at its knob, on the right
   private turn(predicate: string, enabled: boolean): Promise<boolean> {
+    var turned = () => this.switchState(predicate).then(function(value) {
+      return value === enabled ? value : null
+    })
     return this.switchState(predicate).then((current) => {
       if (current === enabled) {
         return current
       }
-      return this.waitFor(() => this.findFirst(predicate).then((element) => {
-        return element ? this.click(element).then(() => true) : null
-      }), 'The switch cannot be tapped')
-        .then(() => this.waitFor(
-          () => this.switchState(predicate).then(function(value) {
-            return value === enabled ? value : null
-          })
-        , 'The switch did not turn ' + (enabled ? 'on' : 'off')
-        ))
+      return this.tapSwitch(predicate, false)
+        .then(() => this.poll(turned, Math.min(TURN_TIMEOUT, this.options.waitTimeout)))
+        .then((result) => {
+          if (result.found !== null) {
+            return result.found
+          }
+          return this.tapSwitch(predicate, true).then(() => this.waitFor(
+            turned
+          , 'The switch did not turn ' + (enabled ? 'on' : 'off')
+          ))
+        })
     })
+  }
+
+  private tapSwitch(predicate: string, atKnob: boolean): Promise<unknown> {
+    return this.waitFor(() => this.findFirst(predicate).then((element) => {
+      if (!element) {
+        return null
+      }
+      if (!atKnob) {
+        return this.click(element).then(() => true)
+      }
+      return this.attribute(element, 'rect').then((value) => {
+        var rect = value as Rect
+        return this.post('/wda/tap', {
+          x: rect.x + rect.width - Math.min(25, rect.width / 2)
+        , y: rect.y + rect.height / 2
+        }).then(() => true)
+      })
+    }), 'The switch cannot be tapped')
+  }
+
+  // reportAirplaneMode: tells the state of Airplane Mode, which iOS logs only when it changes, when
+  // the root page of Settings is in front anyway
+  private reportAirplaneMode(): Promise<unknown> {
+    if (!this.onAirplaneMode) {
+      return Promise.resolve()
+    }
+    var report = this.onAirplaneMode
+    return this.findFirst(AIRPLANE_MODE)
+      .then((element) => (element ? this.attribute(element, 'value') : null))
+      .then(function(value) {
+        if (value !== null && typeof value !== 'undefined') {
+          report(isOn(value))
+        }
+      })
+      .catch(function() {
+        return null
+      })
   }
 
   private onSwitch<T>(radio: IosRadio, action: (predicate: string) => Promise<T>): Promise<T> {
@@ -165,6 +231,7 @@ export default class SettingsAutomation extends WdaAutomation {
       })
       .then(() => this.openSettings())
       .then(() => this.findItem(ITEMS[radio]))
+      .then((item) => this.reportAirplaneMode().then(() => item))
       .then((item) => this.attribute(item, 'label')
         .then((label) => this.click(item).then(() => label)))
       .then((label) => {

@@ -35,6 +35,13 @@ export default syrup.serial()
     , sessionId: function() {
         return wdaClient.sessionId
       }
+      // the Info tab: iOS logs Airplane Mode only when it changes
+    , onAirplaneMode: function(enabled) {
+        push.send([
+          wireutil.global
+        , wireutil.envelope(new wire.AirplaneModeEvent(options.serial, enabled))
+        ])
+      }
     })
 
     function status(radio: IosRadio, enabled: boolean): string {
