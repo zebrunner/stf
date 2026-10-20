@@ -604,3 +604,16 @@ export class IosNetworkCollector {
     return {connected: type !== null, type: type, wifi: this.wifi}
   }
 }
+
+// tunnelSupported <output>: whether the device of the output of `ios info` takes the userspace tunnel
+// of go-ios over lockdown (CoreDeviceProxy): iOS, iPadOS and tvOS 17.4 and later
+export function tunnelSupported(output: string): boolean {
+  var version = text(lastJson(output)?.ProductVersion)
+  if (!version) {
+    return false
+  }
+  var parts = version.split('.').map(Number)
+  var major = parts[0] || 0
+  var minor = parts[1] || 0
+  return major > 17 || (major === 17 && minor >= 4)
+}

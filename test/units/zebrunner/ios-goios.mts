@@ -11,6 +11,7 @@ import {
 , parseBattery
 , parseDeviceInfo
 , parseDiskSpace
+, tunnelSupported
 , goIosError
 , matchesFilters
 , parseFsyncTree
@@ -447,5 +448,20 @@ describe('zebrunner: hardware of iOS models', function() {
       ios: true, product: 'iPhone99,1', name: 'x'
     })
     expect(applyIosModel({product: 'iPhone11,8'})).to.deep.equal({product: 'iPhone11,8'})
+  })
+})
+
+describe('zebrunner: ios-device tunnel', function() {
+  it('should run the userspace tunnel from iOS 17.4 on', function() {
+    function info(version: string) {
+      return JSON.stringify({ProductVersion: version, DeviceClass: 'iPhone'})
+    }
+    expect(tunnelSupported(info('18.7.10'))).to.equal(true)
+    expect(tunnelSupported(info('26.0'))).to.equal(true)
+    expect(tunnelSupported(info('17.4'))).to.equal(true)
+    expect(tunnelSupported(info('17.3.1'))).to.equal(false)
+    expect(tunnelSupported(info('16.7.10'))).to.equal(false)
+    expect(tunnelSupported('{}')).to.equal(false)
+    expect(tunnelSupported('')).to.equal(false)
   })
 })

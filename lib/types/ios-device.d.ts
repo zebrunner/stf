@@ -254,6 +254,11 @@ export interface IosLogcatPlugin {
   isRunning(): boolean
 }
 
+export interface IosTunnelPlugin {
+  isRunning(): boolean
+  stop(): void
+}
+
 export interface IosFileEntry {
   name: string
   mode: number
