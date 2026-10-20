@@ -223,6 +223,12 @@ export interface DeviceNetwork {
   state?: string
   manual?: boolean
   operator?: string | null
+  // Fork (Zebrunner): the Wi-Fi link of an iOS device
+  ssid?: string | null
+  rssi?: number | null
+  snr?: number | null
+  channel?: number | null
+  bandwidth?: number | null
 }
 
 export interface DeviceIdentity {

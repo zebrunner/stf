@@ -143,6 +143,7 @@ var pbjs5MessageType: Record<string, number> = {
 , TemporarilyUnavailableMessage: 120
 , InitializeIosDeviceState: 121
 , IosDeviceInfoMessage: 126
+, IosNetworkEvent: 127
 }
 
 var pbjs5Encodings = [

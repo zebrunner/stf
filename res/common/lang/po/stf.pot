@@ -6,6 +6,18 @@ msgstr ""
 msgid "(Expiration date - Starting date) must be <= Class duration"
 msgstr ""
 
+#: res/app/src/features/control/panes/info/zebrunner-network.ts:20
+msgid "Channel"
+msgstr ""
+
+#: res/app/src/features/control/panes/info/zebrunner-network.ts:19
+msgid "Signal"
+msgstr ""
+
+#: res/app/src/features/control/panes/info/zebrunner-network.ts:18
+msgid "SSID"
+msgstr ""
+
 #: res/app/src/features/settings/groups/GroupList.tsx:153
 #: res/app/src/features/settings/groups/shared/ObjectsTable.tsx:195
 #: res/app/src/features/settings/users/UsersSettings.tsx:231

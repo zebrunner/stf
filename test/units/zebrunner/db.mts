@@ -125,6 +125,24 @@ describe('zebrunner: dbapi', function() {
     })
   })
 
+  it('should keep the network of an iOS device', async function() {
+    await dbapi.setIosNetwork({
+      serial: 'serial', connected: true, type: 'WIFI', ssid: 'Lab', rssi: -40, snr: 30, channel: 36
+    , bandwidth: 80
+    })
+    await dbapi.setIosNetwork({
+      serial: 'serial', connected: false, type: '', ssid: '', rssi: 0, snr: 0, channel: 0
+    , bandwidth: 0
+    })
+    expect(writes[0].network).to.eql({
+      connected: true, type: 'WIFI', ssid: 'Lab', rssi: -40, snr: 30, channel: 36, bandwidth: 80
+    })
+    expect(writes[1].network).to.eql({
+      connected: false, type: null, ssid: null, rssi: null, snr: null, channel: null
+    , bandwidth: null
+    })
+  })
+
   it('should make a ready device present', async function() {
     await dbapi.setDeviceReady('serial', 'channel')
     expect(writes[0].ready).to.equal(true)

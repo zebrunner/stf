@@ -46,6 +46,15 @@ else if (rest[0] === 'batteryregistry') {
   console.log(JSON.stringify({Temperature: 2130, Voltage: 4171, IsCharging: false,
     CurrentCapacity: 100, DesignCapacity: 2942, NominalChargeCapacity: 2769}))
 }
+else if (rest[0] === 'ostrace') {
+  var trace = function(process, message) {
+    console.log(JSON.stringify({pid: 1, filename: '/usr/sbin/' + process, message: message}))
+  }
+  trace('wifid', '__WiFiLQAMgrLogStats(Lab:Stationary): InfraUptime:9.0secs Channel: 36 ' +
+    'Bandwidth: 80Mhz Rssi: -40 Cca: 1 Snr: 30')
+  trace('symptomsd', 'StateRelay for type 3: WiFi (active/primary/dns-ok)')
+  setInterval(function() {}, 1000)
+}
 else if (rest[0] === 'list') {
   var connection = process.env.FAKE_GO_IOS_CONNECTION || 'USB'
   console.log(JSON.stringify({deviceList: [{Udid: 'udid-1', ConnectionType: connection}]}))
@@ -422,7 +431,7 @@ describe('zebrunner: ios-device go-ios plugins', function() {
       var {plugin, unit} = await loadPlugin('info/index')
       await plugin.manageDeviceInfo()
       var sent: Decoded[] = []
-      for (var i = 0; i < 100 && sent.length < 3; i++) {
+      for (var i = 0; i < 150 && sent.length < 4; i++) {
         await new Promise(function(resolve) {
           setTimeout(resolve, 20)
         })
@@ -430,7 +439,12 @@ describe('zebrunner: ios-device go-ios plugins', function() {
       }
       expect(sent.map(function(item) {
         return item.type
-      })).to.deep.equal(['InitializeIosDeviceState', 'IosDeviceInfoMessage', 'BatteryIosEvent'])
+      })).to.deep.equal([
+        'InitializeIosDeviceState'
+      , 'IosDeviceInfoMessage'
+      , 'BatteryIosEvent'
+      , 'IosNetworkEvent'
+      ])
       var info = sent[1]!.message
       expect([info.serial, info.manufacturer, info.product, info.sdk, info.abi, info.rom])
         .to.deep.equal([SERIAL, 'Apple', 'iPhone11,8', '22H374', 'arm64e', 60982])
@@ -438,6 +452,16 @@ describe('zebrunner: ios-device go-ios plugins', function() {
       var battery = sent[2]!.message
       expect([battery.health, battery.status, battery.level, battery.temp, battery.voltage])
         .to.deep.equal(['good', 'full', 100, '21.3', 4.171])
+      var network = sent[3]!.message
+      expect([
+        network.connected
+      , network.type
+      , network.ssid
+      , network.rssi
+      , network.snr
+      , network.channel
+      , network.bandwidth
+      ]).to.deep.equal([true, 'WIFI', 'Lab', -40, 30, 36, 80])
       // the build of iOS comes from lockdown, not a made up architecture
       expect(sent[0]!.message.options.architect).to.equal('')
     })

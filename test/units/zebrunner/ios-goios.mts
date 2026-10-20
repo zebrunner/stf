@@ -3,9 +3,11 @@
 import {expect} from 'chai'
 
 import {
-  afcPath
+  IosNetworkCollector
+, afcPath
 , connectedByUsb
 , isAgentWarning
+, ostraceEntry
 , parseBattery
 , parseDeviceInfo
 , parseDiskSpace
@@ -321,5 +323,129 @@ describe('zebrunner: ios-device info', function() {
     , msg: 'go-ios agent is not running. You might need to start it with \'ios tunnel start\''
     }))).to.equal(true)
     expect(isAgentWarning('{"level":"WARN","msg":"failed to get tunnel info"}')).to.equal(false)
+  })
+})
+
+// Lines of `ios ostrace` on an iPhone XR with iOS 18.7.10, shortened
+function trace(process: string, message: string): string {
+  return JSON.stringify({pid: 50, filename: '/usr/sbin/' + process, message: message})
+}
+
+var WIFI_LINK = trace('wifid', '__WiFiLQAMgrLogStats(SOLVD_DEMO:Stationary): ' +
+  'InfraUptime:2235.8secs Channel: 36 Bandwidth: 40Mhz Rssi: -32 {-30 0} Cca: 83 (S:0 O:0 I:0) ' +
+  'Snr: 29 BcnPer: 0.0% (22)')
+var WIFI_RELAY = trace('symptomsd', 'StateRelay for type 3: WiFi (active/primary/constrained-no/' +
+  'expensive-no/rssifull/arp-ok/dns-ok/lqm:100/advisory:7/pwrDL:1/pwrUL:1/ic:1/loi:home)')
+
+function collect(lines: string[]) {
+  var collector = new IosNetworkCollector()
+  lines.forEach(function(line) {
+    var entry = ostraceEntry(line)
+    if (entry) {
+      collector.add(entry)
+    }
+  })
+  return collector
+}
+
+describe('zebrunner: ios-device network', function() {
+  it('should read the Wi-Fi link and the primary interface from the system log', function() {
+    var collector = collect([trace('wifid', 'Apple80211GetIfListCopy: enter'), WIFI_LINK])
+    expect(collector.complete()).to.equal(false)
+    collector.add(ostraceEntry(WIFI_RELAY)!)
+    expect(collector.complete()).to.equal(true)
+    expect(collector.network()).to.deep.equal({
+      connected: true
+    , type: 'WIFI'
+    , wifi: {ssid: 'SOLVD_DEMO', channel: 36, bandwidth: 40, rssi: -32, snr: 29}
+    })
+  })
+
+  it('should keep an SSID with colons and parentheses', function() {
+    var line = trace('wifid', '__WiFiLQAMgrLogStats(Cafe: 2 (guest):Moving): InfraUptime:5.0secs ' +
+      'Channel: 6 Bandwidth: 20Mhz Rssi: -71')
+    expect(collect([line]).network().wifi).to.deep.equal({
+      ssid: 'Cafe: 2 (guest)', channel: 6, bandwidth: 20, rssi: -71, snr: null
+    })
+  })
+
+  it('should tell no network with Wi-Fi off and no other interface', function() {
+    expect(collect([trace('wifid', 'nothing'), 'not json']).network())
+      .to.deep.equal({connected: false, type: null, wifi: null})
+  })
+
+  it('should take the cellular network when it is the primary interface', function() {
+    var network = collect([
+      trace('symptomsd', 'StateRelay for type 3: WiFi (inactive/constrained-no)')
+    , trace('symptomsd', 'StateRelay for type 1: Cell (active/primary/expensive-yes)')
+    ]).network()
+    expect(network).to.deep.equal({connected: true, type: 'MOBILE', wifi: null})
+  })
+
+  it('should read only the lines of ostrace', function() {
+    expect(ostraceEntry(WIFI_LINK)!.process).to.equal('wifid')
+    expect(ostraceEntry('{"level":"WARN","msg":"go-ios agent is not running"}')).to.equal(null)
+    expect(ostraceEntry('plain text')).to.equal(null)
+  })
+})
+
+describe('zebrunner: device data of an iOS device', function() {
+  it('should keep the capacity the device tells over the one of its model', async function() {
+    var datautil = (await import('../../../lib/util/datautil.js')).default
+    var device = datautil.applyData({
+      serial: 'udid'
+    , model: 'iPhone_XR'
+    , memory: {rom: 60982}
+    } as unknown as Parameters<typeof datautil.applyData>[0]) as unknown as {
+      name: string
+      cpu: {name: string}
+      memory: {ram: number, rom: number}
+    }
+    expect(device.name).to.equal('iPhone XR')
+    expect(device.cpu.name).to.equal('Apple A12')
+    expect(device.memory).to.deep.equal({ram: 3072, rom: 60982})
+  })
+})
+
+describe('zebrunner: hardware of iOS models', function() {
+  it('should know every model by its ProductType', async function() {
+    var models = (await import('../../../lib/util/zebrunner-ios-models.json', {
+      with: {type: 'json'}
+    })).default as Record<string, {name: string, display: object, cpu: object}>
+    var keys = Object.keys(models)
+    expect(keys.length).to.be.above(100)
+    keys.forEach(function(key) {
+      expect(key, key).to.match(/^(iPhone|iPad)\d+,\d+$/)
+      expect(models[key]!.name, key).to.be.a('string')
+      expect(models[key]!.display, key).to.include.keys('inches', 'ppi', 'fps', 'width', 'height')
+      expect(models[key]!.cpu, key).to.include.keys('name', 'cores', 'freq')
+    })
+  })
+
+  it('should put the hardware of the model on an iOS device', async function() {
+    var datautil = (await import('../../../lib/util/datautil.js')).default
+    var device = datautil.applyData({
+      serial: 'udid'
+    , ios: true
+    , model: 'iPhone_XR'
+    , product: 'iPhone11,8'
+    , memory: {rom: 60982}
+    , display: {width: 828, height: 1792, scale: 2}
+    } as unknown as Parameters<typeof datautil.applyData>[0]) as unknown as Record<string, any>
+    expect(device.name).to.equal('iPhone XR')
+    expect(device.releasedAt).to.equal('2018-10-26T00:00:00.000Z')
+    expect(device.cpu).to.deep.equal({name: 'Apple A12 Bionic', cores: 6, freq: 2.49})
+    expect(device.memory).to.deep.equal({ram: 3072, rom: 60982})
+    expect(device.display).to.deep.equal({
+      width: 828, height: 1792, scale: 2, density: 2, inches: 6.1, fps: 60, xdpi: 326, ydpi: 326
+    })
+  })
+
+  it('should leave a model it does not know and the Android devices as they are', async function() {
+    var {applyIosModel} = await import('../../../lib/util/zebrunner-ios-models.js')
+    expect(applyIosModel({ios: true, product: 'iPhone99,1', name: 'x'})).to.deep.equal({
+      ios: true, product: 'iPhone99,1', name: 'x'
+    })
+    expect(applyIosModel({product: 'iPhone11,8'})).to.deep.equal({product: 'iPhone11,8'})
   })
 })

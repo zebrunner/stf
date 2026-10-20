@@ -22,6 +22,7 @@ import {notifyFailure} from '@/ui/notify'
 import {WidgetCard} from '@/ui/WidgetCard'
 import type {PaneProps} from '../../types'
 import classes from './InfoPane.module.css'
+import {wifiRows} from './zebrunner-network'
 
 interface InfoRow {
   label: string
@@ -249,6 +250,8 @@ export default function InfoPane({device, control}: PaneProps) {
         , {label: gettext('Roaming'), value: humanizedBool(network?.roaming)}
         , {label: gettext('Type'), value: translatedLookup(networkTypes, network?.type)}
         , {label: gettext('Sub Type'), value: translatedLookup(networkSubTypes, network?.subtype)}
+          // Fork (Zebrunner): the Wi-Fi link of an iOS device
+        , ...wifiRows(network)
       ]
     }
     , {

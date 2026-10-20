@@ -96,6 +96,7 @@ enum MessageType {
   TemporarilyUnavailableMessage  = 120;
   InitializeIosDeviceState       = 121;
   IosDeviceInfoMessage           = 126;
+  IosNetworkEvent                = 127;
   reserved 20, 83 to 85, 97, 100 to 112, 115, 117 to 119, 122 to 125;
   GroupUserChangeMessage     = 1200;
   DeviceGroupChangeMessage   = 1201;
@@ -867,6 +868,19 @@ message SdkIosVersion {
   required string id = 1;
   required string device = 2;
   required string sdkVersion = 3;
+}
+
+// The network of an iOS device from its system log (plugins/info of the ios-device unit): the
+// primary interface and the Wi-Fi link (bandwidth in MHz)
+message IosNetworkEvent {
+  required string serial = 1;
+  required bool connected = 2;
+  optional string type = 3;
+  optional string ssid = 4;
+  optional int32 rssi = 5;
+  optional int32 snr = 6;
+  optional uint32 channel = 7;
+  optional uint32 bandwidth = 8;
 }
 
 // page: the page of Settings to open on iOS (wifi, bluetooth, storage, developer), none for its root

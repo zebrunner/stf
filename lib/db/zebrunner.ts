@@ -12,22 +12,25 @@ import type {
   BatteryIosEventFields
 , InitializeIosDeviceStateFields
 , IosDeviceInfoMessageFields
+, IosNetworkEventFields
 , SdkIosVersionFields
 } from '../types/wire.js'
 
 type DbApi = typeof import('./api.js')['default']
 type Db = typeof import('./index.js')['default']
 
-// Display defaults reported for iOS devices until WDA tells the real size
-const DEFAULT_IOS_DEVICE_ARGS = {
-  DENSITY: 2
-, FPS: 60
-, ID: 0
-, ROTATION: 0
-, SECURE: true
-, SIZE: 4.971253395080566
-, XDPI: 294.9670104980469
-, YDPI: 295.56298828125
+// iosNetwork <message>: the network field of a device for an IosNetworkEvent
+export function iosNetwork(message: IosNetworkEventFields) {
+  var wifi = Boolean(message.ssid)
+  return {
+    connected: message.connected
+  , type: message.type || null
+  , ssid: wifi ? message.ssid : null
+  , rssi: wifi ? message.rssi : null
+  , snr: wifi && typeof message.snr === 'number' ? message.snr : null
+  , channel: wifi ? message.channel : null
+  , bandwidth: wifi ? message.bandwidth : null
+  }
 }
 
 export interface SessionDocument {
@@ -46,6 +49,7 @@ export interface ZebrunnerDbApi {
   unmarkDeviceAsUsing(serial: string): Promise<r.WriteResult>
   setDeviceIosBattery(message: BatteryIosEventFields): Promise<r.WriteResult>
   setIosDeviceInfo(message: IosDeviceInfoMessageFields): Promise<r.WriteResult>
+  setIosNetwork(message: IosNetworkEventFields): Promise<r.WriteResult>
   setDeviceIosVersion(message: SdkIosVersionFields): Promise<void>
   sizeIosDevice(
     serial: string
@@ -153,6 +157,13 @@ export default function extendDbApi(dbapi: DbApi, db: Db) {
     return db.run(r.table('devices').get<DeviceDocument>(message.serial).update(info))
   }
 
+  // The network of an iOS device from its system log; the Wi-Fi fields are null without a link
+  dbapi.setIosNetwork = function(message) {
+    return db.run(r.table('devices').get<DeviceDocument>(message.serial).update({
+      network: iosNetwork(message)
+    }))
+  }
+
   dbapi.setDeviceIosVersion = function(message) {
     return db.run(r.table('devices').get<DeviceDocument>(message.id))
       .then(function(device) {
@@ -236,15 +247,17 @@ export default function extendDbApi(dbapi: DbApi, db: Db) {
     , usage: null
     , ios: true
     , iosClientChannel: message.serial
+    // Fork (Zebrunner): the screen of an iOS device: its size comes from WDA, the rest of its model
+    // (lib/util/zebrunner-ios-models.ts); Android fields that iOS has no counterpart for are cleared
     , display: {
-        density: DEFAULT_IOS_DEVICE_ARGS.DENSITY
-      , fps: DEFAULT_IOS_DEVICE_ARGS.FPS
-      , id: DEFAULT_IOS_DEVICE_ARGS.ID
-      , rotation: DEFAULT_IOS_DEVICE_ARGS.ROTATION
-      , secure: DEFAULT_IOS_DEVICE_ARGS.SECURE
-      , size: DEFAULT_IOS_DEVICE_ARGS.SIZE
-      , xdpi: DEFAULT_IOS_DEVICE_ARGS.XDPI
-      , ydpi: DEFAULT_IOS_DEVICE_ARGS.YDPI
+        density: null
+      , fps: null
+      , id: null
+      , rotation: 0
+      , secure: null
+      , size: null
+      , xdpi: null
+      , ydpi: null
       , url: screenWsUrlPattern
       }
     , group: {

@@ -499,3 +499,108 @@ export function parseBattery(output: string): IosBattery | null {
   , voltage: voltage === null ? null : voltage / 1000
   }
 }
+
+export interface OstraceEntry {
+  // the name of the process, the last part of its path
+  process: string
+  message: string
+}
+
+// ostraceEntry <line>: a line of `ios ostrace` (JSON), null for anything else
+export function ostraceEntry(line: string): OstraceEntry | null {
+  if (!line.startsWith('{')) {
+    return null
+  }
+  try {
+    var entry = JSON.parse(line) as {filename?: unknown, message?: unknown}
+    if (typeof entry.filename !== 'string' || typeof entry.message !== 'string') {
+      return null
+    }
+    return {process: entry.filename.split('/').pop()!, message: entry.message}
+  }
+  catch {
+    return null
+  }
+}
+
+export interface IosWifiLink {
+  ssid: string
+  rssi: number
+  snr: number | null
+  channel: number
+  // MHz
+  bandwidth: number
+}
+
+export interface IosNetwork {
+  connected: boolean
+  // WIFI, MOBILE or ETHERNET, the primary interface; null when there is none
+  type: string | null
+  wifi: IosWifiLink | null
+}
+
+// wifid logs the quality of the Wi-Fi link every ~5 seconds while it is associated
+var WIFI_LINK = new RegExp(
+  '__WiFiLQAMgrLogStats\\((.*):[A-Za-z]+\\): InfraUptime:[\\d.]+secs Channel: (\\d+) ' +
+  'Bandwidth: (\\d+)Mhz Rssi: (-?\\d+)(?:.*? Snr: (-?\\d+))?'
+)
+// symptomsd relays the state of the interfaces it watches: "StateRelay for type 3: WiFi (active/
+// primary/...)"
+var STATE_RELAY = /StateRelay for type \d+: (\w+) \(([^)]*)\)/
+
+var INTERFACE_TYPES: Record<string, string> = {
+  wifi: 'WIFI'
+, cell: 'MOBILE'
+, cellular: 'MOBILE'
+, wired: 'ETHERNET'
+}
+
+// IosNetworkCollector: the network of a device from the lines of `ios ostrace`; complete once it
+// has seen a Wi-Fi link and the state of the interfaces
+export class IosNetworkCollector {
+  private wifi: IosWifiLink | null = null
+  private relays: Record<string, string[]> = {}
+
+  add(entry: OstraceEntry): void {
+    if (entry.process === 'wifid') {
+      var link = WIFI_LINK.exec(entry.message)
+      if (link) {
+        this.wifi = {
+          ssid: link[1]!
+        , channel: Number(link[2])
+        , bandwidth: Number(link[3])
+        , rssi: Number(link[4])
+        , snr: typeof link[5] === 'string' ? Number(link[5]) : null
+        }
+      }
+    }
+    else if (entry.process === 'symptomsd') {
+      var relay = STATE_RELAY.exec(entry.message)
+      if (relay) {
+        this.relays[relay[1]!.toLowerCase()] = relay[2]!.split('/')
+      }
+    }
+  }
+
+  complete(): boolean {
+    return this.wifi !== null && Object.keys(this.relays).length > 0
+  }
+
+  // network: what was seen; no Wi-Fi link and no active interface is no network
+  network(): IosNetwork {
+    var primary: string | null = null
+    var active: string | null = null
+    Object.keys(this.relays).forEach((name) => {
+      var flags = this.relays[name]!
+      var type = INTERFACE_TYPES[name] || name.toUpperCase()
+      if (flags.includes('primary')) {
+        primary = type
+      }
+      if (flags.includes('active') && !active) {
+        active = type
+      }
+    })
+    var type = primary || active || (this.wifi ? 'WIFI' : null)
+    return {connected: type !== null, type: type, wifi: this.wifi}
+  }
+}

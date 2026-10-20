@@ -65,6 +65,8 @@ import type {
 , WifiSetEnabledMessageFields
 } from '../../types/wire.js'
 import type {WebsocketOptions, WebsocketRequest} from '../../types/units-websocket.js'
+// Fork (Zebrunner)
+import {iosNetwork} from '../../db/zebrunner.js'
 
 var request = Promise.promisifyAll(cypressRequest) as unknown as PromisifiedRequest
 var adb = adbutil()
@@ -487,6 +489,16 @@ export default function(options: WebsocketOptions) {
             serial: serial
           , browser: message
           })
+        })
+      })
+      // Fork (Zebrunner): the network of an iOS device
+      .on(wire.IosNetworkEvent, function(channel, message) {
+        socket.emit('device.change', {
+          important: false
+        , data: {
+            serial: message.serial
+          , network: iosNetwork(message)
+          }
         })
       })
       .on(wire.ConnectivityEvent, function(channel, message: SerialStripped<ConnectivityEvent>) {
