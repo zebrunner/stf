@@ -25,7 +25,6 @@ export default function(options: IosDeviceOptions) {
         .dependency(require('./plugins/heartbeat.js').default)
         .dependency(require('./plugins/solo.js').default)
         .dependency(require('./plugins/info/index.js').default)
-        .dependency(require('./plugins/tunnel.js').default)
         .dependency(require('./plugins/wda.js').default)
         .dependency(require('./support/push.js').default)
         .dependency(require('./support/sub.js').default)

@@ -36,8 +36,7 @@ if (rest[0] === 'syslog') {
   setInterval(function() {}, 1000)
 }
 else if (rest[0] === 'info') {
-  console.log(JSON.stringify({ProductType: 'iPhone11,8',
-    ProductVersion: process.env.FAKE_GO_IOS_VERSION || '18.7.10',
+  console.log(JSON.stringify({ProductType: 'iPhone11,8', ProductVersion: '18.7.10',
     BuildVersion: '22H374', CPUArchitecture: 'arm64e', InternationalMobileEquipmentIdentity: '35'}))
 }
 else if (rest[0] === 'diskspace') {
@@ -46,14 +45,6 @@ else if (rest[0] === 'diskspace') {
 else if (rest[0] === 'batteryregistry') {
   console.log(JSON.stringify({Temperature: 2130, Voltage: 4171, IsCharging: false,
     CurrentCapacity: 100, DesignCapacity: 2942, NominalChargeCapacity: 2769}))
-}
-else if (rest[0] === 'tunnel') {
-  fs.appendFileSync(process.env.FAKE_GO_IOS_TUNNELS, rest.join(' ') + '\\n')
-  console.error(JSON.stringify({level: 'INFO', msg: 'userspace tunnel negotiated'}))
-  if (process.env.FAKE_TUNNEL_EXIT) {
-    process.exit(1)
-  }
-  setInterval(function() {}, 1000)
 }
 else if (rest[0] === 'ostrace') {
   var trace = function(process, message) {
@@ -473,59 +464,6 @@ describe('zebrunner: ios-device go-ios plugins', function() {
       ]).to.deep.equal([true, 'WIFI', 'Lab', -40, 30, 36, 80])
       // the build of iOS comes from lockdown, not a made up architecture
       expect(sent[0]!.message.options.architect).to.equal('')
-    })
-  })
-
-  describe('tunnel', function() {
-    var tunnels: string
-
-    beforeEach(function() {
-      tunnels = path.join(bin, 'tunnels.log')
-      fs.writeFileSync(tunnels, '')
-      process.env.FAKE_GO_IOS_TUNNELS = tunnels
-    })
-
-    afterEach(function() {
-      delete process.env.FAKE_GO_IOS_VERSION
-      delete process.env.FAKE_TUNNEL_EXIT
-    })
-
-    async function started(count: number) {
-      for (var i = 0; i < 150; i++) {
-        var lines = fs.readFileSync(tunnels, 'utf8').split('\n').filter(Boolean)
-        if (lines.length >= count) {
-          return lines
-        }
-        await new Promise(function(resolve) {
-          setTimeout(resolve, 20)
-        })
-      }
-      return fs.readFileSync(tunnels, 'utf8').split('\n').filter(Boolean)
-    }
-
-    it('should run a userspace tunnel for iOS 17.4 and later', async function() {
-      var {plugin} = await loadPlugin('tunnel')
-      expect(await started(1)).to.deep.equal(['tunnel start --userspace'])
-      expect(plugin.isRunning()).to.equal(true)
-      plugin.stop()
-      expect(plugin.isRunning()).to.equal(false)
-    })
-
-    it('should start the tunnel again when it ends', async function() {
-      process.env.FAKE_TUNNEL_EXIT = '1'
-      var {plugin} = await loadPlugin('tunnel')
-      expect(await started(2)).to.have.length(2)
-      plugin.stop()
-    })
-
-    it('should not run a tunnel before iOS 17.4', async function() {
-      process.env.FAKE_GO_IOS_VERSION = '17.3.1'
-      var {plugin} = await loadPlugin('tunnel')
-      await new Promise(function(resolve) {
-        setTimeout(resolve, 500)
-      })
-      expect(fs.readFileSync(tunnels, 'utf8')).to.equal('')
-      expect(plugin.isRunning()).to.equal(false)
     })
   })
 })
