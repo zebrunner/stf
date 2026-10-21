@@ -291,24 +291,18 @@ export function pathActions(paths: PathPoint[][]): W3cSource[] {
   return sources
 }
 
-// replayPath <wdaClient> <contacts>: replays the gesture on the device. The taps of the gesture
-// (touchUp, doubleClick) wait for it through isSwiping; an error of WDA is logged, it does not
-// stop the unit as WdaClient.handleRequest does
-export function replayPath(wdaClient: WdaClientPlugin, contacts: PathContact[]): Promise<void> {
-  var size = wdaClient.deviceSize
-  if (!size || !wdaClient.sessionId) {
+// replayDevicePaths <wdaClient> <paths>: replays the paths of the fingers, in the points of WDA in
+// the current orientation. The taps (touchUp, doubleClick) wait for it through isSwiping; an error
+// of WDA is logged, it does not stop the unit as WdaClient.handleRequest does
+export function replayDevicePaths(
+  wdaClient: WdaClientPlugin
+, points: PathPoint[][]
+): Promise<void> {
+  if (!wdaClient.sessionId || wdaClient.isSwiping) {
     return Promise.resolve()
   }
-  if (wdaClient.deviceType === 'Apple TV') {
-    log.error('Gestures are not supported on Apple TV')
-    return Promise.resolve()
-  }
-  if (wdaClient.isSwiping) {
-    return Promise.resolve()
-  }
-  var orientation = wdaClient.orientation
-  var paths = simplify(normalize(contacts, function(point) {
-    return toDevice(orientation, size!, point)
+  var paths = simplify(points.filter(function(path) {
+    return path.length > 0
   }))
   if (!paths.length) {
     return Promise.resolve()
@@ -334,4 +328,23 @@ export function replayPath(wdaClient: WdaClientPlugin, contacts: PathContact[]):
     .finally(function() {
       wdaClient.isSwiping = false
     })
+}
+
+// replayPath <wdaClient> <contacts>: replays the gesture of the UI (points of the screen from 0 to 1)
+export function replayPath(wdaClient: WdaClientPlugin, contacts: PathContact[]): Promise<void> {
+  var size = wdaClient.deviceSize
+  if (!size || !wdaClient.sessionId) {
+    return Promise.resolve()
+  }
+  if (wdaClient.deviceType === 'Apple TV') {
+    log.error('Gestures are not supported on Apple TV')
+    return Promise.resolve()
+  }
+  if (wdaClient.isSwiping) {
+    return Promise.resolve()
+  }
+  var orientation = wdaClient.orientation
+  return replayDevicePaths(wdaClient, normalize(contacts, function(point) {
+    return toDevice(orientation, size!, point)
+  }))
 }

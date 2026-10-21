@@ -1,6 +1,8 @@
 import Promise from 'bluebird'
 
 import logger from '../../../../util/logger.js'
+// Fork (Zebrunner)
+import {isWdaButton} from '../wda/navigation.js'
 import type {
   IosDeviceSize
 , IosOrientation
@@ -125,6 +127,11 @@ function pressButton(this: IosPressButtonContext, key: string): unknown {
     case 'media_rewind':
       return log.error('Non-existent button in WDA')
     default:
+      // Fork (Zebrunner): WDA fails on a button the device has not, which stopped the unit
+      if (!isWdaButton(key, this.deviceType)) {
+        log.warn('The button %s is not supported on iOS', key)
+        return null
+      }
       return this.pressButton(key)
   }
 }
