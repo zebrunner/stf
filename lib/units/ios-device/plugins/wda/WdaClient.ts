@@ -32,6 +32,8 @@ import type {
 import notifierSyrup from '../devicenotifier.js'
 import activeOrNewSession from './session.js'
 import pushSyrup from '../../support/push.js'
+// Fork (Zebrunner)
+import {startFastInput, stopFastInput} from './fast-input.js'
 
 const LOG_REQUEST_MSG = 'Request has been sent to WDA with data: '
 var NO_RESULT: undefined
@@ -114,6 +116,11 @@ export default syrup.serial()
               this.batteryIosEvent()
             }
             this.setStatus(3)
+            // Fork (Zebrunner): a session STF created gets the settings of WDA for its UI, a
+            // session of Appium keeps its own (WDA resets them in every new session)
+            return startFastInput(this.baseUrl, this.sessionId!, session.created)
+          })
+          .then(() => {
             return this.size()
           })
           .catch((err) => {
@@ -128,15 +135,17 @@ export default syrup.serial()
 
         // A session of somebody else (an Appium test) is left to its owner
         if (currentSessionId === null || !this.ownSession) {
-          return Promise.resolve()
+          // Fork (Zebrunner)
+          return stopFastInput()
         }
 
         log.info('stopping wda session: ', currentSessionId)
         this.ownSession = false
-        return this.handleRequest({
+        // Fork (Zebrunner): the default settings of WDA back first
+        return stopFastInput().then(() => this.handleRequest({
           method: 'DELETE'
         , uri: `${this.baseUrl}/session/${currentSessionId}`
-        })
+        }))
       }
 
     , setStatus: function(status: number) {
@@ -331,13 +340,10 @@ export default syrup.serial()
                   , x: this.orientation === 'PORTRAIT' ? x : y
                   , y: this.orientation === 'PORTRAIT' ? y : x
                   }
-                , {
-                    type: 'pointerMove'
-                  , duration: 0
-                  , x: this.orientation === 'PORTRAIT' ? x : y
-                  , y: this.orientation === 'PORTRAIT' ? y : x
-                  }
-                , {type: 'pointerUp'}
+                  // Fork (Zebrunner): a press instead of a second move, WDA takes a snapshot of
+                  // the app for every move (a tap 1.4 s -> 0.9 s)
+                , {type: 'pointerDown', button: 0}
+                , {type: 'pointerUp', button: 0}
                 ]
               }
             ]

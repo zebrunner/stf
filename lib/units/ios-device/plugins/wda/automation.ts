@@ -1,6 +1,7 @@
 import Promise from 'bluebird'
 
 import request from '../util/rp.js'
+import {withFullSnapshots} from './fast-input.js'
 import type {RpOptions, WdaValueResponse} from '../../../../types/ios-device.js'
 
 export var SETTINGS_BUNDLE_ID = 'com.apple.Preferences'
@@ -52,8 +53,13 @@ export default class WdaAutomation {
     }, options)
   }
 
+  // The fast input settings of WDA (fast-input.ts) cut the snapshots the lookups of elements
+  // need, so an operation runs with the default ones
   protected serial<T>(operation: () => Promise<T>): Promise<T> {
-    var next = queue.then(operation, operation)
+    var full = function() {
+      return withFullSnapshots(operation)
+    }
+    var next = queue.then(full, full)
     queue = next.catch(function() {
       return null
     })
