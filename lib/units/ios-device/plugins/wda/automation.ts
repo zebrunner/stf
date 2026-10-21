@@ -125,9 +125,15 @@ export default class WdaAutomation {
   // findFirst <predicate>: the first element of the predicate, null without one (WDA stops looking
   // at the first match, unlike /elements that snapshots all of them)
   protected findFirst(predicate: string): Promise<string | null> {
+    return this.find('predicate string', predicate)
+  }
+
+  // find <using> <value>: the first element of a locator of WDA (predicate string, class chain,
+  // accessibility id), null without one
+  protected find(using: string, value: string): Promise<string | null> {
     return this.post<WdaValueResponse<WdaElement>>('/element', {
-      using: 'predicate string'
-    , value: predicate
+      using: using
+    , value: value
     })
       .then(function(response) {
         var element = response.value

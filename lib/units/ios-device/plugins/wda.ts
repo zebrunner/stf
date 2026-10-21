@@ -24,6 +24,11 @@ import subSyrup from '../support/sub.js'
 import wdaClientSyrup from './wda/WdaClient.js'
 // Fork (Zebrunner)
 import {replayPath} from './wda/gesture.js'
+import NavigationAutomation, {
+  isNavigationKey
+, pressNavigationKey
+, screenSize
+} from './wda/navigation.js'
 
 interface WdaPlugin {
   connect(): Promise<void>
@@ -51,10 +56,27 @@ export default syrup.serial()
   ): WdaPlugin {
     var log = logger.createLogger('wda:client')
     var Wda: WdaPlugin = Object.create(null)
+    // Fork (Zebrunner): Back and Recents, see wda/navigation.ts
+    var navigation = new NavigationAutomation({
+      baseUrl: wdaClient.baseUrl
+    , sessionId: function() {
+        return wdaClient.sessionId
+      }
+    , screenWidth: function() {
+        return wdaClient.deviceSize ?
+          screenSize(wdaClient.deviceSize, wdaClient.orientation).width :
+          null
+      }
+    })
 
     Wda.connect = function() {
       sub.on('message', wirerouter()
         .on(wire.KeyPressMessage, function(_channel, message) {
+          // Fork (Zebrunner)
+          if (isNavigationKey(message.key)) {
+            pressNavigationKey(wdaClient, navigation, message.key)
+            return
+          }
           if (wdaClient.orientation === 'LANDSCAPE' && message.key === 'home') {
             wdaClient.rotation({orientation: 'PORTRAIT'}).then(function() {
               iosutil.pressButton.call(wdaClient, message.key)
