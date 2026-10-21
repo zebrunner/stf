@@ -11,22 +11,26 @@ import type {DeviceDocument, DeviceGroup, GroupDocument} from '../types/stf.js'
 import type {
   BatteryIosEventFields
 , InitializeIosDeviceStateFields
+, IosDeviceInfoMessageFields
+, IosNetworkEventFields
 , SdkIosVersionFields
 } from '../types/wire.js'
 
 type DbApi = typeof import('./api.js')['default']
 type Db = typeof import('./index.js')['default']
 
-// Display defaults reported for iOS devices until WDA tells the real size
-const DEFAULT_IOS_DEVICE_ARGS = {
-  DENSITY: 2
-, FPS: 60
-, ID: 0
-, ROTATION: 0
-, SECURE: true
-, SIZE: 4.971253395080566
-, XDPI: 294.9670104980469
-, YDPI: 295.56298828125
+// iosNetwork <message>: the network field of a device for an IosNetworkEvent
+export function iosNetwork(message: IosNetworkEventFields) {
+  var wifi = Boolean(message.ssid)
+  return {
+    connected: message.connected
+  , type: message.type || null
+  , ssid: wifi ? message.ssid : null
+  , rssi: wifi ? message.rssi : null
+  , snr: wifi && typeof message.snr === 'number' ? message.snr : null
+  , channel: wifi ? message.channel : null
+  , bandwidth: wifi ? message.bandwidth : null
+  }
 }
 
 export interface SessionDocument {
@@ -44,6 +48,8 @@ export interface ZebrunnerDbApi {
   markDeviceAsUsing(serial: string): Promise<r.WriteResult>
   unmarkDeviceAsUsing(serial: string): Promise<r.WriteResult>
   setDeviceIosBattery(message: BatteryIosEventFields): Promise<r.WriteResult>
+  setIosDeviceInfo(message: IosDeviceInfoMessageFields): Promise<r.WriteResult>
+  setIosNetwork(message: IosNetworkEventFields): Promise<r.WriteResult>
   setDeviceIosVersion(message: SdkIosVersionFields): Promise<void>
   sizeIosDevice(
     serial: string
@@ -104,16 +110,57 @@ export default function extendDbApi(dbapi: DbApi, db: Db) {
     }))
   }
 
+  // The battery from WDA (level and state) or go-ios (also health, temperature and voltage): an
+  // empty field is not known and keeps the stored one
   dbapi.setDeviceIosBattery = function(message) {
+    var battery: Record<string, unknown> = {
+      source: message.source
+    , status: message.status
+    , level: message.level
+    , scale: message.scale
+    }
+    if (message.health) {
+      battery.health = message.health
+    }
+    if (message.temp && message.temp !== 'n/a') {
+      battery.temp = Number(message.temp)
+    }
+    if (typeof message.voltage === 'number') {
+      battery.voltage = message.voltage
+    }
     return db.run(r.table('devices').get<DeviceDocument>(message.id).update({
-      battery: {
-        health: message.health
-      , source: message.source
-      , status: message.status
-      , level: message.level
-      , temp: message.temp
-      , scale: message.scale
-      }
+      battery: battery
+    }))
+  }
+
+  // What go-ios reads from lockdown (plugins/info of the ios-device unit), the fields it knows
+  dbapi.setIosDeviceInfo = function(message) {
+    var info: Record<string, unknown> = {}
+    ;(['manufacturer', 'product', 'version', 'sdk', 'abi', 'cpuPlatform', 'operator'] as const)
+      .forEach(function(field) {
+        if (message[field]) {
+          info[field] = message[field]
+        }
+      })
+    if (message.phone) {
+      var phone: Record<string, string> = {}
+      ;(['imei', 'imsi', 'phoneNumber', 'iccid', 'network'] as const).forEach(function(field) {
+        if (message.phone![field]) {
+          phone[field] = message.phone![field]!
+        }
+      })
+      info.phone = phone
+    }
+    if (message.rom) {
+      info.memory = {rom: message.rom}
+    }
+    return db.run(r.table('devices').get<DeviceDocument>(message.serial).update(info))
+  }
+
+  // The network of an iOS device from its system log; the Wi-Fi fields are null without a link
+  dbapi.setIosNetwork = function(message) {
+    return db.run(r.table('devices').get<DeviceDocument>(message.serial).update({
+      network: iosNetwork(message)
     }))
   }
 
@@ -200,15 +247,17 @@ export default function extendDbApi(dbapi: DbApi, db: Db) {
     , usage: null
     , ios: true
     , iosClientChannel: message.serial
+    // Fork (Zebrunner): the screen of an iOS device: its size comes from WDA, the rest of its model
+    // (lib/util/zebrunner-ios-models.ts); Android fields that iOS has no counterpart for are cleared
     , display: {
-        density: DEFAULT_IOS_DEVICE_ARGS.DENSITY
-      , fps: DEFAULT_IOS_DEVICE_ARGS.FPS
-      , id: DEFAULT_IOS_DEVICE_ARGS.ID
-      , rotation: DEFAULT_IOS_DEVICE_ARGS.ROTATION
-      , secure: DEFAULT_IOS_DEVICE_ARGS.SECURE
-      , size: DEFAULT_IOS_DEVICE_ARGS.SIZE
-      , xdpi: DEFAULT_IOS_DEVICE_ARGS.XDPI
-      , ydpi: DEFAULT_IOS_DEVICE_ARGS.YDPI
+        density: null
+      , fps: null
+      , id: null
+      , rotation: 0
+      , secure: null
+      , size: null
+      , xdpi: null
+      , ydpi: null
       , url: screenWsUrlPattern
       }
     , group: {

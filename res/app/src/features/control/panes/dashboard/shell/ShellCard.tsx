@@ -11,6 +11,9 @@ export function ShellCard({control}: {control: Control}) {
   const {t} = useTranslation()
   const serial = control.target.serial
   const shell = shellStore.useValue(serial)
+  // Fork (Zebrunner): the shell of an iOS device runs go-ios commands (lib/units/ios-device/plugins/shell.ts)
+  const ios = Boolean(control.target.ios)
+  const hint = ios ? t('Runs go-ios commands, e.g. apps --list') : t('Executes remote shell commands')
   const historyIndex = useRef<number | null>(null)
 
   function submit() {
@@ -44,7 +47,7 @@ export function ShellCard({control}: {control: Control}) {
       icon={IconTerminal2}
       color='gray'
       title={t('Shell')}
-      help={{topic: 'Remote-Shell', tooltip: t('Executes remote shell commands')}}
+      help={{topic: 'Remote-Shell', tooltip: hint}}
       actions={(
         <Button
           size='compact-xs'
@@ -69,7 +72,8 @@ export function ShellCard({control}: {control: Control}) {
           onChange={(event) => setShellCommand(serial, event.currentTarget.value)}
           onKeyDown={browseHistory}
           classNames={{input: `shell-input ${classes.monoInput}`}}
-          leftSection={<Text span ff='monospace' c='dimmed' size='sm'>$</Text>}
+          leftSection={<Text span ff='monospace' c='dimmed' size='sm'>{ios ? '$ ios' : '$'}</Text>}
+          leftSectionWidth={ios ? 52 : undefined}
           rightSectionWidth={40}
           rightSection={shell.running ?
             <Loader size='xs' /> :
@@ -89,7 +93,7 @@ export function ShellCard({control}: {control: Control}) {
       <div className={classes.terminal}>
         {shell.lastCommand ?
           <div className={classes.terminalPrompt}>$ {shell.lastCommand}</div> :
-          <div className={classes.terminalHint}>{t('Executes remote shell commands')}</div>}
+          <div className={classes.terminalHint}>{hint}</div>}
         {shell.output && (
           <pre className={`shell-results selectable ${classes.terminalOutput}`}>{shell.output}</pre>
         )}

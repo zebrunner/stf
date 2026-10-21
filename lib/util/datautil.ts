@@ -6,6 +6,8 @@ import deviceData from '@devicefarmer/stf-device-db'
 import browserData from '@devicefarmer/stf-browser-db'
 
 import deviceutil from './deviceutil.js'
+// Fork (Zebrunner)
+import {applyIosModel} from './zebrunner-ios-models.js'
 import type {DeviceDisplayMessageFields} from '../types/wire.js'
 
 interface DisplayView extends Partial<DeviceDisplayMessageFields> {
@@ -56,14 +58,17 @@ datautil.applyData = function<D extends DeviceView>(device: D) {
     device.releasedAt = match.date
     device.image = match.image
     device.cpu = match.cpu
-    device.memory = match.memory
+    // Fork (Zebrunner): the memory an iOS device tells (its capacity through go-ios) wins over the
+    // one of its model, which comes in several capacities
+    device.memory = Object.assign({}, match.memory, device.memory)
     if (match.display && match.display.s) {
       device.display = device.display || {}
       device.display.inches = match.display.s
     }
   }
 
-  return device
+  // Fork (Zebrunner): the hardware of iOS models, which the device db above hardly knows
+  return applyIosModel(device as D & {ios?: boolean})
 }
 
 datautil.applyBrowsers = function<D extends DeviceView>(device: D) {

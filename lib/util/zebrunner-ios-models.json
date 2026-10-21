@@ -1,0 +1,2291 @@
+{
+  "iPad5,1": {
+    "name": "iPad mini 4",
+    "released": "2015-09-09",
+    "display": {
+      "inches": 7.9,
+      "ppi": 326,
+      "fps": 60,
+      "width": 1536,
+      "height": 2048
+    },
+    "cpu": {
+      "name": "Apple A8",
+      "cores": 2,
+      "freq": 1.5
+    },
+    "ram": 2048
+  },
+  "iPad5,2": {
+    "name": "iPad mini 4",
+    "released": "2015-09-09",
+    "display": {
+      "inches": 7.9,
+      "ppi": 326,
+      "fps": 60,
+      "width": 1536,
+      "height": 2048
+    },
+    "cpu": {
+      "name": "Apple A8",
+      "cores": 2,
+      "freq": 1.5
+    },
+    "ram": 2048
+  },
+  "iPad5,3": {
+    "name": "iPad Air 2",
+    "released": "2014-10-22",
+    "display": {
+      "inches": 9.7,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1536,
+      "height": 2048
+    },
+    "cpu": {
+      "name": "Apple A8X",
+      "cores": 3,
+      "freq": 1.5
+    },
+    "ram": 2048
+  },
+  "iPad5,4": {
+    "name": "iPad Air 2",
+    "released": "2014-10-22",
+    "display": {
+      "inches": 9.7,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1536,
+      "height": 2048
+    },
+    "cpu": {
+      "name": "Apple A8X",
+      "cores": 3,
+      "freq": 1.5
+    },
+    "ram": 2048
+  },
+  "iPad6,3": {
+    "name": "iPad Pro 9.7-inch",
+    "released": "2016-03-31",
+    "display": {
+      "inches": 9.7,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1536,
+      "height": 2048
+    },
+    "cpu": {
+      "name": "Apple A9X",
+      "cores": 2,
+      "freq": 2.16
+    },
+    "ram": 2048
+  },
+  "iPad6,4": {
+    "name": "iPad Pro 9.7-inch",
+    "released": "2016-03-31",
+    "display": {
+      "inches": 9.7,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1536,
+      "height": 2048
+    },
+    "cpu": {
+      "name": "Apple A9X",
+      "cores": 2,
+      "freq": 2.16
+    },
+    "ram": 2048
+  },
+  "iPad6,7": {
+    "name": "iPad Pro 12.9-inch (1st generation)",
+    "released": "2015-11-11",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple A9X",
+      "cores": 2,
+      "freq": 2.26
+    },
+    "ram": 4096
+  },
+  "iPad6,8": {
+    "name": "iPad Pro 12.9-inch (1st generation)",
+    "released": "2015-11-11",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple A9X",
+      "cores": 2,
+      "freq": 2.26
+    },
+    "ram": 4096
+  },
+  "iPad6,11": {
+    "name": "iPad (5th generation)",
+    "released": "2017-03-24",
+    "display": {
+      "inches": 9.7,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1536,
+      "height": 2048
+    },
+    "cpu": {
+      "name": "Apple A9",
+      "cores": 2,
+      "freq": 1.85
+    },
+    "ram": 2048
+  },
+  "iPad6,12": {
+    "name": "iPad (5th generation)",
+    "released": "2017-03-24",
+    "display": {
+      "inches": 9.7,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1536,
+      "height": 2048
+    },
+    "cpu": {
+      "name": "Apple A9",
+      "cores": 2,
+      "freq": 1.85
+    },
+    "ram": 2048
+  },
+  "iPad7,1": {
+    "name": "iPad Pro 12.9-inch (2nd generation)",
+    "released": "2017-06-13",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 120,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple A10X Fusion",
+      "cores": 6,
+      "freq": 2.38
+    },
+    "ram": 4096
+  },
+  "iPad7,2": {
+    "name": "iPad Pro 12.9-inch (2nd generation)",
+    "released": "2017-06-13",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 120,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple A10X Fusion",
+      "cores": 6,
+      "freq": 2.38
+    },
+    "ram": 4096
+  },
+  "iPad7,3": {
+    "name": "iPad Pro 10.5-inch",
+    "released": "2017-06-13",
+    "display": {
+      "inches": 10.5,
+      "ppi": 264,
+      "fps": 120,
+      "width": 1668,
+      "height": 2224
+    },
+    "cpu": {
+      "name": "Apple A10X Fusion",
+      "cores": 6,
+      "freq": 2.38
+    },
+    "ram": 4096
+  },
+  "iPad7,4": {
+    "name": "iPad Pro 10.5-inch",
+    "released": "2017-06-13",
+    "display": {
+      "inches": 10.5,
+      "ppi": 264,
+      "fps": 120,
+      "width": 1668,
+      "height": 2224
+    },
+    "cpu": {
+      "name": "Apple A10X Fusion",
+      "cores": 6,
+      "freq": 2.38
+    },
+    "ram": 4096
+  },
+  "iPad7,5": {
+    "name": "iPad (6th generation)",
+    "released": "2018-03-27",
+    "display": {
+      "inches": 9.7,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1536,
+      "height": 2048
+    },
+    "cpu": {
+      "name": "Apple A10 Fusion",
+      "cores": 4,
+      "freq": 2.34
+    },
+    "ram": 2048
+  },
+  "iPad7,6": {
+    "name": "iPad (6th generation)",
+    "released": "2018-03-27",
+    "display": {
+      "inches": 9.7,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1536,
+      "height": 2048
+    },
+    "cpu": {
+      "name": "Apple A10 Fusion",
+      "cores": 4,
+      "freq": 2.34
+    },
+    "ram": 2048
+  },
+  "iPad7,11": {
+    "name": "iPad (7th generation)",
+    "released": "2019-09-25",
+    "display": {
+      "inches": 10.2,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1620,
+      "height": 2160
+    },
+    "cpu": {
+      "name": "Apple A10 Fusion",
+      "cores": 4,
+      "freq": 2.34
+    },
+    "ram": 3072
+  },
+  "iPad7,12": {
+    "name": "iPad (7th generation)",
+    "released": "2019-09-25",
+    "display": {
+      "inches": 10.2,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1620,
+      "height": 2160
+    },
+    "cpu": {
+      "name": "Apple A10 Fusion",
+      "cores": 4,
+      "freq": 2.34
+    },
+    "ram": 3072
+  },
+  "iPad8,1": {
+    "name": "iPad Pro 11-inch (1st generation)",
+    "released": "2018-11-07",
+    "display": {
+      "inches": 11.0,
+      "ppi": 264,
+      "fps": 120,
+      "width": 1668,
+      "height": 2388
+    },
+    "cpu": {
+      "name": "Apple A12X Bionic",
+      "cores": 8,
+      "freq": 2.49
+    },
+    "ram": 4096,
+    "ramNote": "1 TB storage configuration ships with 6 GB RAM; other storage tiers have 4 GB."
+  },
+  "iPad8,2": {
+    "name": "iPad Pro 11-inch (1st generation)",
+    "released": "2018-11-07",
+    "display": {
+      "inches": 11.0,
+      "ppi": 264,
+      "fps": 120,
+      "width": 1668,
+      "height": 2388
+    },
+    "cpu": {
+      "name": "Apple A12X Bionic",
+      "cores": 8,
+      "freq": 2.49
+    },
+    "ram": 4096,
+    "ramNote": "1 TB storage configuration ships with 6 GB RAM; other storage tiers have 4 GB."
+  },
+  "iPad8,3": {
+    "name": "iPad Pro 11-inch (1st generation)",
+    "released": "2018-11-07",
+    "display": {
+      "inches": 11.0,
+      "ppi": 264,
+      "fps": 120,
+      "width": 1668,
+      "height": 2388
+    },
+    "cpu": {
+      "name": "Apple A12X Bionic",
+      "cores": 8,
+      "freq": 2.49
+    },
+    "ram": 4096,
+    "ramNote": "1 TB storage configuration ships with 6 GB RAM; other storage tiers have 4 GB."
+  },
+  "iPad8,4": {
+    "name": "iPad Pro 11-inch (1st generation)",
+    "released": "2018-11-07",
+    "display": {
+      "inches": 11.0,
+      "ppi": 264,
+      "fps": 120,
+      "width": 1668,
+      "height": 2388
+    },
+    "cpu": {
+      "name": "Apple A12X Bionic",
+      "cores": 8,
+      "freq": 2.49
+    },
+    "ram": 4096,
+    "ramNote": "1 TB storage configuration ships with 6 GB RAM; other storage tiers have 4 GB."
+  },
+  "iPad8,5": {
+    "name": "iPad Pro 12.9-inch (3rd generation)",
+    "released": "2018-11-07",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 120,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple A12X Bionic",
+      "cores": 8,
+      "freq": 2.49
+    },
+    "ram": 4096,
+    "ramNote": "1 TB storage configuration ships with 6 GB RAM; other storage tiers have 4 GB."
+  },
+  "iPad8,6": {
+    "name": "iPad Pro 12.9-inch (3rd generation)",
+    "released": "2018-11-07",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 120,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple A12X Bionic",
+      "cores": 8,
+      "freq": 2.49
+    },
+    "ram": 4096,
+    "ramNote": "1 TB storage configuration ships with 6 GB RAM; other storage tiers have 4 GB."
+  },
+  "iPad8,7": {
+    "name": "iPad Pro 12.9-inch (3rd generation)",
+    "released": "2018-11-07",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 120,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple A12X Bionic",
+      "cores": 8,
+      "freq": 2.49
+    },
+    "ram": 4096,
+    "ramNote": "1 TB storage configuration ships with 6 GB RAM; other storage tiers have 4 GB."
+  },
+  "iPad8,8": {
+    "name": "iPad Pro 12.9-inch (3rd generation)",
+    "released": "2018-11-07",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 120,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple A12X Bionic",
+      "cores": 8,
+      "freq": 2.49
+    },
+    "ram": 4096,
+    "ramNote": "1 TB storage configuration ships with 6 GB RAM; other storage tiers have 4 GB."
+  },
+  "iPad8,9": {
+    "name": "iPad Pro 11-inch (2nd generation)",
+    "released": "2020-03-25",
+    "display": {
+      "inches": 11.0,
+      "ppi": 264,
+      "fps": 120,
+      "width": 1668,
+      "height": 2388
+    },
+    "cpu": {
+      "name": "Apple A12Z Bionic",
+      "cores": 8,
+      "freq": 2.49
+    },
+    "ram": 6144
+  },
+  "iPad8,10": {
+    "name": "iPad Pro 11-inch (2nd generation)",
+    "released": "2020-03-25",
+    "display": {
+      "inches": 11.0,
+      "ppi": 264,
+      "fps": 120,
+      "width": 1668,
+      "height": 2388
+    },
+    "cpu": {
+      "name": "Apple A12Z Bionic",
+      "cores": 8,
+      "freq": 2.49
+    },
+    "ram": 6144
+  },
+  "iPad8,11": {
+    "name": "iPad Pro 12.9-inch (4th generation)",
+    "released": "2020-03-25",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 120,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple A12Z Bionic",
+      "cores": 8,
+      "freq": 2.49
+    },
+    "ram": 6144
+  },
+  "iPad8,12": {
+    "name": "iPad Pro 12.9-inch (4th generation)",
+    "released": "2020-03-25",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 120,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple A12Z Bionic",
+      "cores": 8,
+      "freq": 2.49
+    },
+    "ram": 6144
+  },
+  "iPad11,1": {
+    "name": "iPad mini (5th generation)",
+    "released": "2019-03-18",
+    "display": {
+      "inches": 7.9,
+      "ppi": 326,
+      "fps": 60,
+      "width": 1536,
+      "height": 2048
+    },
+    "cpu": {
+      "name": "Apple A12 Bionic",
+      "cores": 6,
+      "freq": 2.49
+    },
+    "ram": 3072
+  },
+  "iPad11,2": {
+    "name": "iPad mini (5th generation)",
+    "released": "2019-03-18",
+    "display": {
+      "inches": 7.9,
+      "ppi": 326,
+      "fps": 60,
+      "width": 1536,
+      "height": 2048
+    },
+    "cpu": {
+      "name": "Apple A12 Bionic",
+      "cores": 6,
+      "freq": 2.49
+    },
+    "ram": 3072
+  },
+  "iPad11,3": {
+    "name": "iPad Air (3rd generation)",
+    "released": "2019-03-18",
+    "display": {
+      "inches": 10.5,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1668,
+      "height": 2224
+    },
+    "cpu": {
+      "name": "Apple A12 Bionic",
+      "cores": 6,
+      "freq": 2.49
+    },
+    "ram": 3072
+  },
+  "iPad11,4": {
+    "name": "iPad Air (3rd generation)",
+    "released": "2019-03-18",
+    "display": {
+      "inches": 10.5,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1668,
+      "height": 2224
+    },
+    "cpu": {
+      "name": "Apple A12 Bionic",
+      "cores": 6,
+      "freq": 2.49
+    },
+    "ram": 3072
+  },
+  "iPad11,6": {
+    "name": "iPad (8th generation)",
+    "released": "2020-09-18",
+    "display": {
+      "inches": 10.2,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1620,
+      "height": 2160
+    },
+    "cpu": {
+      "name": "Apple A12 Bionic",
+      "cores": 6,
+      "freq": 2.49
+    },
+    "ram": 3072
+  },
+  "iPad11,7": {
+    "name": "iPad (8th generation)",
+    "released": "2020-09-18",
+    "display": {
+      "inches": 10.2,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1620,
+      "height": 2160
+    },
+    "cpu": {
+      "name": "Apple A12 Bionic",
+      "cores": 6,
+      "freq": 2.49
+    },
+    "ram": 3072
+  },
+  "iPad12,1": {
+    "name": "iPad (9th generation)",
+    "released": "2021-09-24",
+    "display": {
+      "inches": 10.2,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1620,
+      "height": 2160
+    },
+    "cpu": {
+      "name": "Apple A13 Bionic",
+      "cores": 6,
+      "freq": 2.66
+    },
+    "ram": 3072
+  },
+  "iPad12,2": {
+    "name": "iPad (9th generation)",
+    "released": "2021-09-24",
+    "display": {
+      "inches": 10.2,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1620,
+      "height": 2160
+    },
+    "cpu": {
+      "name": "Apple A13 Bionic",
+      "cores": 6,
+      "freq": 2.66
+    },
+    "ram": 3072
+  },
+  "iPad13,1": {
+    "name": "iPad Air (4th generation)",
+    "released": "2020-10-23",
+    "display": {
+      "inches": 10.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1640,
+      "height": 2360
+    },
+    "cpu": {
+      "name": "Apple A14 Bionic",
+      "cores": 6,
+      "freq": 3.09
+    },
+    "ram": 4096
+  },
+  "iPad13,2": {
+    "name": "iPad Air (4th generation)",
+    "released": "2020-10-23",
+    "display": {
+      "inches": 10.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1640,
+      "height": 2360
+    },
+    "cpu": {
+      "name": "Apple A14 Bionic",
+      "cores": 6,
+      "freq": 3.09
+    },
+    "ram": 4096
+  },
+  "iPad13,4": {
+    "name": "iPad Pro 11-inch (3rd generation)",
+    "released": "2021-05-21",
+    "display": {
+      "inches": 11.0,
+      "ppi": 264,
+      "fps": 120,
+      "width": 1668,
+      "height": 2388
+    },
+    "cpu": {
+      "name": "Apple M1",
+      "cores": 8,
+      "freq": 3.2
+    },
+    "ram": 8192,
+    "ramNote": "1 TB and 2 TB storage configurations ship with 16 GB RAM; lower storage tiers have 8 GB."
+  },
+  "iPad13,5": {
+    "name": "iPad Pro 11-inch (3rd generation)",
+    "released": "2021-05-21",
+    "display": {
+      "inches": 11.0,
+      "ppi": 264,
+      "fps": 120,
+      "width": 1668,
+      "height": 2388
+    },
+    "cpu": {
+      "name": "Apple M1",
+      "cores": 8,
+      "freq": 3.2
+    },
+    "ram": 8192,
+    "ramNote": "1 TB and 2 TB storage configurations ship with 16 GB RAM; lower storage tiers have 8 GB."
+  },
+  "iPad13,6": {
+    "name": "iPad Pro 11-inch (3rd generation)",
+    "released": "2021-05-21",
+    "display": {
+      "inches": 11.0,
+      "ppi": 264,
+      "fps": 120,
+      "width": 1668,
+      "height": 2388
+    },
+    "cpu": {
+      "name": "Apple M1",
+      "cores": 8,
+      "freq": 3.2
+    },
+    "ram": 8192,
+    "ramNote": "1 TB and 2 TB storage configurations ship with 16 GB RAM; lower storage tiers have 8 GB."
+  },
+  "iPad13,7": {
+    "name": "iPad Pro 11-inch (3rd generation)",
+    "released": "2021-05-21",
+    "display": {
+      "inches": 11.0,
+      "ppi": 264,
+      "fps": 120,
+      "width": 1668,
+      "height": 2388
+    },
+    "cpu": {
+      "name": "Apple M1",
+      "cores": 8,
+      "freq": 3.2
+    },
+    "ram": 8192,
+    "ramNote": "1 TB and 2 TB storage configurations ship with 16 GB RAM; lower storage tiers have 8 GB."
+  },
+  "iPad13,8": {
+    "name": "iPad Pro 12.9-inch (5th generation)",
+    "released": "2021-05-21",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 120,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple M1",
+      "cores": 8,
+      "freq": 3.2
+    },
+    "ram": 8192,
+    "ramNote": "1 TB and 2 TB storage configurations ship with 16 GB RAM; lower storage tiers have 8 GB."
+  },
+  "iPad13,9": {
+    "name": "iPad Pro 12.9-inch (5th generation)",
+    "released": "2021-05-21",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 120,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple M1",
+      "cores": 8,
+      "freq": 3.2
+    },
+    "ram": 8192,
+    "ramNote": "1 TB and 2 TB storage configurations ship with 16 GB RAM; lower storage tiers have 8 GB."
+  },
+  "iPad13,10": {
+    "name": "iPad Pro 12.9-inch (5th generation)",
+    "released": "2021-05-21",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 120,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple M1",
+      "cores": 8,
+      "freq": 3.2
+    },
+    "ram": 8192,
+    "ramNote": "1 TB and 2 TB storage configurations ship with 16 GB RAM; lower storage tiers have 8 GB."
+  },
+  "iPad13,11": {
+    "name": "iPad Pro 12.9-inch (5th generation)",
+    "released": "2021-05-21",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 120,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple M1",
+      "cores": 8,
+      "freq": 3.2
+    },
+    "ram": 8192,
+    "ramNote": "1 TB and 2 TB storage configurations ship with 16 GB RAM; lower storage tiers have 8 GB."
+  },
+  "iPad13,16": {
+    "name": "iPad Air (5th generation)",
+    "released": "2022-03-18",
+    "display": {
+      "inches": 10.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1640,
+      "height": 2360
+    },
+    "cpu": {
+      "name": "Apple M1",
+      "cores": 8,
+      "freq": 3.2
+    },
+    "ram": 8192
+  },
+  "iPad13,17": {
+    "name": "iPad Air (5th generation)",
+    "released": "2022-03-18",
+    "display": {
+      "inches": 10.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1640,
+      "height": 2360
+    },
+    "cpu": {
+      "name": "Apple M1",
+      "cores": 8,
+      "freq": 3.2
+    },
+    "ram": 8192
+  },
+  "iPad13,18": {
+    "name": "iPad (10th generation)",
+    "released": "2022-10-26",
+    "display": {
+      "inches": 10.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1640,
+      "height": 2360
+    },
+    "cpu": {
+      "name": "Apple A14 Bionic",
+      "cores": 6,
+      "freq": 3.09
+    },
+    "ram": 4096
+  },
+  "iPad13,19": {
+    "name": "iPad (10th generation)",
+    "released": "2022-10-26",
+    "display": {
+      "inches": 10.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1640,
+      "height": 2360
+    },
+    "cpu": {
+      "name": "Apple A14 Bionic",
+      "cores": 6,
+      "freq": 3.09
+    },
+    "ram": 4096
+  },
+  "iPad14,1": {
+    "name": "iPad mini (6th generation)",
+    "released": "2021-09-24",
+    "display": {
+      "inches": 8.3,
+      "ppi": 326,
+      "fps": 60,
+      "width": 1488,
+      "height": 2266
+    },
+    "cpu": {
+      "name": "Apple A15 Bionic",
+      "cores": 6,
+      "freq": 2.93
+    },
+    "ram": 4096
+  },
+  "iPad14,2": {
+    "name": "iPad mini (6th generation)",
+    "released": "2021-09-24",
+    "display": {
+      "inches": 8.3,
+      "ppi": 326,
+      "fps": 60,
+      "width": 1488,
+      "height": 2266
+    },
+    "cpu": {
+      "name": "Apple A15 Bionic",
+      "cores": 6,
+      "freq": 2.93
+    },
+    "ram": 4096
+  },
+  "iPad14,3": {
+    "name": "iPad Pro 11-inch (4th generation)",
+    "released": "2022-10-26",
+    "display": {
+      "inches": 11.0,
+      "ppi": 264,
+      "fps": 120,
+      "width": 1668,
+      "height": 2388
+    },
+    "cpu": {
+      "name": "Apple M2",
+      "cores": 8,
+      "freq": 3.49
+    },
+    "ram": 8192,
+    "ramNote": "1 TB and 2 TB storage configurations ship with 16 GB RAM; lower storage tiers have 8 GB."
+  },
+  "iPad14,4": {
+    "name": "iPad Pro 11-inch (4th generation)",
+    "released": "2022-10-26",
+    "display": {
+      "inches": 11.0,
+      "ppi": 264,
+      "fps": 120,
+      "width": 1668,
+      "height": 2388
+    },
+    "cpu": {
+      "name": "Apple M2",
+      "cores": 8,
+      "freq": 3.49
+    },
+    "ram": 8192,
+    "ramNote": "1 TB and 2 TB storage configurations ship with 16 GB RAM; lower storage tiers have 8 GB."
+  },
+  "iPad14,5": {
+    "name": "iPad Pro 12.9-inch (6th generation)",
+    "released": "2022-10-26",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 120,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple M2",
+      "cores": 8,
+      "freq": 3.49
+    },
+    "ram": 8192,
+    "ramNote": "1 TB and 2 TB storage configurations ship with 16 GB RAM; lower storage tiers have 8 GB."
+  },
+  "iPad14,6": {
+    "name": "iPad Pro 12.9-inch (6th generation)",
+    "released": "2022-10-26",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 120,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple M2",
+      "cores": 8,
+      "freq": 3.49
+    },
+    "ram": 8192,
+    "ramNote": "1 TB and 2 TB storage configurations ship with 16 GB RAM; lower storage tiers have 8 GB."
+  },
+  "iPad14,8": {
+    "name": "iPad Air 11-inch (M2)",
+    "released": "2024-05-15",
+    "display": {
+      "inches": 10.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1640,
+      "height": 2360
+    },
+    "cpu": {
+      "name": "Apple M2",
+      "cores": 8,
+      "freq": 3.48
+    },
+    "ram": 8192
+  },
+  "iPad14,9": {
+    "name": "iPad Air 11-inch (M2)",
+    "released": "2024-05-15",
+    "display": {
+      "inches": 10.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1640,
+      "height": 2360
+    },
+    "cpu": {
+      "name": "Apple M2",
+      "cores": 8,
+      "freq": 3.48
+    },
+    "ram": 8192
+  },
+  "iPad14,10": {
+    "name": "iPad Air 13-inch (M2)",
+    "released": "2024-05-15",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple M2",
+      "cores": 8,
+      "freq": 3.48
+    },
+    "ram": 8192
+  },
+  "iPad14,11": {
+    "name": "iPad Air 13-inch (M2)",
+    "released": "2024-05-15",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple M2",
+      "cores": 8,
+      "freq": 3.48
+    },
+    "ram": 8192
+  },
+  "iPad15,3": {
+    "name": "iPad Air 11-inch (M3)",
+    "released": "2025-03-12",
+    "display": {
+      "inches": 10.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1640,
+      "height": 2360
+    },
+    "cpu": {
+      "name": "Apple M3",
+      "cores": 8,
+      "freq": 4.06
+    },
+    "ram": 8192
+  },
+  "iPad15,4": {
+    "name": "iPad Air 11-inch (M3)",
+    "released": "2025-03-12",
+    "display": {
+      "inches": 10.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1640,
+      "height": 2360
+    },
+    "cpu": {
+      "name": "Apple M3",
+      "cores": 8,
+      "freq": 4.06
+    },
+    "ram": 8192
+  },
+  "iPad15,5": {
+    "name": "iPad Air 13-inch (M3)",
+    "released": "2025-03-12",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple M3",
+      "cores": 8,
+      "freq": 4.06
+    },
+    "ram": 8192
+  },
+  "iPad15,6": {
+    "name": "iPad Air 13-inch (M3)",
+    "released": "2025-03-12",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple M3",
+      "cores": 8,
+      "freq": 4.06
+    },
+    "ram": 8192
+  },
+  "iPad15,7": {
+    "name": "iPad (11th generation)",
+    "released": "2025-03-12",
+    "display": {
+      "inches": 10.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1640,
+      "height": 2360
+    },
+    "cpu": {
+      "name": "Apple A16",
+      "cores": 5,
+      "freq": 3.44
+    },
+    "ram": 6144
+  },
+  "iPad15,8": {
+    "name": "iPad (11th generation)",
+    "released": "2025-03-12",
+    "display": {
+      "inches": 10.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1640,
+      "height": 2360
+    },
+    "cpu": {
+      "name": "Apple A16",
+      "cores": 5,
+      "freq": 3.44
+    },
+    "ram": 6144
+  },
+  "iPad16,1": {
+    "name": "iPad mini (A17 Pro)",
+    "released": "2024-10-23",
+    "display": {
+      "inches": 8.3,
+      "ppi": 326,
+      "fps": 60,
+      "width": 1488,
+      "height": 2266
+    },
+    "cpu": {
+      "name": "Apple A17 Pro",
+      "cores": 6,
+      "freq": 3.78
+    },
+    "ram": 8192
+  },
+  "iPad16,2": {
+    "name": "iPad mini (A17 Pro)",
+    "released": "2024-10-23",
+    "display": {
+      "inches": 8.3,
+      "ppi": 326,
+      "fps": 60,
+      "width": 1488,
+      "height": 2266
+    },
+    "cpu": {
+      "name": "Apple A17 Pro",
+      "cores": 6,
+      "freq": 3.78
+    },
+    "ram": 8192
+  },
+  "iPad16,3": {
+    "name": "iPad Pro 11-inch (M4)",
+    "released": "2024-05-15",
+    "display": {
+      "inches": 11.1,
+      "ppi": 264,
+      "fps": 120,
+      "width": 1668,
+      "height": 2420
+    },
+    "cpu": {
+      "name": "Apple M4",
+      "cores": 9,
+      "freq": 4.39
+    },
+    "ram": 8192,
+    "ramNote": "256/512 GB tiers ship with 8 GB RAM and a 9-core CPU; 1 TB/2 TB tiers ship with 16 GB RAM and a 10-core CPU."
+  },
+  "iPad16,4": {
+    "name": "iPad Pro 11-inch (M4)",
+    "released": "2024-05-15",
+    "display": {
+      "inches": 11.1,
+      "ppi": 264,
+      "fps": 120,
+      "width": 1668,
+      "height": 2420
+    },
+    "cpu": {
+      "name": "Apple M4",
+      "cores": 9,
+      "freq": 4.39
+    },
+    "ram": 8192,
+    "ramNote": "256/512 GB tiers ship with 8 GB RAM and a 9-core CPU; 1 TB/2 TB tiers ship with 16 GB RAM and a 10-core CPU."
+  },
+  "iPad16,5": {
+    "name": "iPad Pro 13-inch (M4)",
+    "released": "2024-05-15",
+    "display": {
+      "inches": 13.0,
+      "ppi": 264,
+      "fps": 120,
+      "width": 2064,
+      "height": 2752
+    },
+    "cpu": {
+      "name": "Apple M4",
+      "cores": 9,
+      "freq": 4.39
+    },
+    "ram": 8192,
+    "ramNote": "256/512 GB tiers ship with 8 GB RAM and a 9-core CPU; 1 TB/2 TB tiers ship with 16 GB RAM and a 10-core CPU."
+  },
+  "iPad16,6": {
+    "name": "iPad Pro 13-inch (M4)",
+    "released": "2024-05-15",
+    "display": {
+      "inches": 13.0,
+      "ppi": 264,
+      "fps": 120,
+      "width": 2064,
+      "height": 2752
+    },
+    "cpu": {
+      "name": "Apple M4",
+      "cores": 9,
+      "freq": 4.39
+    },
+    "ram": 8192,
+    "ramNote": "256/512 GB tiers ship with 8 GB RAM and a 9-core CPU; 1 TB/2 TB tiers ship with 16 GB RAM and a 10-core CPU."
+  },
+  "iPad16,8": {
+    "name": "iPad Air 11-inch (M4)",
+    "released": "2026-03-11",
+    "display": {
+      "inches": 10.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1640,
+      "height": 2360
+    },
+    "cpu": {
+      "name": "Apple M4",
+      "cores": 8,
+      "freq": 4.1
+    },
+    "ram": 12288
+  },
+  "iPad16,9": {
+    "name": "iPad Air 11-inch (M4)",
+    "released": "2026-03-11",
+    "display": {
+      "inches": 10.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 1640,
+      "height": 2360
+    },
+    "cpu": {
+      "name": "Apple M4",
+      "cores": 8,
+      "freq": 4.1
+    },
+    "ram": 12288
+  },
+  "iPad16,10": {
+    "name": "iPad Air 13-inch (M4)",
+    "released": "2026-03-11",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple M4",
+      "cores": 8,
+      "freq": 4.1
+    },
+    "ram": 12288
+  },
+  "iPad16,11": {
+    "name": "iPad Air 13-inch (M4)",
+    "released": "2026-03-11",
+    "display": {
+      "inches": 12.9,
+      "ppi": 264,
+      "fps": 60,
+      "width": 2048,
+      "height": 2732
+    },
+    "cpu": {
+      "name": "Apple M4",
+      "cores": 8,
+      "freq": 4.1
+    },
+    "ram": 12288
+  },
+  "iPad17,1": {
+    "name": "iPad Pro 11-inch (M5)",
+    "released": "2025-10-22",
+    "display": {
+      "inches": 11.1,
+      "ppi": 264,
+      "fps": 120,
+      "width": 1668,
+      "height": 2420
+    },
+    "cpu": {
+      "name": "Apple M5",
+      "cores": 9,
+      "freq": 4.42
+    },
+    "ram": 12288,
+    "ramNote": "256/512 GB tiers ship with 12 GB RAM and a 9-core CPU; 1 TB/2 TB tiers ship with 16 GB RAM and a 10-core CPU."
+  },
+  "iPad17,2": {
+    "name": "iPad Pro 11-inch (M5)",
+    "released": "2025-10-22",
+    "display": {
+      "inches": 11.1,
+      "ppi": 264,
+      "fps": 120,
+      "width": 1668,
+      "height": 2420
+    },
+    "cpu": {
+      "name": "Apple M5",
+      "cores": 9,
+      "freq": 4.42
+    },
+    "ram": 12288,
+    "ramNote": "256/512 GB tiers ship with 12 GB RAM and a 9-core CPU; 1 TB/2 TB tiers ship with 16 GB RAM and a 10-core CPU."
+  },
+  "iPad17,3": {
+    "name": "iPad Pro 13-inch (M5)",
+    "released": "2025-10-22",
+    "display": {
+      "inches": 13.0,
+      "ppi": 264,
+      "fps": 120,
+      "width": 2064,
+      "height": 2752
+    },
+    "cpu": {
+      "name": "Apple M5",
+      "cores": 9,
+      "freq": 4.42
+    },
+    "ram": 12288,
+    "ramNote": "256/512 GB tiers ship with 12 GB RAM and a 9-core CPU; 1 TB/2 TB tiers ship with 16 GB RAM and a 10-core CPU."
+  },
+  "iPad17,4": {
+    "name": "iPad Pro 13-inch (M5)",
+    "released": "2025-10-22",
+    "display": {
+      "inches": 13.0,
+      "ppi": 264,
+      "fps": 120,
+      "width": 2064,
+      "height": 2752
+    },
+    "cpu": {
+      "name": "Apple M5",
+      "cores": 9,
+      "freq": 4.42
+    },
+    "ram": 12288,
+    "ramNote": "256/512 GB tiers ship with 12 GB RAM and a 9-core CPU; 1 TB/2 TB tiers ship with 16 GB RAM and a 10-core CPU."
+  },
+  "iPhone8,1": {
+    "name": "iPhone 6s",
+    "released": "2015-09-25",
+    "display": {
+      "inches": 4.7,
+      "ppi": 326,
+      "fps": 60,
+      "width": 750,
+      "height": 1334
+    },
+    "cpu": {
+      "name": "Apple A9",
+      "cores": 2,
+      "freq": 1.85
+    },
+    "ram": 2048
+  },
+  "iPhone8,2": {
+    "name": "iPhone 6s Plus",
+    "released": "2015-09-25",
+    "display": {
+      "inches": 5.5,
+      "ppi": 401,
+      "fps": 60,
+      "width": 1080,
+      "height": 1920
+    },
+    "cpu": {
+      "name": "Apple A9",
+      "cores": 2,
+      "freq": 1.85
+    },
+    "ram": 2048
+  },
+  "iPhone8,4": {
+    "name": "iPhone SE (1st generation)",
+    "released": "2016-03-31",
+    "display": {
+      "inches": 4.0,
+      "ppi": 326,
+      "fps": 60,
+      "width": 640,
+      "height": 1136
+    },
+    "cpu": {
+      "name": "Apple A9",
+      "cores": 2,
+      "freq": 1.85
+    },
+    "ram": 2048
+  },
+  "iPhone9,1": {
+    "name": "iPhone 7",
+    "released": "2016-09-16",
+    "display": {
+      "inches": 4.7,
+      "ppi": 326,
+      "fps": 60,
+      "width": 750,
+      "height": 1334
+    },
+    "cpu": {
+      "name": "Apple A10 Fusion",
+      "cores": 4,
+      "freq": 2.34
+    },
+    "ram": 2048
+  },
+  "iPhone9,2": {
+    "name": "iPhone 7 Plus",
+    "released": "2016-09-16",
+    "display": {
+      "inches": 5.5,
+      "ppi": 401,
+      "fps": 60,
+      "width": 1080,
+      "height": 1920
+    },
+    "cpu": {
+      "name": "Apple A10 Fusion",
+      "cores": 4,
+      "freq": 2.34
+    },
+    "ram": 3072
+  },
+  "iPhone9,3": {
+    "name": "iPhone 7",
+    "released": "2016-09-16",
+    "display": {
+      "inches": 4.7,
+      "ppi": 326,
+      "fps": 60,
+      "width": 750,
+      "height": 1334
+    },
+    "cpu": {
+      "name": "Apple A10 Fusion",
+      "cores": 4,
+      "freq": 2.34
+    },
+    "ram": 2048
+  },
+  "iPhone9,4": {
+    "name": "iPhone 7 Plus",
+    "released": "2016-09-16",
+    "display": {
+      "inches": 5.5,
+      "ppi": 401,
+      "fps": 60,
+      "width": 1080,
+      "height": 1920
+    },
+    "cpu": {
+      "name": "Apple A10 Fusion",
+      "cores": 4,
+      "freq": 2.34
+    },
+    "ram": 3072
+  },
+  "iPhone10,1": {
+    "name": "iPhone 8",
+    "released": "2017-09-22",
+    "display": {
+      "inches": 4.7,
+      "ppi": 326,
+      "fps": 60,
+      "width": 750,
+      "height": 1334
+    },
+    "cpu": {
+      "name": "Apple A11 Bionic",
+      "cores": 6,
+      "freq": 2.39
+    },
+    "ram": 2048
+  },
+  "iPhone10,2": {
+    "name": "iPhone 8 Plus",
+    "released": "2017-09-22",
+    "display": {
+      "inches": 5.5,
+      "ppi": 401,
+      "fps": 60,
+      "width": 1080,
+      "height": 1920
+    },
+    "cpu": {
+      "name": "Apple A11 Bionic",
+      "cores": 6,
+      "freq": 2.39
+    },
+    "ram": 3072
+  },
+  "iPhone10,3": {
+    "name": "iPhone X",
+    "released": "2017-11-03",
+    "display": {
+      "inches": 5.8,
+      "ppi": 458,
+      "fps": 60,
+      "width": 1125,
+      "height": 2436
+    },
+    "cpu": {
+      "name": "Apple A11 Bionic",
+      "cores": 6,
+      "freq": 2.39
+    },
+    "ram": 3072
+  },
+  "iPhone10,4": {
+    "name": "iPhone 8",
+    "released": "2017-09-22",
+    "display": {
+      "inches": 4.7,
+      "ppi": 326,
+      "fps": 60,
+      "width": 750,
+      "height": 1334
+    },
+    "cpu": {
+      "name": "Apple A11 Bionic",
+      "cores": 6,
+      "freq": 2.39
+    },
+    "ram": 2048
+  },
+  "iPhone10,5": {
+    "name": "iPhone 8 Plus",
+    "released": "2017-09-22",
+    "display": {
+      "inches": 5.5,
+      "ppi": 401,
+      "fps": 60,
+      "width": 1080,
+      "height": 1920
+    },
+    "cpu": {
+      "name": "Apple A11 Bionic",
+      "cores": 6,
+      "freq": 2.39
+    },
+    "ram": 3072
+  },
+  "iPhone10,6": {
+    "name": "iPhone X",
+    "released": "2017-11-03",
+    "display": {
+      "inches": 5.8,
+      "ppi": 458,
+      "fps": 60,
+      "width": 1125,
+      "height": 2436
+    },
+    "cpu": {
+      "name": "Apple A11 Bionic",
+      "cores": 6,
+      "freq": 2.39
+    },
+    "ram": 3072
+  },
+  "iPhone11,2": {
+    "name": "iPhone XS",
+    "released": "2018-09-21",
+    "display": {
+      "inches": 5.8,
+      "ppi": 458,
+      "fps": 60,
+      "width": 1125,
+      "height": 2436
+    },
+    "cpu": {
+      "name": "Apple A12 Bionic",
+      "cores": 6,
+      "freq": 2.49
+    },
+    "ram": 4096
+  },
+  "iPhone11,4": {
+    "name": "iPhone XS Max",
+    "released": "2018-09-21",
+    "display": {
+      "inches": 6.5,
+      "ppi": 458,
+      "fps": 60,
+      "width": 1242,
+      "height": 2688
+    },
+    "cpu": {
+      "name": "Apple A12 Bionic",
+      "cores": 6,
+      "freq": 2.49
+    },
+    "ram": 4096
+  },
+  "iPhone11,6": {
+    "name": "iPhone XS Max",
+    "released": "2018-09-21",
+    "display": {
+      "inches": 6.5,
+      "ppi": 458,
+      "fps": 60,
+      "width": 1242,
+      "height": 2688
+    },
+    "cpu": {
+      "name": "Apple A12 Bionic",
+      "cores": 6,
+      "freq": 2.49
+    },
+    "ram": 4096
+  },
+  "iPhone11,8": {
+    "name": "iPhone XR",
+    "released": "2018-10-26",
+    "display": {
+      "inches": 6.1,
+      "ppi": 326,
+      "fps": 60,
+      "width": 828,
+      "height": 1792
+    },
+    "cpu": {
+      "name": "Apple A12 Bionic",
+      "cores": 6,
+      "freq": 2.49
+    },
+    "ram": 3072
+  },
+  "iPhone12,1": {
+    "name": "iPhone 11",
+    "released": "2019-09-20",
+    "display": {
+      "inches": 6.1,
+      "ppi": 326,
+      "fps": 60,
+      "width": 828,
+      "height": 1792
+    },
+    "cpu": {
+      "name": "Apple A13 Bionic",
+      "cores": 6,
+      "freq": 2.65
+    },
+    "ram": 4096
+  },
+  "iPhone12,3": {
+    "name": "iPhone 11 Pro",
+    "released": "2019-09-20",
+    "display": {
+      "inches": 5.8,
+      "ppi": 458,
+      "fps": 60,
+      "width": 1125,
+      "height": 2436
+    },
+    "cpu": {
+      "name": "Apple A13 Bionic",
+      "cores": 6,
+      "freq": 2.65
+    },
+    "ram": 4096
+  },
+  "iPhone12,5": {
+    "name": "iPhone 11 Pro Max",
+    "released": "2019-09-20",
+    "display": {
+      "inches": 6.5,
+      "ppi": 458,
+      "fps": 60,
+      "width": 1242,
+      "height": 2688
+    },
+    "cpu": {
+      "name": "Apple A13 Bionic",
+      "cores": 6,
+      "freq": 2.65
+    },
+    "ram": 4096
+  },
+  "iPhone12,8": {
+    "name": "iPhone SE (2nd generation)",
+    "released": "2020-04-24",
+    "display": {
+      "inches": 4.7,
+      "ppi": 326,
+      "fps": 60,
+      "width": 750,
+      "height": 1334
+    },
+    "cpu": {
+      "name": "Apple A13 Bionic",
+      "cores": 6,
+      "freq": 2.65
+    },
+    "ram": 3072
+  },
+  "iPhone13,1": {
+    "name": "iPhone 12 mini",
+    "released": "2020-11-13",
+    "display": {
+      "inches": 5.4,
+      "ppi": 476,
+      "fps": 60,
+      "width": 1080,
+      "height": 2340
+    },
+    "cpu": {
+      "name": "Apple A14 Bionic",
+      "cores": 6,
+      "freq": 3.09
+    },
+    "ram": 4096
+  },
+  "iPhone13,2": {
+    "name": "iPhone 12",
+    "released": "2020-10-23",
+    "display": {
+      "inches": 6.1,
+      "ppi": 460,
+      "fps": 60,
+      "width": 1170,
+      "height": 2532
+    },
+    "cpu": {
+      "name": "Apple A14 Bionic",
+      "cores": 6,
+      "freq": 3.09
+    },
+    "ram": 4096
+  },
+  "iPhone13,3": {
+    "name": "iPhone 12 Pro",
+    "released": "2020-10-23",
+    "display": {
+      "inches": 6.1,
+      "ppi": 460,
+      "fps": 60,
+      "width": 1170,
+      "height": 2532
+    },
+    "cpu": {
+      "name": "Apple A14 Bionic",
+      "cores": 6,
+      "freq": 3.09
+    },
+    "ram": 6144
+  },
+  "iPhone13,4": {
+    "name": "iPhone 12 Pro Max",
+    "released": "2020-11-13",
+    "display": {
+      "inches": 6.7,
+      "ppi": 458,
+      "fps": 60,
+      "width": 1284,
+      "height": 2778
+    },
+    "cpu": {
+      "name": "Apple A14 Bionic",
+      "cores": 6,
+      "freq": 3.09
+    },
+    "ram": 6144
+  },
+  "iPhone14,2": {
+    "name": "iPhone 13 Pro",
+    "released": "2021-09-24",
+    "display": {
+      "inches": 6.1,
+      "ppi": 460,
+      "fps": 120,
+      "width": 1170,
+      "height": 2532
+    },
+    "cpu": {
+      "name": "Apple A15 Bionic",
+      "cores": 6,
+      "freq": 3.24
+    },
+    "ram": 6144
+  },
+  "iPhone14,3": {
+    "name": "iPhone 13 Pro Max",
+    "released": "2021-09-24",
+    "display": {
+      "inches": 6.7,
+      "ppi": 458,
+      "fps": 120,
+      "width": 1284,
+      "height": 2778
+    },
+    "cpu": {
+      "name": "Apple A15 Bionic",
+      "cores": 6,
+      "freq": 3.24
+    },
+    "ram": 6144
+  },
+  "iPhone14,4": {
+    "name": "iPhone 13 mini",
+    "released": "2021-09-24",
+    "display": {
+      "inches": 5.4,
+      "ppi": 476,
+      "fps": 60,
+      "width": 1080,
+      "height": 2340
+    },
+    "cpu": {
+      "name": "Apple A15 Bionic",
+      "cores": 6,
+      "freq": 3.24
+    },
+    "ram": 4096
+  },
+  "iPhone14,5": {
+    "name": "iPhone 13",
+    "released": "2021-09-24",
+    "display": {
+      "inches": 6.1,
+      "ppi": 460,
+      "fps": 60,
+      "width": 1170,
+      "height": 2532
+    },
+    "cpu": {
+      "name": "Apple A15 Bionic",
+      "cores": 6,
+      "freq": 3.24
+    },
+    "ram": 4096
+  },
+  "iPhone14,6": {
+    "name": "iPhone SE (3rd generation)",
+    "released": "2022-03-18",
+    "display": {
+      "inches": 4.7,
+      "ppi": 326,
+      "fps": 60,
+      "width": 750,
+      "height": 1334
+    },
+    "cpu": {
+      "name": "Apple A15 Bionic",
+      "cores": 6,
+      "freq": 3.24
+    },
+    "ram": 4096
+  },
+  "iPhone14,7": {
+    "name": "iPhone 14",
+    "released": "2022-09-16",
+    "display": {
+      "inches": 6.1,
+      "ppi": 460,
+      "fps": 60,
+      "width": 1170,
+      "height": 2532
+    },
+    "cpu": {
+      "name": "Apple A15 Bionic",
+      "cores": 6,
+      "freq": 3.24
+    },
+    "ram": 6144
+  },
+  "iPhone14,8": {
+    "name": "iPhone 14 Plus",
+    "released": "2022-10-07",
+    "display": {
+      "inches": 6.7,
+      "ppi": 458,
+      "fps": 60,
+      "width": 1284,
+      "height": 2778
+    },
+    "cpu": {
+      "name": "Apple A15 Bionic",
+      "cores": 6,
+      "freq": 3.24
+    },
+    "ram": 6144
+  },
+  "iPhone15,2": {
+    "name": "iPhone 14 Pro",
+    "released": "2022-09-16",
+    "display": {
+      "inches": 6.1,
+      "ppi": 460,
+      "fps": 120,
+      "width": 1179,
+      "height": 2556
+    },
+    "cpu": {
+      "name": "Apple A16 Bionic",
+      "cores": 6,
+      "freq": 3.46
+    },
+    "ram": 6144
+  },
+  "iPhone15,3": {
+    "name": "iPhone 14 Pro Max",
+    "released": "2022-09-16",
+    "display": {
+      "inches": 6.7,
+      "ppi": 460,
+      "fps": 120,
+      "width": 1290,
+      "height": 2796
+    },
+    "cpu": {
+      "name": "Apple A16 Bionic",
+      "cores": 6,
+      "freq": 3.46
+    },
+    "ram": 6144
+  },
+  "iPhone15,4": {
+    "name": "iPhone 15",
+    "released": "2023-09-22",
+    "display": {
+      "inches": 6.1,
+      "ppi": 460,
+      "fps": 60,
+      "width": 1179,
+      "height": 2556
+    },
+    "cpu": {
+      "name": "Apple A16 Bionic",
+      "cores": 6,
+      "freq": 3.46
+    },
+    "ram": 6144
+  },
+  "iPhone15,5": {
+    "name": "iPhone 15 Plus",
+    "released": "2023-09-22",
+    "display": {
+      "inches": 6.7,
+      "ppi": 460,
+      "fps": 60,
+      "width": 1290,
+      "height": 2796
+    },
+    "cpu": {
+      "name": "Apple A16 Bionic",
+      "cores": 6,
+      "freq": 3.46
+    },
+    "ram": 6144
+  },
+  "iPhone16,1": {
+    "name": "iPhone 15 Pro",
+    "released": "2023-09-22",
+    "display": {
+      "inches": 6.1,
+      "ppi": 460,
+      "fps": 120,
+      "width": 1179,
+      "height": 2556
+    },
+    "cpu": {
+      "name": "Apple A17 Pro",
+      "cores": 6,
+      "freq": 3.78
+    },
+    "ram": 8192
+  },
+  "iPhone16,2": {
+    "name": "iPhone 15 Pro Max",
+    "released": "2023-09-22",
+    "display": {
+      "inches": 6.7,
+      "ppi": 460,
+      "fps": 120,
+      "width": 1290,
+      "height": 2796
+    },
+    "cpu": {
+      "name": "Apple A17 Pro",
+      "cores": 6,
+      "freq": 3.78
+    },
+    "ram": 8192
+  },
+  "iPhone17,1": {
+    "name": "iPhone 16 Pro",
+    "released": "2024-09-20",
+    "display": {
+      "inches": 6.3,
+      "ppi": 460,
+      "fps": 120,
+      "width": 1206,
+      "height": 2622
+    },
+    "cpu": {
+      "name": "Apple A18 Pro",
+      "cores": 6,
+      "freq": 4.04
+    },
+    "ram": 8192
+  },
+  "iPhone17,2": {
+    "name": "iPhone 16 Pro Max",
+    "released": "2024-09-20",
+    "display": {
+      "inches": 6.9,
+      "ppi": 460,
+      "fps": 120,
+      "width": 1320,
+      "height": 2868
+    },
+    "cpu": {
+      "name": "Apple A18 Pro",
+      "cores": 6,
+      "freq": 4.04
+    },
+    "ram": 8192
+  },
+  "iPhone17,3": {
+    "name": "iPhone 16",
+    "released": "2024-09-20",
+    "display": {
+      "inches": 6.1,
+      "ppi": 460,
+      "fps": 60,
+      "width": 1179,
+      "height": 2556
+    },
+    "cpu": {
+      "name": "Apple A18",
+      "cores": 6,
+      "freq": 4.04
+    },
+    "ram": 8192
+  },
+  "iPhone17,4": {
+    "name": "iPhone 16 Plus",
+    "released": "2024-09-20",
+    "display": {
+      "inches": 6.7,
+      "ppi": 460,
+      "fps": 60,
+      "width": 1290,
+      "height": 2796
+    },
+    "cpu": {
+      "name": "Apple A18",
+      "cores": 6,
+      "freq": 4.04
+    },
+    "ram": 8192
+  },
+  "iPhone17,5": {
+    "name": "iPhone 16e",
+    "released": "2025-02-28",
+    "display": {
+      "inches": 6.1,
+      "ppi": 460,
+      "fps": 60,
+      "width": 1170,
+      "height": 2532
+    },
+    "cpu": {
+      "name": "Apple A18",
+      "cores": 6,
+      "freq": 4.04
+    },
+    "ram": 8192
+  },
+  "iPhone18,1": {
+    "name": "iPhone 17 Pro",
+    "released": "2025-09-19",
+    "display": {
+      "inches": 6.3,
+      "ppi": 460,
+      "fps": 120,
+      "width": 1206,
+      "height": 2622
+    },
+    "cpu": {
+      "name": "Apple A19 Pro",
+      "cores": 6,
+      "freq": 4.25
+    },
+    "ram": 12288
+  },
+  "iPhone18,2": {
+    "name": "iPhone 17 Pro Max",
+    "released": "2025-09-19",
+    "display": {
+      "inches": 6.9,
+      "ppi": 460,
+      "fps": 120,
+      "width": 1320,
+      "height": 2868
+    },
+    "cpu": {
+      "name": "Apple A19 Pro",
+      "cores": 6,
+      "freq": 4.25
+    },
+    "ram": 12288
+  },
+  "iPhone18,3": {
+    "name": "iPhone 17",
+    "released": "2025-09-19",
+    "display": {
+      "inches": 6.3,
+      "ppi": 460,
+      "fps": 120,
+      "width": 1206,
+      "height": 2622
+    },
+    "cpu": {
+      "name": "Apple A19",
+      "cores": 6,
+      "freq": 4.25
+    },
+    "ram": 8192
+  },
+  "iPhone18,4": {
+    "name": "iPhone Air",
+    "released": "2025-09-19",
+    "display": {
+      "inches": 6.5,
+      "ppi": 460,
+      "fps": 120,
+      "width": 1260,
+      "height": 2736
+    },
+    "cpu": {
+      "name": "Apple A19 Pro",
+      "cores": 6,
+      "freq": 4.25
+    },
+    "ram": 12288
+  },
+  "iPhone18,5": {
+    "name": "iPhone 17e",
+    "released": "2026-03-11",
+    "display": {
+      "inches": 6.1,
+      "ppi": 460,
+      "fps": 60,
+      "width": 1170,
+      "height": 2532
+    },
+    "cpu": {
+      "name": "Apple A19",
+      "cores": 6,
+      "freq": 4.25
+    },
+    "ram": 8192
+  },
+  "iPhone19,2": {
+    "name": "iPhone 18 Pro",
+    "released": "2026-09-18",
+    "display": {
+      "inches": 6.3,
+      "ppi": 460,
+      "fps": 120,
+      "width": 1206,
+      "height": 2622
+    },
+    "cpu": {
+      "name": "Apple A20 Pro",
+      "cores": 6,
+      "freq": 4.93
+    },
+    "ram": 12288
+  },
+  "iPhone19,3": {
+    "name": "iPhone 18 Pro Max",
+    "released": "2026-09-18",
+    "display": {
+      "inches": 6.9,
+      "ppi": 460,
+      "fps": 120,
+      "width": 1320,
+      "height": 2868
+    },
+    "cpu": {
+      "name": "Apple A20 Pro",
+      "cores": 6,
+      "freq": 4.93
+    },
+    "ram": 12288
+  },
+  "iPhone19,7": {
+    "name": "iPhone 18 Pro Max",
+    "released": "2026-09-18",
+    "display": {
+      "inches": 6.9,
+      "ppi": 460,
+      "fps": 120,
+      "width": 1320,
+      "height": 2868
+    },
+    "cpu": {
+      "name": "Apple A20 Pro",
+      "cores": 6,
+      "freq": 4.93
+    },
+    "ram": 12288
+  }
+}

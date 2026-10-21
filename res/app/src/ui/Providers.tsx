@@ -24,7 +24,8 @@ export function Providers({children}: {children: ReactNode}) {
     <MantineProvider theme={theme} defaultColorScheme='auto'>
       <QueryClientProvider client={queryClient}>
         <ModalsProvider>
-          <Notifications position='top-right' limit={5} />
+          {/* Fork (Zebrunner): no dismissing by dragging, so the text of a notification can be selected */}
+          <Notifications position='top-right' limit={5} allowDragDismiss={false} />
           {children}
         </ModalsProvider>
       </QueryClientProvider>

@@ -412,6 +412,19 @@ export default db.ensureConnectivity(function(options: ProcessorOptions) {
           log.info(err)
         })
     })
+    .on(wire.IosDeviceInfoMessage, function(channel, message) {
+      dbapi.setIosDeviceInfo(message)
+        .catch(function(err) {
+          log.error('Unable to save the info of iOS device "%s"', message.serial, err.stack)
+        })
+    })
+    .on(wire.IosNetworkEvent, function(channel, message, data) {
+      dbapi.setIosNetwork(message)
+        .catch(function(err) {
+          log.error('Unable to save the network of iOS device "%s"', message.serial, err.stack)
+        })
+      appDealer.send([channel, data])
+    })
     .on(wire.SdkIosVersion, function(channel, message) {
       dbapi.setDeviceIosVersion(message)
         .catch(function(err) {

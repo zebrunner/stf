@@ -65,6 +65,9 @@ import type {
 , WifiSetEnabledMessageFields
 } from '../../types/wire.js'
 import type {WebsocketOptions, WebsocketRequest} from '../../types/units-websocket.js'
+// Fork (Zebrunner)
+import {iosNetwork} from '../../db/zebrunner.js'
+import {touchPathIosMessage} from '../../wire/zebrunner.js'
 
 var request = Promise.promisifyAll(cypressRequest) as unknown as PromisifiedRequest
 var adb = adbutil()
@@ -119,6 +122,8 @@ interface WebsocketClientEvents {
   'input.touchDownIos': ChannelEvent<TouchDownIosMessageFields>
   'input.touchMoveIos': ChannelEvent<IosTouchMoveData>
   'input.touchUp': ChannelEvent<TouchUpMessageFields>
+  // Fork (Zebrunner): a whole gesture of an iOS device
+  'input.touchPathIos': ChannelEvent<{contacts?: unknown}>
   'input.touchCommit': ChannelEvent<TouchCommitMessageFields>
   'input.touchReset': ChannelEvent<TouchCommitMessageFields>
   'input.gestureStart': ChannelEvent<TouchCommitMessageFields>
@@ -164,7 +169,8 @@ interface WebsocketClientEvents {
   'browser.open': TransactionDataEvent<BrowserOpenMessageFields>
   'browser.clear': TransactionDataEvent<BrowserClearMessageFields>
   'store.open': TransactionEvent
-  'settings.open': TransactionEvent
+  // Fork (Zebrunner): the page of Settings to open on iOS
+  'settings.open': ChannelEvent<{page?: string} | null | undefined>
   'screen.capture': TransactionEvent
   'fs.retrieve': TransactionDataEvent<FileSystemGetMessageFields>
   'fs.list': TransactionDataEvent<FileSystemListMessageFields>
@@ -488,6 +494,16 @@ export default function(options: WebsocketOptions) {
           })
         })
       })
+      // Fork (Zebrunner): the network of an iOS device
+      .on(wire.IosNetworkEvent, function(channel, message) {
+        socket.emit('device.change', {
+          important: false
+        , data: {
+            serial: message.serial
+          , network: iosNetwork(message)
+          }
+        })
+      })
       .on(wire.ConnectivityEvent, function(channel, message: SerialStripped<ConnectivityEvent>) {
         var serial = message.serial
         delete message.serial
@@ -755,6 +771,18 @@ export default function(options: WebsocketOptions) {
           }
           catch(err) {
             log.error('input.touchMoveIos had an error', (err as Error).stack)
+          }
+        })
+        // Fork (Zebrunner): a whole gesture of an iOS device
+        .on('input.touchPathIos', function(channel, data) {
+          try {
+            push.send([
+              channel
+            , wireutil.envelope(touchPathIosMessage(data?.contacts))
+            ])
+          }
+          catch(err) {
+            log.error('input.touchPathIos had an error', (err as Error).stack)
           }
         })
         .on('input.touchUp', function(channel, data) {
@@ -1201,10 +1229,13 @@ export default function(options: WebsocketOptions) {
             )
           ])
         })
-        .on('settings.open', function(channel) {
+        .on('settings.open', function(channel, data) {
           push.send([
             channel
-          , wireutil.envelope(new wire.DashboardOpenMessage())
+            // Fork (Zebrunner): the page of Settings to open on iOS
+          , wireutil.envelope(new wire.DashboardOpenMessage(
+              typeof data?.page === 'string' ? data.page : null
+            ))
           ])
         })
         .on('screen.capture', function(channel, responseChannel) {

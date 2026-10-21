@@ -95,6 +95,9 @@ enum MessageType {
   DashboardOpenMessage           = 116;
   TemporarilyUnavailableMessage  = 120;
   InitializeIosDeviceState       = 121;
+  IosDeviceInfoMessage           = 126;
+  IosNetworkEvent                = 127;
+  TouchPathIosMessage            = 128;
   reserved 20, 83 to 85, 97, 100 to 112, 115, 117 to 119, 122 to 125;
   GroupUserChangeMessage     = 1200;
   DeviceGroupChangeMessage   = 1201;
@@ -844,6 +847,22 @@ message BatteryIosEvent {
   required int32 level = 5;
   required string temp = 6;
   required int32 scale = 7;
+  optional double voltage = 8;
+}
+
+// What go-ios reads from the lockdown of an iOS device (plugins/info of the ios-device unit); rom
+// is the capacity in MB
+message IosDeviceInfoMessage {
+  required string serial = 1;
+  optional string manufacturer = 2;
+  optional string product = 3;
+  optional string version = 4;
+  optional string sdk = 5;
+  optional string abi = 6;
+  optional string cpuPlatform = 7;
+  optional string operator = 8;
+  optional DevicePhoneMessage phone = 9;
+  optional uint32 rom = 10;
 }
 
 message SdkIosVersion {
@@ -852,7 +871,38 @@ message SdkIosVersion {
   required string sdkVersion = 3;
 }
 
+// The network of an iOS device from its system log (plugins/info of the ios-device unit): the
+// primary interface and the Wi-Fi link (bandwidth in MHz)
+message IosNetworkEvent {
+  required string serial = 1;
+  required bool connected = 2;
+  optional string type = 3;
+  optional string ssid = 4;
+  optional int32 rssi = 5;
+  optional int32 snr = 6;
+  optional uint32 channel = 7;
+  optional uint32 bandwidth = 8;
+}
+
+// Fork (Zebrunner): a whole gesture of an iOS device, replayed when it ends: the points of
+// every finger, x and y from 0 to 1 like TouchDownIosMessage, t in ms from the start
+message TouchPathIosPoint {
+  required float x = 1;
+  required float y = 2;
+  required uint32 t = 3;
+}
+
+message TouchPathIosContact {
+  repeated TouchPathIosPoint points = 1;
+}
+
+message TouchPathIosMessage {
+  repeated TouchPathIosContact contacts = 1;
+}
+
+// page: the page of Settings to open on iOS (wifi, bluetooth, storage, developer), none for its root
 message DashboardOpenMessage {
+  optional string page = 1;
 }
 
 message TemporarilyUnavailableMessage {

@@ -5,6 +5,7 @@ import type DbApi from '../../../lib/db/api.js'
 import {importFresh, mockModule} from '../../helpers/module-mock.mts'
 
 type InitialState = Parameters<typeof DbApi.initializeIosDeviceState>[1]
+type IosDeviceInfoMessageFields = Parameters<typeof DbApi.setIosDeviceInfo>[0]
 
 // The documents the methods write, as test/db/api.mts reads them: a built update term is
 // [UPDATE, [[target], {document}]], an insert one is [INSERT, [[table], {document}]]
@@ -68,16 +69,77 @@ describe('zebrunner: dbapi', function() {
     , source: 'usb'
     , status: 'charging'
     , level: 80
-    , temp: '30'
+    , temp: '30.5'
     , scale: 100
+    , voltage: 4.184
     })
     expect(writes[0].battery).to.eql({
       health: 'good'
     , source: 'usb'
     , status: 'charging'
     , level: 80
-    , temp: '30'
+    , temp: 30.5
     , scale: 100
+    , voltage: 4.184
+    })
+  })
+
+  // WDA knows the level and the state only, go-ios the rest
+  it('should keep the battery fields an iOS device does not tell', async function() {
+    await dbapi.setDeviceIosBattery({
+      id: 'serial'
+    , health: ''
+    , source: 'usb'
+    , status: 'full'
+    , level: 100
+    , temp: 'n/a'
+    , scale: 100
+    , voltage: null as unknown as number
+    })
+    expect(writes[0].battery).to.eql({source: 'usb', status: 'full', level: 100, scale: 100})
+  })
+
+  it('should keep what lockdown tells of an iOS device', async function() {
+    await dbapi.setIosDeviceInfo({
+      serial: 'serial'
+    , manufacturer: 'Apple'
+    , product: 'iPhone11,8'
+    , version: '18.7.10'
+    , sdk: '22H374'
+    , abi: 'arm64e'
+    , cpuPlatform: 't8020'
+    , operator: null as unknown as string
+    , phone: {imei: '357366097804847', imsi: null, phoneNumber: '', iccid: null, network: null} as
+        unknown as IosDeviceInfoMessageFields['phone']
+    , rom: 60982
+    })
+    expect(writes[0]).to.eql({
+      manufacturer: 'Apple'
+    , product: 'iPhone11,8'
+    , version: '18.7.10'
+    , sdk: '22H374'
+    , abi: 'arm64e'
+    , cpuPlatform: 't8020'
+    , phone: {imei: '357366097804847'}
+    , memory: {rom: 60982}
+    })
+  })
+
+  it('should keep the network of an iOS device', async function() {
+    await dbapi.setIosNetwork({
+      serial: 'serial', connected: true, type: 'WIFI', ssid: 'Lab', rssi: -40, snr: 30, channel: 36
+    , bandwidth: 80
+    })
+    await dbapi.setIosNetwork({
+      serial: 'serial', connected: false, type: '', ssid: '', rssi: 0, snr: 0, channel: 0
+    , bandwidth: 0
+    })
+    expect(writes[0].network).to.eql({
+      connected: true, type: 'WIFI', ssid: 'Lab', rssi: -40, snr: 30, channel: 36, bandwidth: 80
+    })
+    expect(writes[1].network).to.eql({
+      connected: false, type: null, ssid: null, rssi: null, snr: null, channel: null
+    , bandwidth: null
     })
   })
 

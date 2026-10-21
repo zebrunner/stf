@@ -1,6 +1,8 @@
 import type {Control} from '@/core/control'
 import type {ScalingCoordinator} from '@/core/scaling'
 import type {ScreenGeometry} from './screen-stream'
+// Fork (Zebrunner)
+import {createIosTrail, IosPath, type IosTrail} from './ios-gesture'
 
 export interface ScreenTouchOptions {
   root: HTMLElement
@@ -13,9 +15,7 @@ export interface ScreenTouchOptions {
 
 const SEQ_CYCLE = 100
 const MOUSE_PRESSURE = 0.5
-const IOS_TOUCH_PRESSURE = 0.5
 const SECONDARY_BUTTON = 3
-const IOS_SWIPE_THRESHOLD = 0.1
 
 export function bindScreenTouch(options: ScreenTouchOptions): () => void {
   const {root, input, fingers, screen, scaler, control} = options
@@ -24,7 +24,30 @@ export function bindScreenTouch(options: ScreenTouchOptions): () => void {
   let seq = -1
   let fakePinch = false
   let lastPossiblyBuggyMouseUpEvent: MouseEvent | null = null
-  let previousCoords = {x: 0, y: 0}
+  // Fork (Zebrunner): the gesture of an iOS device and the trail of its fingers
+  let iosPath: IosPath | null = null
+  let iosTrail: IosTrail | null = null
+
+  function recordIos(contact: number, xP: number, yP: number, x: number, y: number, time: number) {
+    if (!iosPath) {
+      iosPath = new IosPath(time)
+    }
+    iosPath.add(contact, xP, yP, time)
+    iosTrail = iosTrail || createIosTrail(root)
+    iosTrail.add(contact, x, y)
+  }
+
+  // endIos: the gesture goes to the device unless it is a tap, the tap is the touchUp after it
+  function endIos() {
+    if (iosPath && iosPath.moved()) {
+      control.touchPathIos(iosPath.contacts())
+      iosTrail?.end(iosPath.duration())
+    }
+    else {
+      iosTrail?.clear()
+    }
+    iosPath = null
+  }
 
   function nextSeq(): number {
     seq += 1
@@ -70,7 +93,10 @@ export function bindScreenTouch(options: ScreenTouchOptions): () => void {
 
   function touchDown(seqValue: number, contact: number, x: number, y: number, pressure: number) {
     if (control.target.ios) {
-      control.touchDownIos(seqValue, contact, x, y, pressure)
+      // Fork (Zebrunner): the tap of the gesture is where its first finger touches
+      if (contact === 0) {
+        control.touchDownIos(seqValue, contact, x, y, pressure)
+      }
     }
     else {
       control.touchDown(seqValue, contact, x, y, pressure)
@@ -91,6 +117,14 @@ export function bindScreenTouch(options: ScreenTouchOptions): () => void {
     const x = e.pageX - screen.bounds.x
     const y = e.pageY - screen.bounds.y
     const scaled = scale(x, y)
+
+    if (control.target.ios) {
+      // Fork (Zebrunner)
+      recordIos(0, scaled.xP, scaled.yP, x, y, e.timeStamp)
+      if (fakePinch) {
+        recordIos(1, 1 - scaled.xP, 1 - scaled.yP, screen.bounds.w - x, screen.bounds.h - y, e.timeStamp)
+      }
+    }
 
     control.touchMove(nextSeq(), 0, scaled.xP, scaled.yP, MOUSE_PRESSURE)
 
@@ -131,24 +165,16 @@ export function bindScreenTouch(options: ScreenTouchOptions): () => void {
     }
     e.preventDefault()
 
-    const x = e.pageX - screen.bounds.x
-    const y = e.pageY - screen.bounds.y
-    const pressure = MOUSE_PRESSURE
-    const scaled = scale(x, y)
-
-    if (control.target.ios && (
-      Math.abs(previousCoords.x - scaled.xP) >= IOS_SWIPE_THRESHOLD ||
-      Math.abs(previousCoords.y - scaled.yP) >= IOS_SWIPE_THRESHOLD
-    )) {
-      control.touchMoveIos(
-        scaled.xP
-        , scaled.yP
-        , previousCoords.x
-        , previousCoords.y
-        , pressure
-        , 0
-        , nextSeq()
-      )
+    if (control.target.ios && iosPath) {
+      // Fork (Zebrunner): the whole gesture instead of a straight swipe
+      const x = e.pageX - screen.bounds.x
+      const y = e.pageY - screen.bounds.y
+      const scaled = scale(x, y)
+      recordIos(0, scaled.xP, scaled.yP, x, y, e.timeStamp)
+      if (fakePinch) {
+        recordIos(1, 1 - scaled.xP, 1 - scaled.yP, screen.bounds.w - x, screen.bounds.h - y, e.timeStamp)
+      }
+      endIos()
     }
 
     control.touchUp(nextSeq(), 0)
@@ -187,7 +213,15 @@ export function bindScreenTouch(options: ScreenTouchOptions): () => void {
     const x = e.pageX - screen.bounds.x
     const y = e.pageY - screen.bounds.y
     const scaled = scale(x, y)
-    previousCoords = {x: scaled.xP, y: scaled.yP}
+
+    if (control.target.ios) {
+      // Fork (Zebrunner)
+      iosPath = null
+      recordIos(0, scaled.xP, scaled.yP, x, y, e.timeStamp)
+      if (fakePinch) {
+        recordIos(1, 1 - scaled.xP, 1 - scaled.yP, screen.bounds.w - x, screen.bounds.h - y, e.timeStamp)
+      }
+    }
 
     touchDown(nextSeq(), 0, scaled.xP, scaled.yP, MOUSE_PRESSURE)
 
@@ -232,8 +266,8 @@ export function bindScreenTouch(options: ScreenTouchOptions): () => void {
         const scaled = scale(x, y)
 
         if (control.target.ios) {
-          // The iOS unit treats toX/toY >= 2 as page coordinates of a finger drag
-          control.touchMoveIos(touch.pageX, touch.pageY, scaled.xP, scaled.yP, IOS_TOUCH_PRESSURE)
+          // Fork (Zebrunner): the whole gesture is sent when it ends
+          recordIos(slot, scaled.xP, scaled.yP, x, y, e.timeStamp)
         }
         else {
           control.touchMove(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
@@ -262,10 +296,24 @@ export function bindScreenTouch(options: ScreenTouchOptions): () => void {
       if (typeof slot !== 'undefined') {
         delete slotted[touch.identifier]
         slots.push(slot)
-        control.touchUp(nextSeq(), slot)
+        if (control.target.ios) {
+          // Fork (Zebrunner): one touchUp (the tap) after the whole gesture
+          const x = touch.pageX - screen.bounds.x
+          const y = touch.pageY - screen.bounds.y
+          const scaled = scale(x, y)
+          recordIos(slot, scaled.xP, scaled.yP, x, y, e.timeStamp)
+        }
+        else {
+          control.touchUp(nextSeq(), slot)
+        }
         deactivateFinger(slot)
         foundAny = true
       }
+    }
+
+    if (foundAny && control.target.ios && !e.touches.length) {
+      endIos()
+      control.touchUp(nextSeq(), 0)
     }
 
     if (foundAny) {
@@ -302,6 +350,8 @@ export function bindScreenTouch(options: ScreenTouchOptions): () => void {
       slots.sort().reverse()
       control.touchReset(nextSeq())
       deactivateFingers()
+      // Fork (Zebrunner)
+      iosPath = null
     }
 
     if (!slots.length) {
@@ -316,6 +366,10 @@ export function bindScreenTouch(options: ScreenTouchOptions): () => void {
       const scaled = scale(x, y)
 
       slotted[touch.identifier] = slot
+      if (control.target.ios) {
+        // Fork (Zebrunner)
+        recordIos(slot, scaled.xP, scaled.yP, x, y, e.timeStamp)
+      }
       touchDown(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
       activateFinger(slot, x, y, pressure)
     }
@@ -344,5 +398,7 @@ export function bindScreenTouch(options: ScreenTouchOptions): () => void {
     document.removeEventListener('touchend', touchEndListener)
     document.removeEventListener('touchleave', touchEndListener)
     deactivateFingers()
+    // Fork (Zebrunner)
+    iosTrail?.destroy()
   }
 }

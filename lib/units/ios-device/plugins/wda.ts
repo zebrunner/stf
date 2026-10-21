@@ -22,6 +22,8 @@ import type {ScreenCaptureMessage, TypeMessageFields} from '../../../types/wire.
 import pushSyrup from '../support/push.js'
 import subSyrup from '../support/sub.js'
 import wdaClientSyrup from './wda/WdaClient.js'
+// Fork (Zebrunner)
+import {replayPath} from './wda/gesture.js'
 
 interface WdaPlugin {
   connect(): Promise<void>
@@ -66,8 +68,11 @@ export default syrup.serial()
         .on(wire.StoreOpenMessage, function() {
           iosutil.pressButton.call(wdaClient, 'store')
         })
-        .on(wire.DashboardOpenMessage, function() {
-          iosutil.pressButton.call(wdaClient, 'settings')
+        .on(wire.DashboardOpenMessage, function(_channel, message) {
+          // A page of Settings is opened by radio.ts
+          if (!message.page) {
+            iosutil.pressButton.call(wdaClient, 'settings')
+          }
         })
         .on(wire.PhysicalIdentifyMessage, function() {
           iosutil.pressButton.call(wdaClient, 'finder')
@@ -77,6 +82,10 @@ export default syrup.serial()
         })
         .on(wire.TouchMoveIosMessage, function(_channel, message) {
           wdaClient.swipe(message)
+        })
+        // Fork (Zebrunner): a whole gesture, see wda/gesture.ts
+        .on(wire.TouchPathIosMessage, function(_channel, message) {
+          replayPath(wdaClient, message.contacts)
         })
         .on(wire.TypeMessage, function(_channel, message) {
           log.verbose('wire.TypeMessage: ', message)
@@ -119,17 +128,20 @@ export default syrup.serial()
           wdaClient.touchUp()
         })
         .on(wire.ScreenCaptureMessage, function(channel, _message: ScreenCaptureMessage) {
+          var reply = wireutil.reply(options.serial)
           wdaClient.screenshot()
             .then(function(response: WdaValueResponse<string>) {
-              var reply = wireutil.reply(options.serial)
               var args = storageauth.sign({
                 url: url.resolve(options.storageUrl, util.format('s/upload/%s', 'image'))
               })
 
               var imageBuffer = Buffer.from(response.value, 'base64')
 
-              var req = request.post(args, function(_err, _res, body) {
+              var req = request.post(args, function(err, _res, body) {
                 try {
+                  if (err) {
+                    throw err
+                  }
                   var result = JSON.parse(body) as StorageUploadResponse
                   push.send([
                     channel
@@ -138,6 +150,7 @@ export default syrup.serial()
                 }
                 catch (err) {
                   log.error('Invalid JSON in response', (err as Error).stack, body)
+                  push.send([channel, reply.fail('fail')])
                 }
               })
               req.form().append('file', imageBuffer, {
@@ -147,6 +160,7 @@ export default syrup.serial()
             })
             .catch(function(err) {
               log.error('Failed to get screenshot', err)
+              push.send([channel, reply.fail('fail')])
             })
         })
         .handler())

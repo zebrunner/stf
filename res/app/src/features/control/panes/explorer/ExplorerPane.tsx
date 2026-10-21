@@ -139,6 +139,8 @@ export default function ExplorerPane({device, control}: PaneProps) {
   }, [listDir, serial])
 
   const sorted = useMemo(() => files.slice().sort(compareEntries), [files])
+  // Fork (Zebrunner): AFC of iOS gives no sizes or permissions (lib/units/ios-device/plugins/filesystem.ts)
+  const ios = Boolean(device.ios)
 
   function dirEnterLocation(event: FormEvent) {
     event.preventDefault()
@@ -243,7 +245,7 @@ export default function ExplorerPane({device, control}: PaneProps) {
                   </Table.Td>
                   <Table.Td>
                     <Text size='sm' c='dimmed' className={classes.nowrap}>
-                      {fileIsDir(entry.mode) ? '-' : formatFileSize(entry.size)}
+                      {fileIsDir(entry.mode) || ios ? '-' : formatFileSize(entry.size)}
                     </Text>
                   </Table.Td>
                   <Table.Td>
@@ -253,7 +255,7 @@ export default function ExplorerPane({device, control}: PaneProps) {
                   </Table.Td>
                   <Table.Td>
                     <Text size='sm' ff='monospace' fs='italic' className={classes.nowrap}>
-                      {formatPermissionMode(entry.mode)}
+                      {ios ? '-' : formatPermissionMode(entry.mode)}
                     </Text>
                   </Table.Td>
                 </Table.Tr>

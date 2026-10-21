@@ -72,6 +72,9 @@ export function createControl(target: Device, channel: string) {
       , contact = 0
       , seq = 0
     ) => sendOneWay('input.touchMoveIos', {seq, contact, toX, toY, fromX, fromY, pressure})
+    // Fork (Zebrunner): a whole gesture of an iOS device, see features/control/screen/ios-gesture.ts
+    , touchPathIos: (contacts: Array<Array<{x: number, y: number, t: number}>>) =>
+      sendOneWay('input.touchPathIos', {contacts: contacts.map((points) => ({points}))})
     , touchUp: (seq: number, contact: number) => sendOneWay('input.touchUp', {seq, contact})
     , touchCommit: (seq: number) => sendOneWay('input.touchCommit', {seq})
     , touchReset: (seq: number) => sendOneWay('input.touchReset', {seq})
@@ -113,7 +116,8 @@ export function createControl(target: Device, channel: string) {
       sendTwoWay('browser.open', {url, browser: browser ? browser.id : null})
     , clearBrowser: (browser: Browser | null) => sendTwoWay('browser.clear', {browser: browser ? browser.id : null})
     , openStore: () => sendTwoWay('store.open')
-    , openSettings: () => sendOneWay('settings.open')
+    // Fork (Zebrunner): page opens a page of Settings on iOS (wifi, storage, developer)
+    , openSettings: (page?: string) => sendOneWay('settings.open', page ? {page} : undefined)
     , screenshot: () => sendTwoWay('screen.capture')
     , fsretrieve: (file: string) => sendTwoWay('fs.retrieve', {file})
     , fslist: (dir: string) => sendTwoWay('fs.list', {dir})

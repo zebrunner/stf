@@ -1,0 +1,606 @@
+import {execFile, spawn, type ChildProcessWithoutNullStreams} from 'child_process'
+
+import Promise from 'bluebird'
+
+// The go-ios binary, installed by the mcloud-device image; it reaches the device through
+// USBMUXD_SOCKET_ADDRESS, so only the lockdown services work (no tunnel of iOS 17+)
+export var GO_IOS_BIN = 'ios'
+
+// The commands of the shell of the device dashboard (go-ios v1.3.2). A command maps to the
+// subcommands it allows, which must follow it, null allows any arguments. Nothing that pairs,
+// erases, signs, tunnels, starts WDA or writes files of the container is allowed
+var SHELL_COMMANDS: Record<string, string[] | null> = {
+  apps: null
+, assistivetouch: ['enable', 'disable', 'toggle', 'get']
+, batterycheck: null
+, batteryregistry: null
+, crash: ['ls']
+, date: null
+, devicename: null
+, devicestate: ['list']
+, devmode: ['get']
+, diagnostics: ['list']
+, diskspace: null
+, fsync: ['tree']
+, image: ['list']
+, info: null
+, ip: null
+, kill: null
+, lang: null
+, launch: null
+, lockdown: ['get']
+, mobilegestalt: null
+, pasteboard: ['set', 'get']
+, profile: ['list']
+, ps: null
+, reboot: null
+, resetlocation: null
+, setlocation: null
+, timeformat: ['24h', '12h', 'toggle', 'get']
+, uninstall: null
+, version: null
+, voiceover: ['enable', 'disable', 'toggle', 'get']
+, zoom: ['enable', 'disable', 'toggle', 'get']
+}
+
+// The options of the allowed commands, nothing else: docopt of go-ios takes a prefix of a long
+// option (--udi for --udid) and the value of an option from the next word (--driver tree rm would
+// run rm), so an option must be one of these, written out, with its value after "="
+var SHELL_FLAGS = [
+  '--all'
+, '--apps'
+, '--filesharing'
+, '--force'
+, '--kill-existing'
+, '--list'
+, '--nojson'
+, '--plist'
+, '--pretty'
+, '--system'
+, '--verbose'
+, '--wait'
+, '-v'
+]
+
+var SHELL_VALUE_OPTIONS = [
+  '--app'
+, '--arg'
+, '--domain'
+, '--env'
+, '--lat'
+, '--lon'
+, '--path'
+, '--pid'
+, '--process'
+, '--setlang'
+, '--setlocale'
+]
+
+export var SHELL_COMMAND_NAMES = Object.keys(SHELL_COMMANDS)
+
+export class GoIosCommandError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'GoIosCommandError'
+  }
+}
+
+// splitCommandLine <line>: the words of a command line, with '' and "" quoting and \ escapes
+export function splitCommandLine(line: string): string[] {
+  var words: string[] = []
+  var word = ''
+  var inWord = false
+  var quote: string | null = null
+
+  for (var i = 0; i < line.length; i++) {
+    var char = line[i]!
+    if (quote) {
+      if (char === quote) {
+        quote = null
+      }
+      else if (char === '\\' && quote === '"' && i + 1 < line.length) {
+        word += line[++i]
+      }
+      else {
+        word += char
+      }
+    }
+    else if (char === '"' || char === '\'') {
+      quote = char
+      inWord = true
+    }
+    else if (char === '\\' && i + 1 < line.length) {
+      word += line[++i]
+      inWord = true
+    }
+    else if (/\s/.test(char)) {
+      if (inWord) {
+        words.push(word)
+        word = ''
+        inWord = false
+      }
+    }
+    else {
+      word += char
+      inWord = true
+    }
+  }
+
+  if (quote) {
+    throw new GoIosCommandError('Unterminated quote')
+  }
+  if (inWord) {
+    words.push(word)
+  }
+  return words
+}
+
+// optionError <arg>: why an option is not allowed, null when it is
+function optionError(arg: string): string | null {
+  var equals = arg.indexOf('=')
+  var name = equals === -1 ? arg : arg.slice(0, equals)
+  if (SHELL_FLAGS.includes(name)) {
+    return equals === -1 ? null : 'The option "' + name + '" takes no value'
+  }
+  if (SHELL_VALUE_OPTIONS.includes(name)) {
+    return equals === -1 ? 'Write the value of "' + name + '" as ' + name + '=<value>' : null
+  }
+  return 'The option "' + name + '" is not allowed'
+}
+
+// shellArgs <line>: the go-ios arguments of a command of the shell ("ios" in front is optional),
+// throws GoIosCommandError when the command is not allowed
+export function shellArgs(line: string): string[] {
+  var args = splitCommandLine(line)
+  if (args[0] === GO_IOS_BIN) {
+    args.shift()
+  }
+
+  var command = args[0]
+  if (!command) {
+    throw new GoIosCommandError('Enter a go-ios command, e.g. "apps --list"')
+  }
+  if (!Object.prototype.hasOwnProperty.call(SHELL_COMMANDS, command)) {
+    throw new GoIosCommandError(
+      'The command "' + command + '" is not allowed, the allowed ones: ' +
+      SHELL_COMMAND_NAMES.join(', ')
+    )
+  }
+
+  var subcommands = SHELL_COMMANDS[command]
+  if (subcommands && !subcommands.includes(args[1] || '')) {
+    throw new GoIosCommandError(
+      'Only "' + subcommands.map(function(sub) {
+        return command + ' ' + sub
+      }).join('", "') + '" of "' + command + '" is allowed'
+    )
+  }
+
+  args.slice(1).forEach(function(arg) {
+    var error = arg.startsWith('-') ? optionError(arg) : null
+    if (error) {
+      throw new GoIosCommandError(error)
+    }
+  })
+
+  return args
+}
+
+// spawnGoIos <serial> <args>: go-ios on the device of the unit, without a shell
+export function spawnGoIos(serial: string, args: string[]): ChildProcessWithoutNullStreams {
+  return spawn(GO_IOS_BIN, args.concat('--udid=' + serial), {
+    stdio: ['pipe', 'pipe', 'pipe']
+  })
+}
+
+export interface GoIosResult {
+  stdout: string
+  stderr: string
+}
+
+// goIosError <stderr>: the last error go-ios logged (its logs are JSON lines)
+export function goIosError(stderr: string): string {
+  var lines = stderr.split('\n').filter(Boolean)
+  for (var i = lines.length - 1; i >= 0; i--) {
+    try {
+      var entry = JSON.parse(lines[i]!) as Record<string, unknown>
+      if (entry.level === 'error' || entry.level === 'ERROR' || entry.level === 'fatal') {
+        return [entry.msg, entry.err || entry.error].filter(Boolean).join(': ')
+      }
+    }
+    catch {
+      return lines[i]!
+    }
+  }
+  return ''
+}
+
+// execGoIos <serial> <args> [timeout]: the output of go-ios on the device of the unit; rejects
+// with the error go-ios printed when it fails
+export function execGoIos(serial: string, args: string[], timeout = 60000): Promise<GoIosResult> {
+  return new Promise<GoIosResult>(function(resolve, reject) {
+    execFile(
+      GO_IOS_BIN
+    , args.concat('--udid=' + serial)
+    , {timeout: timeout, maxBuffer: 64 * 1024 * 1024}
+    , function(err, stdout, stderr) {
+        if (err) {
+          reject(new Error(goIosError(stderr) || err.message))
+          return
+        }
+        resolve({stdout: stdout, stderr: stderr})
+      }
+    )
+  })
+}
+
+// The priorities of the log levels of syslog, as the ones of logcat
+// (2 verbose, 3 debug, 4 info, 5 warn, 6 error, 7 fatal)
+var SYSLOG_PRIORITIES: Record<string, number> = {
+  debug: 3
+, info: 4
+, notice: 4
+, warning: 5
+, error: 6
+, critical: 7
+, alert: 7
+, emergency: 7
+}
+
+var SYSLOG_LINE = new RegExp(
+  '^[A-Z][a-z]{2}\\s+\\d+\\s+\\d{2}:\\d{2}:\\d{2}\\s+\\S+\\s+([^\\[]+)\\[(\\d+)\\]' +
+  '(?:\\s+<(\\w+)>)?:\\s?([\\s\\S]*)$'
+)
+
+export interface SyslogEntry {
+  pid: number
+  priority: number
+  tag: string
+  message: string
+}
+
+// parseSyslog <line>: a line of `ios syslog` (JSON with the message in "msg", or the raw message)
+export function parseSyslog(line: string): SyslogEntry | null {
+  var text = line
+  if (line.startsWith('{')) {
+    try {
+      var parsed = JSON.parse(line) as {msg?: unknown}
+      if (typeof parsed.msg !== 'string') {
+        return null
+      }
+      text = parsed.msg
+    }
+    catch {
+      // not JSON, the raw message
+    }
+  }
+  if (!text.trim()) {
+    return null
+  }
+
+  var match = SYSLOG_LINE.exec(text)
+  if (!match) {
+    return {pid: 0, priority: 4, tag: '', message: text}
+  }
+  return {
+    pid: Number(match[2])
+  , priority: SYSLOG_PRIORITIES[(match[3] || '').toLowerCase()] || 4
+  , tag: match[1]!.trim()
+  , message: match[4]!
+  }
+}
+
+// The entries of `ios fsync tree`: S_IFDIR and S_IFREG only, AFC does not give the permissions
+var S_IFDIR = 0o040000
+var S_IFREG = 0o100000
+
+export interface AfcEntry {
+  name: string
+  mode: number
+  size: number
+}
+
+// parseFsyncTree <output>: the entries of the listed directory in the output of `ios fsync tree`,
+// which prints the whole tree depth first ("|  " per level, "|-" before the name, "/" after a
+// directory), so its children are the lines of the first level
+export function parseFsyncTree(output: string): AfcEntry[] {
+  var entries: AfcEntry[] = []
+  var level = -1
+
+  output.split('\n').forEach(function(line) {
+    var match = /^((?:\| {2})*)\|-(.*)$/.exec(line)
+    if (!match) {
+      return
+    }
+    var depth = match[1]!.length / 3
+    if (level === -1) {
+      level = depth
+    }
+    if (depth !== level) {
+      return
+    }
+    var name = match[2]!
+    var directory = name.endsWith('/')
+    if (directory) {
+      name = name.slice(0, -1)
+    }
+    if (name) {
+      entries.push({
+        name: name
+      , mode: directory ? S_IFDIR : S_IFREG
+      , size: -1
+      })
+    }
+  })
+
+  return entries
+}
+
+// afcPath <path>: a path of the media directory of AFC, absolute and without ".."
+export function afcPath(path: string): string {
+  var parts = path.split('/').filter(function(part) {
+    return part && part !== '.'
+  })
+  if (parts.includes('..')) {
+    throw new GoIosCommandError('The path "' + path + '" is not allowed')
+  }
+  return '/' + parts.join('/')
+}
+
+// matchesFilters <entry> <filters>: whether an entry passes the filters of logcat, which keep the
+// entries of a tag ("*" for any) from a priority on; no filter keeps everything
+export function matchesFilters(
+  entry: SyslogEntry
+, filters: Array<{tag: string, priority: number}>
+): boolean {
+  if (!filters.length) {
+    return true
+  }
+  return filters.some(function(filter) {
+    return (filter.tag === '*' || filter.tag === entry.tag) && entry.priority >= filter.priority
+  })
+}
+
+// connectedByUsb <output> <serial>: whether `ios list --details` has the device on a USB
+// connection of usbmuxd (not a "Network" one)
+export function connectedByUsb(output: string, serial: string): boolean {
+  try {
+    var list = JSON.parse(output) as {deviceList?: Array<{Udid?: string, ConnectionType?: string}>}
+    return (list.deviceList || []).some(function(device) {
+      return device.Udid === serial && device.ConnectionType !== 'Network'
+    })
+  }
+  catch {
+    return false
+  }
+}
+
+// isAgentWarning <line>: the warning go-ios logs on every command when its tunnel agent of iOS 17+
+// is not running (it is not, the unit reaches the device through usbmuxd)
+export function isAgentWarning(line: string): boolean {
+  return line.includes('"level":"WARN"') && line.includes('go-ios agent is not running')
+}
+
+// lastJson <output>: the last JSON object go-ios printed
+function lastJson(output: string): Record<string, unknown> | null {
+  var lines = output.split('\n').filter(function(line) {
+    return line.trim().startsWith('{')
+  })
+  for (var i = lines.length - 1; i >= 0; i--) {
+    try {
+      return JSON.parse(lines[i]!) as Record<string, unknown>
+    }
+    catch {
+      // not JSON
+    }
+  }
+  return null
+}
+
+function text(value: unknown): string | null {
+  return typeof value === 'string' && value ? value : null
+}
+
+function count(value: unknown): number | null {
+  return typeof value === 'number' && isFinite(value) ? value : null
+}
+
+export interface IosLockdownInfo {
+  manufacturer: string
+  product: string | null
+  version: string | null
+  sdk: string | null
+  abi: string | null
+  cpuPlatform: string | null
+  operator: string | null
+  phone: {
+    imei: string | null
+    imsi: string | null
+    phoneNumber: string | null
+    iccid: string | null
+  }
+}
+
+// parseDeviceInfo <output>: the fields of the Info tab in the output of `ios info` (lockdown)
+export function parseDeviceInfo(output: string): IosLockdownInfo | null {
+  var info = lastJson(output)
+  if (!info) {
+    return null
+  }
+  var carriers = Array.isArray(info.CarrierBundleInfoArray) ?
+    info.CarrierBundleInfoArray as Array<Record<string, unknown>> :
+    []
+  var carrier = carriers.map(function(entry) {
+    return text(entry.CFBundleIdentifier)
+  }).find(Boolean)
+  return {
+    manufacturer: 'Apple'
+  , product: text(info.ProductType)
+  , version: text(info.ProductVersion)
+  , sdk: text(info.BuildVersion)
+  , abi: text(info.CPUArchitecture)
+  , cpuPlatform: text(info.HardwarePlatform)
+  , operator: carrier ? carrier.replace(/^com\.apple\./, '').replace(/_/g, ' ') : null
+  , phone: {
+      imei: text(info.InternationalMobileEquipmentIdentity)
+    , imsi: text(info.InternationalMobileSubscriberIdentity) ||
+        text(carriers.map(function(entry) {
+          return entry.InternationalMobileSubscriberIdentity
+        }).find(Boolean))
+    , phoneNumber: text(info.PhoneNumber)
+    , iccid: text(info.IntegratedCircuitCardIdentity) ||
+        text(carriers.map(function(entry) {
+          return entry.IntegratedCircuitCardIdentity
+        }).find(Boolean))
+    }
+  }
+}
+
+// parseDiskSpace <output>: the capacity in MB in the output of `ios diskspace`
+export function parseDiskSpace(output: string): number | null {
+  var total = count(lastJson(output)?.TotalBytes)
+  return total ? Math.round(total / 1024 / 1024) : null
+}
+
+export interface IosBattery {
+  health: string
+  status: string
+  level: number
+  // degrees Celsius, as text
+  temp: string
+  // volts
+  voltage: number | null
+}
+
+// parseBattery <output>: the battery in the output of `ios batteryregistry` (the IORegistry of the
+// battery); the health is "good" down to 80% of the design capacity, where iOS asks for a service
+export function parseBattery(output: string): IosBattery | null {
+  var battery = lastJson(output)
+  var level = count(battery?.CurrentCapacity)
+  if (!battery || level === null) {
+    return null
+  }
+  var design = count(battery.DesignCapacity)
+  var nominal = count(battery.NominalChargeCapacity)
+  var temperature = count(battery.Temperature)
+  var voltage = count(battery.Voltage)
+  var status = 'discharging'
+  if (battery.IsCharging === true) {
+    status = 'charging'
+  }
+  else if (level >= 100) {
+    status = 'full'
+  }
+  return {
+    health: design && nominal && nominal / design < 0.8 ? 'dead' : 'good'
+  , status: status
+  , level: level
+  , temp: temperature === null ? '' : (temperature / 100).toFixed(1)
+  , voltage: voltage === null ? null : voltage / 1000
+  }
+}
+
+export interface OstraceEntry {
+  // the name of the process, the last part of its path
+  process: string
+  message: string
+}
+
+// ostraceEntry <line>: a line of `ios ostrace` (JSON), null for anything else
+export function ostraceEntry(line: string): OstraceEntry | null {
+  if (!line.startsWith('{')) {
+    return null
+  }
+  try {
+    var entry = JSON.parse(line) as {filename?: unknown, message?: unknown}
+    if (typeof entry.filename !== 'string' || typeof entry.message !== 'string') {
+      return null
+    }
+    return {process: entry.filename.split('/').pop()!, message: entry.message}
+  }
+  catch {
+    return null
+  }
+}
+
+export interface IosWifiLink {
+  ssid: string
+  rssi: number
+  snr: number | null
+  channel: number
+  // MHz
+  bandwidth: number
+}
+
+export interface IosNetwork {
+  connected: boolean
+  // WIFI, MOBILE or ETHERNET, the primary interface; null when there is none
+  type: string | null
+  wifi: IosWifiLink | null
+}
+
+// wifid logs the quality of the Wi-Fi link every ~5 seconds while it is associated
+var WIFI_LINK = new RegExp(
+  '__WiFiLQAMgrLogStats\\((.*):[A-Za-z]+\\): InfraUptime:[\\d.]+secs Channel: (\\d+) ' +
+  'Bandwidth: (\\d+)Mhz Rssi: (-?\\d+)(?:.*? Snr: (-?\\d+))?'
+)
+// symptomsd relays the state of the interfaces it watches: "StateRelay for type 3: WiFi (active/
+// primary/...)"
+var STATE_RELAY = /StateRelay for type \d+: (\w+) \(([^)]*)\)/
+
+var INTERFACE_TYPES: Record<string, string> = {
+  wifi: 'WIFI'
+, cell: 'MOBILE'
+, cellular: 'MOBILE'
+, wired: 'ETHERNET'
+}
+
+// IosNetworkCollector: the network of a device from the lines of `ios ostrace`; complete once it
+// has seen a Wi-Fi link and the state of the interfaces
+export class IosNetworkCollector {
+  private wifi: IosWifiLink | null = null
+  private relays: Record<string, string[]> = {}
+
+  add(entry: OstraceEntry): void {
+    if (entry.process === 'wifid') {
+      var link = WIFI_LINK.exec(entry.message)
+      if (link) {
+        this.wifi = {
+          ssid: link[1]!
+        , channel: Number(link[2])
+        , bandwidth: Number(link[3])
+        , rssi: Number(link[4])
+        , snr: typeof link[5] === 'string' ? Number(link[5]) : null
+        }
+      }
+    }
+    else if (entry.process === 'symptomsd') {
+      var relay = STATE_RELAY.exec(entry.message)
+      if (relay) {
+        this.relays[relay[1]!.toLowerCase()] = relay[2]!.split('/')
+      }
+    }
+  }
+
+  complete(): boolean {
+    return this.wifi !== null && Object.keys(this.relays).length > 0
+  }
+
+  // network: what was seen; no Wi-Fi link and no active interface is no network
+  network(): IosNetwork {
+    var primary: string | null = null
+    var active: string | null = null
+    Object.keys(this.relays).forEach((name) => {
+      var flags = this.relays[name]!
+      var type = INTERFACE_TYPES[name] || name.toUpperCase()
+      if (flags.includes('primary')) {
+        primary = type
+      }
+      if (flags.includes('active') && !active) {
+        active = type
+      }
+    })
+    var type = primary || active || (this.wifi ? 'WIFI' : null)
+    return {connected: type !== null, type: type, wifi: this.wifi}
+  }
+}
