@@ -41,6 +41,12 @@ export var MAX_CONTACTS = 5
 export var MAX_POINTS = 1000
 // A gesture of the UI is not longer than that
 export var MAX_DURATION = 60000
+// WDA takes about 0.25 s for every pointerMove (it resolves the coordinate of the application
+// with an accessibility snapshot; 0.05 s with the settings of fast-input.ts), so a gesture keeps at
+// most MAX_TICKS ticks; a tick that puts
+// no finger farther than TOLERANCE points from the straight moves around it is dropped
+export var MAX_TICKS = 6
+export var TOLERANCE = 3
 
 function valid(point: PathPoint): boolean {
   return Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.t) &&
@@ -114,6 +120,120 @@ export function normalize(
   })
 }
 
+function ticksOf(paths: PathPoint[][]): number[] {
+  return Array.from(new Set(paths.flatMap(function(points) {
+    return points.map(function(point) {
+      return point.t
+    })
+  }))).sort(function(a, b) {
+    return a - b
+  })
+}
+
+// track <points> <times>: where a finger is at the sorted times
+function track(points: PathPoint[], times: number[]): Array<{x: number, y: number}> {
+  var i = 0
+  return times.map(function(t) {
+    while (i < points.length - 1 && points[i + 1]!.t < t) {
+      ++i
+    }
+    var prev = points[i]!
+    var next = points[Math.min(i + 1, points.length - 1)]!
+    if (t <= prev.t || next === prev) {
+      return {x: prev.x, y: prev.y}
+    }
+    if (t >= next.t) {
+      return {x: next.x, y: next.y}
+    }
+    var k = (t - prev.t) / (next.t - prev.t)
+    return {
+      x: Math.round(prev.x + (next.x - prev.x) * k)
+    , y: Math.round(prev.y + (next.y - prev.y) * k)
+    }
+  })
+}
+
+// simplify <paths> [maxTicks] [tolerance]: the paths on fewer shared ticks. The touches and the
+// releases of the fingers stay, then the tick where a finger is the farthest (in space and time)
+// from the straight move between the kept ticks is added while it is farther than the tolerance
+export function simplify(
+  paths: PathPoint[][]
+, maxTicks: number = MAX_TICKS
+, tolerance: number = TOLERANCE
+): PathPoint[][] {
+  var times = ticksOf(paths)
+  var index = new Map(times.map(function(t, i) {
+    return [t, i] as const
+  }))
+  var spans = paths.map(function(points) {
+    return {from: index.get(points[0]!.t)!, to: index.get(points[points.length - 1]!.t)!}
+  })
+  var positions = paths.map(function(points) {
+    return track(points, times)
+  })
+  var kept = times.map(function() {
+    return false
+  })
+  spans.forEach(function(span) {
+    kept[span.from] = true
+    kept[span.to] = true
+  })
+  var count = kept.filter(Boolean).length
+
+  // deviation <f> <n> <from> <to>: how far the finger is at the tick from its straight move
+  // between the kept ticks around it
+  function deviation(f: number, n: number, from: number, to: number): number {
+    var span = spans[f]!
+    if (n <= span.from || n >= span.to) {
+      return 0
+    }
+    var a = positions[f]![from]!
+    var b = positions[f]![to]!
+    var p = positions[f]![n]!
+    var k = (times[n]! - times[from]!) / (times[to]! - times[from]!)
+    return Math.hypot(a.x + (b.x - a.x) * k - p.x, a.y + (b.y - a.y) * k - p.y)
+  }
+
+  while (count < maxTicks) {
+    var prev: number[] = []
+    var next: number[] = []
+    for (var i = 0, last = -1; i < times.length; ++i) {
+      last = kept[i] ? i : last
+      prev[i] = last
+    }
+    for (var j = times.length - 1, first = -1; j >= 0; --j) {
+      first = kept[j] ? j : first
+      next[j] = first
+    }
+
+    var best = -1
+    var bestError = tolerance
+    for (var n = 0; n < times.length; ++n) {
+      for (var f = 0; !kept[n] && f < paths.length; ++f) {
+        var error = deviation(f, n, prev[n]!, next[n]!)
+        if (error > bestError) {
+          best = n
+          bestError = error
+        }
+      }
+    }
+    if (best < 0) {
+      break
+    }
+    kept[best] = true
+    ++count
+  }
+
+  return paths.map(function(_points, f) {
+    var span = spans[f]!
+    return times.flatMap(function(t, i) {
+      return kept[i] && i >= span.from && i <= span.to ?
+        [{x: positions[f]![i]!.x, y: positions[f]![i]!.y, t: t}] :
+        []
+    })
+  })
+}
+
 // pathActions <paths>: the W3C actions of the fingers. The actions of all the sources go by
 // ticks (the n-th action of every source runs at the same time), so every source has an action
 // on every tick: the moves between the times of the points, then the touches and the releases
@@ -127,13 +247,7 @@ export function pathActions(paths: PathPoint[][]): W3cSource[] {
     , actions: [{type: 'pointerMove', duration: 0, x: points[0]!.x, y: points[0]!.y}]
     }
   })
-  var times = Array.from(new Set(paths.flatMap(function(points) {
-    return points.map(function(point) {
-      return point.t
-    })
-  }))).sort(function(a, b) {
-    return a - b
-  })
+  var times = ticksOf(paths)
 
   function start(points: PathPoint[]): number {
     return points[0]!.t
@@ -193,9 +307,9 @@ export function replayPath(wdaClient: WdaClientPlugin, contacts: PathContact[]):
     return Promise.resolve()
   }
   var orientation = wdaClient.orientation
-  var paths = normalize(contacts, function(point) {
+  var paths = simplify(normalize(contacts, function(point) {
     return toDevice(orientation, size!, point)
-  })
+  }))
   if (!paths.length) {
     return Promise.resolve()
   }

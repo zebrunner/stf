@@ -4,9 +4,11 @@ import {expect} from 'chai'
 import express from 'express'
 
 import {
-  normalize
+  MAX_TICKS
+, normalize
 , pathActions
 , replayPath
+, simplify
 , toDevice
 , type PathPoint
 } from '../../../lib/units/ios-device/plugins/wda/gesture.js'
@@ -44,6 +46,69 @@ describe('zebrunner: iOS gestures', function() {
       , {points: []}
       , {points: null}
       ], portrait)).to.deep.equal([[{x: 40, y: 0, t: 0}, {x: 80, y: 0, t: 32}]])
+    })
+  })
+
+  describe('simplify', function() {
+    function line(from: PathPoint, to: PathPoint, steps: number): PathPoint[] {
+      return Array.from({length: steps + 1}, function(_, i) {
+        var k = i / steps
+        return {
+          x: Math.round(from.x + (to.x - from.x) * k)
+        , y: Math.round(from.y + (to.y - from.y) * k)
+        , t: Math.round(from.t + (to.t - from.t) * k)
+        }
+      })
+    }
+
+    it('should keep only the ends of a straight even move', function() {
+      expect(simplify([line({x: 10, y: 700, t: 0}, {x: 10, y: 100, t: 480}, 30)]))
+        .to.deep.equal([[{x: 10, y: 700, t: 0}, {x: 10, y: 100, t: 480}]])
+    })
+
+    it('should keep the corner of a turn', function() {
+      var path = line({x: 0, y: 0, t: 0}, {x: 200, y: 0, t: 160}, 10)
+        .concat(line({x: 200, y: 0, t: 160}, {x: 200, y: 200, t: 320}, 10).slice(1))
+      expect(simplify([path])).to.deep.equal([[
+        {x: 0, y: 0, t: 0}
+      , {x: 200, y: 0, t: 160}
+      , {x: 200, y: 200, t: 320}
+      ]])
+    })
+
+    it('should keep the tick where a finger stops before its release', function() {
+      var path = line({x: 0, y: 0, t: 0}, {x: 300, y: 0, t: 160}, 10)
+        .concat(line({x: 300, y: 0, t: 160}, {x: 300, y: 0, t: 800}, 40).slice(1))
+      expect(simplify([path])).to.deep.equal([[
+        {x: 0, y: 0, t: 0}
+      , {x: 300, y: 0, t: 160}
+      , {x: 300, y: 0, t: 800}
+      ]])
+    })
+
+    it('should not keep more ticks than allowed', function() {
+      var path = Array.from({length: 100}, function(_, i) {
+        return {x: i % 2 ? 300 : 0, y: i * 5, t: i * 16}
+      })
+      var [simple] = simplify([path])
+      expect(simple).to.have.length(MAX_TICKS)
+      expect(simple![0]).to.deep.equal(path[0])
+      expect(simple![MAX_TICKS - 1]).to.deep.equal(path[99])
+    })
+
+    it('should keep the touches and the releases of all the fingers', function() {
+      var simple = simplify([
+        line({x: 0, y: 0, t: 0}, {x: 100, y: 0, t: 160}, 10)
+      , line({x: 50, y: 50, t: 32}, {x: 50, y: 150, t: 96}, 4)
+      ])
+      expect(simple).to.deep.equal([
+        [{x: 0, y: 0, t: 0}, {x: 20, y: 0, t: 32}, {x: 60, y: 0, t: 96}, {x: 100, y: 0, t: 160}]
+      , [{x: 50, y: 50, t: 32}, {x: 50, y: 150, t: 96}]
+      ])
+    })
+
+    it('should keep a tap', function() {
+      expect(simplify([[{x: 5, y: 6, t: 0}]])).to.deep.equal([[{x: 5, y: 6, t: 0}]])
     })
   })
 
@@ -181,6 +246,18 @@ describe('zebrunner: iOS gestures', function() {
       , {type: 'pointerMove', duration: 80, x: 200, y: 200}
       , {type: 'pointerUp', button: 0}
       ])
+    })
+
+    it('should post few moves for a long winding gesture', async function() {
+      var points = Array.from({length: 200}, function(_, i) {
+        return {x: 0.5 + 0.4 * Math.sin(i / 10), y: i / 200, t: i * 16}
+      })
+      await replayPath(client(), [{points: points}])
+      var body = bodies[0] as {actions: Array<{actions: Array<{type: string}>}>}
+      var moves = body.actions[0]!.actions.filter(function(action) {
+        return action.type === 'pointerMove'
+      })
+      expect(moves).to.have.length(MAX_TICKS)
     })
 
     it('should survive an error of WDA', async function() {
