@@ -90,7 +90,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       --shell /usr/sbin/nologin \
       stf && \
     su stf -s /bin/bash -c '/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js install' && \
-    apt-get -y install --no-install-recommends musl-dev libzmq3-dev libprotobuf-dev git graphicsmagick yasm && \
+    apt-get -y install --no-install-recommends musl-dev libzmq3-dev libprotobuf-dev git graphicsmagick openjdk-8-jdk yasm && \
     ln -s /usr/lib/aarch64-linux-musl/libc.so /lib/libc.musl-aarch64.so.1 && \
     echo '--- Building app' && \
     mkdir -p /app && \
