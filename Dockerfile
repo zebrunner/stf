@@ -17,13 +17,13 @@ EXPOSE 3000
 
 ARG TARGETARCH
 
+# Fork (Zebrunner): the amd64 and arm64 images are alike: stf has the uid 998,
+# /app belongs to root, the build tools and caches are removed. zeromq ships
+# its glibc addon for arm64, no musl libc nor pnpm is needed to build it.
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
     export DEBIAN_FRONTEND=noninteractive && \
     useradd --system \
-      --create-home \
-      --shell /usr/sbin/nologin \
-      stf-build && \
-    useradd --system \
+      --uid 998 \
       --create-home \
       --shell /usr/sbin/nologin \
       stf && \
@@ -38,7 +38,7 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
       https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-x64.tar.xz && \
     tar -xJf node-v*.tar.xz --strip-components 1 -C /usr/local && \
     rm node-v*.tar.xz && \
-    su stf-build -s /bin/bash -c '/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js install' && \
+    su stf -s /bin/bash -c '/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js install' && \
     apt-get -y install --no-install-recommends libzmq3-dev libprotobuf-dev git graphicsmagick openjdk-8-jdk yasm cmake && \
     apt-get clean && \
     rm -rf /var/cache/apt/* /var/lib/apt/lists/* && \
@@ -63,6 +63,12 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
     rm -rf ~/.node-gyp && \
     mkdir /app/bundletool && \
     mv /tmp/bundletool/* /app/bundletool && \
+    chown -R root:root /app && \
+    echo '--- Cleaning up' && \
+    apt-get -y purge wget python3 build-essential cmake && \
+    apt-get -y autoremove && \
+    rm -rf /var/cache/apt/* /var/lib/apt/lists/* && \
+    rm -rf /home/stf/.npm /home/stf/.cache /home/stf/.config /home/stf/.local && \
     cd /app && \
     find /tmp -mindepth 1 ! -regex '^/tmp/hsperfdata_root\(/.*\)?' -delete && \
     rm -rf doc .github .tx .semaphore *.md *.yaml LICENSE Dockerfile* \
@@ -86,12 +92,12 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     tar -xJf node-v*.tar.xz --strip-components 1 -C /usr/local && \
     rm node-v*.tar.xz && \
     useradd --system \
+      --uid 998 \
       --create-home \
       --shell /usr/sbin/nologin \
       stf && \
     su stf -s /bin/bash -c '/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js install' && \
-    apt-get -y install --no-install-recommends musl-dev libzmq3-dev libprotobuf-dev git graphicsmagick openjdk-8-jdk yasm && \
-    ln -s /usr/lib/aarch64-linux-musl/libc.so /lib/libc.musl-aarch64.so.1 && \
+    apt-get -y install --no-install-recommends libzmq3-dev libprotobuf-dev git graphicsmagick openjdk-8-jdk yasm && \
     echo '--- Building app' && \
     mkdir -p /app && \
     chown -R stf:stf /tmp/build && \
@@ -100,7 +106,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     export PATH=$PWD/node_modules/.bin:$PATH && \
     sed -i'' -e '/phantomjs/d' package.json && \
     export VCPKG_FORCE_SYSTEM_BINARIES="arm" && \
-    echo 'npm install --save-dev pnpm' | su stf -s /bin/bash && \
     echo 'npm install --python="/usr/bin/python3" --loglevel http' | su stf -s /bin/bash && \
     echo '--- Assembling app' && \
     echo 'npm pack' | su stf -s /bin/bash && \
