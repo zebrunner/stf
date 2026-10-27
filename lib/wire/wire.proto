@@ -98,6 +98,7 @@ enum MessageType {
   IosDeviceInfoMessage           = 126;
   IosNetworkEvent                = 127;
   TouchPathIosMessage            = 128;
+  IosDeviceScreenMessage         = 129;
   reserved 20, 83 to 85, 97, 100 to 112, 115, 117 to 119, 122 to 125;
   GroupUserChangeMessage     = 1200;
   DeviceGroupChangeMessage   = 1201;
@@ -869,6 +870,17 @@ message SdkIosVersion {
   required string id = 1;
   required string device = 2;
   required string sdkVersion = 3;
+}
+
+// The type of an iOS device (iPhone, Apple TV) and its screen in pixels, portrait for a phone,
+// from WebDriverAgent (plugins/devicestate of the ios-device unit): the processor stores them, the
+// device units have no database
+message IosDeviceScreenMessage {
+  required string serial = 1;
+  required string deviceType = 2;
+  required double width = 3;
+  required double height = 4;
+  required double scale = 5;
 }
 
 // The network of an iOS device from its system log (plugins/info of the ios-device unit): the

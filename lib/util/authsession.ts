@@ -21,19 +21,14 @@ import type express from 'express'
 
 import dbapi from '../db/api.js'
 import logger from './logger.js'
+import {isFresh, type SessionJwt} from './sessionjwt.js'
+
+export {isFresh, type SessionJwt}
 
 const DEFAULT_TTL_SECONDS = 24 * 60 * 60
 export const LOGOUT_PATH = '/app/api/v1/logout'
 
 const log = logger.createLogger('util:authsession')
-
-export interface SessionJwt {
-  email: string
-  name: string
-  // Fork (Zebrunner): the session in the database and when it expires (ms since the epoch)
-  sid?: string
-  expiresAt?: number
-}
 
 interface SessionOptions {
   httpOnly?: boolean
@@ -102,11 +97,6 @@ export function isActive(jwt: SessionJwt | undefined): Promise<boolean> {
     }
     return true
   })
-}
-
-// isFresh <jwt>: whether the cookie of a session has not expired, for the units without a database
-export function isFresh(jwt: SessionJwt | undefined): boolean {
-  return Boolean(jwt && jwt.sid && jwt.expiresAt && jwt.expiresAt > Date.now())
 }
 
 // The express middleware of the app and API units: answers the logout and drops the user of a

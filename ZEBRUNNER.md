@@ -39,6 +39,8 @@ The device page of an iOS device has the tabs of an Android one, served by `lib/
 
 There is no port forwarding (iOS cannot run the reverse proxy of Android), no remote debug, ringer mode or bonded Bluetooth devices. go-ios reaches the device through usbmuxd (`USBMUXD_SOCKET_ADDRESS` of mcloud-device). The developer services of iOS 17+ (`ps`, `launch`, `kill`, `info display`, `devicestate`, ...) need a tunnel: the unit runs none, go-ios uses the userspace tunnel the connector container (mcloud-ios-connector) shares for iOS newer than 17.4.0 (`GO_IOS_AGENT_HOST=connector` of mcloud-device, the tunnel API on port 60105). iOS 17.0-17.4.0 has no shared tunnel, so these commands fail there, and a device with `WIRELESS=true` has no go-ios features at all.
 
+The type of the device (iPhone or Apple TV), its screen and its iOS version come from WebDriverAgent without a session when the unit starts (`devicestate.ts`, read again on the next join while WDA fails): the unit sends them to the processor (`IosDeviceScreenMessage`, `SdkIosVersion`), which stores them for the API, the grid and the UI. The device units (`ios-device`, and `device` of Android) have no database: only the units of the server connect to RethinkDB.
+
 ## Image contents
 
 | Component | Why |
@@ -119,6 +121,7 @@ From the images built from `develop` (3.0 and earlier):
 
 - set `STF_STORAGE_TOKEN` in `variables.env` of mcloud (`./zebrunner.sh setup` generates it), the same value as `STF_STORAGE_TOKEN` of mcloud-agent; without it the storage stays open;
 - use a mcloud-device image that installs go-ios, socat and curl itself;
+- the device units no longer connect to RethinkDB (`RETHINKDB_PORT_28015_TCP` of mcloud-device is not needed): the iOS unit sends the type, the screen and the version of the device to the processor, which needs this STF too;
 - run `stf migrate` (the `stf-migrate` service of mcloud does) for the `sessions` table; the users sign in once more;
 - `stf storage-temp` still accepts the `--connect-push`/`--connect-sub` mcloud passes, they are not used.
 

@@ -431,6 +431,12 @@ export default db.ensureConnectivity(function(options: ProcessorOptions) {
           log.info(err)
         })
     })
+    .on(wire.IosDeviceScreenMessage, function(channel, message) {
+      dbapi.setIosDeviceScreen(message)
+        .catch(function(err) {
+          log.error('Unable to save the screen of iOS device "%s"', message.serial, err.stack)
+        })
+    })
     .handler())
 
   lifecycle.observe(function() {

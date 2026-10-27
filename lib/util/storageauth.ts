@@ -16,7 +16,7 @@ import type http from 'http'
 import cookieSession from 'cookie-session'
 import type express from 'express'
 
-import {isFresh, type SessionJwt} from './authsession.js'
+import {isFresh, type SessionJwt} from './sessionjwt.js'
 import logger from './logger.js'
 
 export const TOKEN_HEADER = 'x-stf-internal-token'
