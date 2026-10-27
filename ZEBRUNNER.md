@@ -96,7 +96,7 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 | `GET /api/v1/devices/{serial}/owner` | the owner of the group of the device |
 | `GET /api/v1/devices/{serial}/type` | the device type of an iOS device (`iOS`, `tvOS`) |
 
-The device lists and `GET /api/v1/devices/{serial}` also return `name`, the model of the device.
+The device lists and `GET /api/v1/devices/{serial}` also return `name`, the model of the device. The operations tagged `admin` need an admin with the session cookie of the app as with an access token (`lib/units/api/helpers/securityHandlers.ts`; upstream checked the token only).
 
 ## Sessions
 

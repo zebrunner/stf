@@ -13,6 +13,20 @@ var log = logger.createLogger('api:helpers:securityHandlers')
 
 // Specifications: https://tools.ietf.org/html/rfc6750#section-2.1
 
+// Fork (Zebrunner): the operations tagged admin need an admin, with an access token and with the session cookie of
+// the app alike (upstream checked the token only: any signed-in user could call them from the browser)
+function forbidsUser(req: SecurityRequest, privilege: string): boolean {
+  var tags = req.swagger.operation.definition.tags || []
+  return privilege === apiutil.USER && tags.indexOf('admin') > -1
+}
+
+function forbidden(res: Response) {
+  return res.status(403).json({
+    success: false
+  , description: 'Forbidden: privileged operation (admin)'
+  })
+}
+
 function accessTokenAuth(req: SecurityRequest, res: Response, next: (err?: unknown) => void) {
   if (req.headers.authorization) {
     var authHeader = req.headers.authorization.split(' ')
@@ -56,12 +70,9 @@ function accessTokenAuth(req: SecurityRequest, res: Response, next: (err?: unkno
         return dbapi.loadUser(data.email)
           .then(function(user) {
             if (user) {
-              if (user.privilege === apiutil.USER &&
-                  req.swagger.operation.definition.tags.indexOf('admin') > -1) {
-                return res.status(403).json({
-                  success: false
-                , description: 'Forbidden: privileged operation (admin)'
-                })
+              // Fork (Zebrunner)
+              if (forbidsUser(req, user.privilege)) {
+                return forbidden(res)
               }
               req.user = user
               return next()
@@ -92,6 +103,10 @@ function accessTokenAuth(req: SecurityRequest, res: Response, next: (err?: unkno
     return dbapi.loadUser(req.session.jwt.email)
       .then(function(user) {
         if (user) {
+          // Fork (Zebrunner)
+          if (forbidsUser(req, user.privilege)) {
+            return forbidden(res)
+          }
           req.user = user
           return next()
         }
