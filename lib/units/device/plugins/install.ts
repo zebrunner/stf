@@ -3,7 +3,6 @@
 //
 
 import stream from 'stream'
-import url from 'url'
 import util from 'util'
 
 import syrup from '@devicefarmer/stf-syrup'
@@ -67,8 +66,16 @@ export default syrup.serial()
       }
 
       function pushApp() {
+        // Fork (Zebrunner): only a file of the storage gets the token of the deployment, the href comes from the user
+        var href: string
+        try {
+          href = storageauth.storageUrl(options.storageUrl, message.href)
+        }
+        catch (err) {
+          return Promise.reject(err)
+        }
         var req = request(storageauth.sign({
-          url: url.resolve(options.storageUrl, message.href)
+          url: href
         }))
 
         // We need to catch the Content-Length on the fly or we risk

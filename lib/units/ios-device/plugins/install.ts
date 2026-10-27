@@ -1,7 +1,8 @@
+import childProcess from 'child_process'
 import fs from 'fs'
 import http from 'http'
 import https from 'https'
-import {exec as childExec} from 'child_process'
+import path from 'path'
 
 import syrup from '@devicefarmer/stf-syrup'
 import Promise from 'bluebird'
@@ -15,8 +16,15 @@ import storageauth from '../../../util/storageauth.js'
 import type {IosDeviceOptions, Push, Router} from '../../../types/ios-device.js'
 import routerSyrup from '../support/router.js'
 import pushSyrup from '../support/push.js'
+import {GO_IOS_BIN} from './util/goios.js'
 
 const mkdir = Promise.promisify(fs.mkdir)
+
+// An app bundle identifier of Apple: letters, digits, hyphens and periods. It comes with the manifest of the
+// user, it is never a part of a shell command
+const BUNDLE_ID = /^[A-Za-z0-9][A-Za-z0-9.-]*$/
+// The download of an app from the storage ends when it sends nothing for this time
+const DOWNLOAD_IDLE_TIMEOUT = 60 * 1000
 
 type Log = ReturnType<typeof logger.createLogger>
 type Channel = string | Buffer
@@ -27,9 +35,10 @@ interface IosManifest {
   CFBundleIdentifier?: string
 }
 
-function execShellCommand(cmd: string) {
+// run <file> <args>: the command without a shell, its output
+function run(file: string, args: string[]) {
   return new Promise<string>(function(resolve, reject) {
-    childExec(cmd, function(error, stdout) {
+    childProcess.execFile(file, args, function(error, stdout) {
       if (error) {
         reject(error)
         return
@@ -39,44 +48,36 @@ function execShellCommand(cmd: string) {
   })
 }
 
-function installApp(udid: string, filepath: string, id: string, isSimulator: boolean) {
-  var simulatorCommands = [
-    `cd ${filepath} && unzip * && xcrun simctl install ${udid} *.app`
-  ]
-
-  var deviceCommands = [
-    `ios install --path=${filepath}/${id} --udid=${udid}`
-  ]
-
-  var commands = isSimulator ? simulatorCommands : deviceCommands
-
-  return new Promise<void>(function(resolve, reject) {
-    execShellCommand(commands.join(';')).then(function() {
-      resolve()
-    }).catch(function(err) {
-      reject(err)
+// the app of a simulator build: the .app of the zip, at its root or in Payload/
+function findSimulatorApp(dir: string): string {
+  for (var candidate of [dir, path.join(dir, 'Payload')]) {
+    var app = fs.existsSync(candidate) && fs.readdirSync(candidate).find(function(name) {
+      return name.endsWith('.app')
     })
-  })
+    if (app) {
+      return path.join(candidate, app)
+    }
+  }
+  throw new Error('No .app in the simulator build')
+}
+
+function installApp(udid: string, filepath: string, id: string, isSimulator: boolean) {
+  if (isSimulator) {
+    return run('unzip', ['-o', '-q', path.join(filepath, id), '-d', filepath])
+      .then(function() {
+        return run('xcrun', ['simctl', 'install', udid, findSimulatorApp(filepath)])
+      })
+      .then(function() {})
+  }
+  return run(GO_IOS_BIN, ['install', `--path=${path.join(filepath, id)}`, `--udid=${udid}`])
+    .then(function() {})
 }
 
 function launchApp(udid: string, bundleId: string, isSimulator: boolean) {
-  var simulatorCommands = [
-    `xcrun simctl launch ${udid} ${bundleId}`
-  ]
-
-  var deviceCommands = [
-    `ios launch ${bundleId} --udid=${udid}`
-  ]
-
-  var commands = isSimulator ? simulatorCommands : deviceCommands
-
-  return new Promise<void>(function(resolve, reject) {
-    execShellCommand(commands.join(';')).then(function() {
-      resolve()
-    }).catch(function(err) {
-      reject(err)
-    })
-  })
+  return (isSimulator ?
+    run('xcrun', ['simctl', 'launch', udid, bundleId]) :
+    run(GO_IOS_BIN, ['launch', bundleId, `--udid=${udid}`]))
+    .then(function() {})
 }
 
 function isSimulatorManifest(manifest: IosManifest): boolean {
@@ -128,8 +129,21 @@ function downloadFile(
     }
 
     file.on('error', reject)
-    httpServer.get(downloadUrl, {headers: storageauth.internalHeaders()}, handleResponse)
-      .on('error', reject)
+    var headers = storageauth.internalHeaders()
+    var req = httpServer.get(downloadUrl, {headers: headers}, function(response) {
+      // an answer of the storage that is not the app (e.g. 401 of the authentication) is not installed
+      if (response.statusCode !== 200) {
+        response.resume()
+        file.close()
+        reject(new Error(`The storage answered ${response.statusCode} for the app`))
+        return
+      }
+      handleResponse(response)
+    })
+    req.on('error', reject)
+    req.setTimeout(DOWNLOAD_IDLE_TIMEOUT, function() {
+      req.destroy(new Error('The download of the app from the storage timed out'))
+    })
   })
 }
 
@@ -171,10 +185,18 @@ function maybeLaunchApp(
 , log: Log
 ) {
   if (shouldLaunch) {
-    log.info('CFBundleIdentifier: ' + manifest.CFBundleIdentifier)
+    var bundleId = manifest.CFBundleIdentifier
+    log.info('CFBundleIdentifier: ' + bundleId)
     sendProgress('launching_app', 100)
-    if (manifest.CFBundleIdentifier) {
-      launchApp(options.serial, manifest.CFBundleIdentifier, isSimulator)
+    if (bundleId && BUNDLE_ID.test(bundleId)) {
+      launchApp(options.serial, bundleId, isSimulator)
+        .catch(function(err: Error) {
+          log.error('Unable to launch "%s"', bundleId, err.message)
+        })
+    }
+    else if (bundleId) {
+      log.warn('The app is not launched, its bundle identifier is invalid: %s'
+      , JSON.stringify(bundleId))
     }
   }
 }
@@ -222,16 +244,14 @@ function handleInstall(
   var id = uuid.v4()
   var tmpDirPath = '/tmp/' + id
   var filePath = tmpDirPath + '/' + id
-  var httpServer: typeof http | typeof https = http
-  var downloadUrl = options.storageUrl.replace(/\/+$/, '') + (message.href || '')
 
   log.info('mkdir "%s"', tmpDirPath)
-  if (options.storageUrl.includes('https://')) {
-    httpServer = https
-  }
 
   mkdir(tmpDirPath)
     .then(function() {
+      // only a file of the storage gets the token of the deployment, the href comes from the user
+      var downloadUrl = storageauth.storageUrl(options.storageUrl, message.href || '')
+      var httpServer = downloadUrl.startsWith('https:') ? https : http
       log.info('url: ', downloadUrl)
       return downloadFile(downloadUrl, filePath, httpServer, sendProgress)
     })
@@ -251,6 +271,10 @@ function handleInstall(
     })
     .catch(function(err) {
       sendInstallFailure(push, channel, options, manifest, err, log)
+    })
+    .finally(function() {
+      // the downloaded app and the unzipped simulator build
+      return fs.promises.rm(tmpDirPath, {recursive: true, force: true}).catch(function() {})
     })
 }
 

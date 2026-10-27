@@ -73,7 +73,8 @@ describe('device APK transfer', function() {
       })
 
       router.emit(wire.InstallMessage.$code, 'test-channel', {
-        href: '/sample.apk'
+        // Fork (Zebrunner): a file of the storage, the others are refused
+        href: '/s/blob/sample.apk'
       , manifest: JSON.stringify({package: 'test.apk'})
       , launch: false
       })

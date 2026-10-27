@@ -109,7 +109,7 @@ With `STF_STORAGE_TOKEN` set, `/s/upload`, `/s/download` and `/s/blob` of the st
 - the STF units, with `x-stf-internal-token: <STF_STORAGE_TOKEN>`;
 - signed-in users, with the session cookie of the app unit.
 
-The apk and image plugins forward the credentials of their caller, so `/s/apk/...` and `/s/image/...` are protected the same way. Scripts that used the storage without a session (e.g. with an access token of the API) are refused. `/s/download` (install from URL) downloads only from public addresses over http(s), checked after the DNS lookup, when connecting and on every redirect; `STF_STORAGE_TEMP_DOWNLOAD_ALLOW` lets private networks in.
+The apk and image plugins forward the credentials of their caller, so `/s/apk/...` and `/s/image/...` are protected the same way. The device units download an app to install only from the storage (`storageauth.storageUrl`: `/s/...` of the origin of `--storage-url`), the href of the user cannot send the token elsewhere; the iOS unit runs go-ios and `xcrun` without a shell, launches only a valid bundle identifier and checks the answer of the storage. Scripts that used the storage without a session (e.g. with an access token of the API) are refused. `/s/download` (install from URL) downloads only from public addresses over http(s), checked after the DNS lookup, when connecting and on every redirect; `STF_STORAGE_TEMP_DOWNLOAD_ALLOW` lets private networks in.
 
 Without the token the storage works as in upstream (open routes, any download URL) and logs a warning at start: the upstream tests and CI use it that way. `--storage-token` needs `--secret` (`SECRET`), the secret of the session cookies of the app unit.
 
