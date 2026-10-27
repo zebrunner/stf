@@ -3,6 +3,8 @@ import util from 'util'
 
 import wire from './index.js'
 import logger from '../util/logger.js'
+// Fork (Zebrunner)
+import {guardListener} from '../util/zebrunner-guard.js'
 
 type EmitterClass = typeof EventEmitter.default
 
@@ -62,7 +64,9 @@ Router.prototype.removeListener = function(
 }
 
 Router.prototype.handler = function(this: Router) {
-  return function(this: Router, channel: string | Buffer, data: Buffer) {
+  // Fork (Zebrunner): a malformed message or a failing listener is logged and dropped,
+  // see lib/util/zebrunner-guard.ts
+  var route = function(this: Router, channel: string | Buffer, data: Buffer) {
     var wrapper = wire.Envelope.decode(data)
     var type = wire.ReverseMessageType[wrapper.type]
 
@@ -85,6 +89,9 @@ Router.prototype.handler = function(this: Router) {
       )
     }
   }.bind(this)
+  // Fork (Zebrunner)
+  return guardListener(log, 'a ZeroMQ message', route
+  , (channel: string | Buffer, _data: Buffer) => `the channel "${String(channel)}"`)
 }
 
 export default Router as unknown as RouterFactory
