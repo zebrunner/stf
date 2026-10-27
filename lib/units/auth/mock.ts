@@ -18,6 +18,8 @@ import * as basicAuth from 'basic-auth'
 import logger from '../../util/logger.js'
 import requtil from '../../util/requtil.js'
 import jwtutil from '../../util/jwtutil.js'
+// Fork (Zebrunner): the short token of the sign-in
+import signin from '../../util/zebrunner-signin.js'
 import pathutil from '../../util/pathutil.js'
 import urlutil from '../../util/urlutil.js'
 import lifecycle from '../../util/lifecycle.js'
@@ -155,7 +157,8 @@ export default function(options: MockAuthOptions) {
               }
             , secret: options.secret
             , header: {
-                exp: Date.now() + 24 * 3600 * 1000
+                // Fork (Zebrunner)
+                exp: signin.signInTokenExpiry()
               }
             })
             res.status(200)
