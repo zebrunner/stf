@@ -16,6 +16,8 @@ interface FakePasteboard {
   // The text typed into the focused field of the app in front, null without one
   field: string | null
   settings: Record<string, number>
+  // How long the app that was in front stays there after a switch, like iOS 15 to 18
+  switchDelay: number
   // The settings of WDA when its runner came to the front
   runnerSettings: Record<string, number> | null
   calls: string[]
@@ -23,6 +25,18 @@ interface FakePasteboard {
 
 function fakeWda(state: FakePasteboard) {
   var app = express()
+
+  function switchTo(bundleId: string) {
+    if (state.switchDelay) {
+      setTimeout(function() {
+        state.active = bundleId
+      }, state.switchDelay)
+    }
+    else {
+      state.active = bundleId
+    }
+  }
+
   app.use(express.json())
   app.use(function(req, res, next) {
     state.calls.push(req.method + ' ' + req.path.replace(/^\/session\/[^/]+/, ''))
@@ -35,7 +49,7 @@ function fakeWda(state: FakePasteboard) {
     res.json({value: {bundleId: state.active}})
   })
   app.post('/wda/homescreen', function(req, res) {
-    state.active = 'com.apple.springboard'
+    switchTo('com.apple.springboard')
     res.json({value: null})
   })
   app.get('/session/:id/appium/settings', function(req, res) {
@@ -48,8 +62,12 @@ function fakeWda(state: FakePasteboard) {
   app.post('/session/:id/wda/apps/activate', function(req, res) {
     if (req.body.bundleId === RUNNER) {
       state.runnerSettings = Object.assign({}, state.settings)
+      // The runner is in front once WDA answers
+      state.active = RUNNER
     }
-    state.active = req.body.bundleId
+    else {
+      switchTo(req.body.bundleId)
+    }
     res.json({value: null})
   })
   app.post('/session/:id/wda/getPasteboard', function(req, res) {
@@ -104,6 +122,7 @@ describe('zebrunner: ios-device clipboard', function() {
     , pasteboard: 'copied on the device'
     , field: ''
     , settings: {waitForIdleTimeout: 10, animationCoolOffTimeout: 2}
+    , switchDelay: 0
     , runnerSettings: null
     , calls: []
     }
@@ -156,6 +175,24 @@ describe('zebrunner: ios-device clipboard', function() {
     state.active = 'com.apple.springboard'
     await pasteboard().get()
     expect(state.calls).to.include('POST /wda/homescreen')
+    expect(state.active).to.equal('com.apple.springboard')
+  })
+
+  // WDA answers before the app that comes back is in front, then the next operation would take
+  // the runner for the app to bring back and leave it in front
+  it('should wait for the app that comes back to be in front', async function() {
+    state.switchDelay = 100
+    expect(await pasteboard().get()).to.equal('copied on the device')
+    expect(state.active).to.equal('com.example.app')
+    await pasteboard().paste('pasted text')
+    expect(await pasteboard().get()).to.equal('pasted text')
+    expect(state.active).to.equal('com.example.app')
+  })
+
+  it('should wait for the home screen when it was in front', async function() {
+    state.active = 'com.apple.springboard'
+    state.switchDelay = 100
+    await pasteboard().get()
     expect(state.active).to.equal('com.apple.springboard')
   })
 
