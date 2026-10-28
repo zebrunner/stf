@@ -14,7 +14,7 @@ described under Releasing below.
 | Job | What it proves |
 |---|---|
 | `plan` | `.github/android-matrix.json` is well formed, and produces the Android matrix |
-| `build` | `npm install` and the webpack bundle all succeed, and `stf -V` runs |
+| `build` | `npm ci` and the webpack bundle all succeed, and `stf -V` runs |
 | `lint` | `node build.mts lint` (eslint over `lib/`, the React/TypeScript UI in `res/app/src`, root JS, a `tsc` typecheck, plus jsonlint) |
 | `unit` | `mocha` over `test/` (`lib/util`, `lib/wire`) |
 | `component` | `vitest` + jsdom over the UI specs in `res/app/src/**/*.test.ts(x)` |
@@ -260,8 +260,9 @@ CONTRIBUTING asks of it.
 `test:component` is the Vitest tier. It runs in jsdom and needs no browser; CI
 still runs it as its own job so the report shows it as a separate line.
 
-There is no committed `package-lock.json`: `.gitignore` excludes it, so CI uses
-`npm install` and keys its dependency cache on `package.json`.
+The fork commits `package-lock.json` (and `test/playwright/package-lock.json`):
+CI and the `Dockerfile` install it with `npm ci`, and the dependency cache is
+keyed on `package.json` and `package-lock.json`.
 
 Every job reads its Node version from `.nvmrc` (22.23.2), which is also what the
 `Dockerfile` and `.semaphore/semaphore.yml` use, so CI tests the runtime the

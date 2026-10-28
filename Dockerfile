@@ -20,6 +20,7 @@ ARG TARGETARCH
 # Fork (Zebrunner): the amd64 and arm64 images are alike: stf has the uid 998,
 # /app belongs to root, the build tools and caches are removed. zeromq ships
 # its glibc addon for arm64, no musl libc nor pnpm is needed to build it.
+# npm ci installs the versions of the committed package-lock.json.
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
     export DEBIAN_FRONTEND=noninteractive && \
     useradd --system \
@@ -53,7 +54,7 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
     echo '--- Building app' && \
     cd /tmp/build && \
     export PATH=$PWD/node_modules/.bin:$PATH && \
-    echo 'npm install --python="/usr/bin/python3" --loglevel http' | su stf -s /bin/bash && \
+    echo 'npm ci --python="/usr/bin/python3" --loglevel http' | su stf -s /bin/bash && \
     echo '--- Assembling app' && \
     echo 'npm pack' | su stf -s /bin/bash && \
     tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /app && \
@@ -106,7 +107,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     export PATH=$PWD/node_modules/.bin:$PATH && \
     sed -i'' -e '/phantomjs/d' package.json && \
     export VCPKG_FORCE_SYSTEM_BINARIES="arm" && \
-    echo 'npm install --python="/usr/bin/python3" --loglevel http' | su stf -s /bin/bash && \
+    echo 'npm ci --python="/usr/bin/python3" --loglevel http' | su stf -s /bin/bash && \
     echo '--- Assembling app' && \
     echo 'npm pack' | su stf -s /bin/bash && \
     tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /app && \

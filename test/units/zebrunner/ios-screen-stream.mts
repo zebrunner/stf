@@ -234,4 +234,45 @@ describe('zebrunner: iOS screen stream', function() {
       clock.restore()
     }
   })
+
+  it('should keep the socket of a browser that sends messages and answers pings', async function() {
+    var clock = sinon.useFakeTimers({toFake: ['setInterval', 'clearInterval']})
+    try {
+      var ws = connect()
+      var frames: Buffer[] = []
+      ws.on('message', function(data: Buffer, isBinary: boolean) {
+        if (isBinary) {
+          frames.push(data)
+        }
+      })
+      await new Promise(function(resolve) {
+        ws.on('open', resolve)
+      })
+      // more than the 16 KB the stream keeps for a reader: unread, they would pause the socket and
+      // its pongs
+      for (var i = 0; i < 64; i++) {
+        ws.send('x'.repeat(1024))
+      }
+      await until(function() {
+        return frames.length > 0
+      })
+      expect(frames[0]).to.eql(FRAME)
+
+      clock.tick(30000)
+      await sleep(200)
+      clock.tick(30000)
+      await sleep(200)
+      expect(ws.readyState).to.equal(wsModule.WebSocket.OPEN)
+      expect(mjpeg.open).to.equal(1)
+
+      ws.close()
+      await until(function() {
+        return mjpeg.open === 0
+      })
+      expect(unavailable).to.eql([])
+    }
+    finally {
+      clock.restore()
+    }
+  })
 })
