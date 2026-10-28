@@ -10,10 +10,8 @@ import wireutil from '../../../../wire/util.js'
 import wire from '../../../../wire/index.js'
 import lifecycle from '../../../../util/lifecycle.js'
 import timeutil from '../../../../util/timeutil.js'
-import dbapi from '../../../../db/api.js'
 import type {
-  DisplayDocument
-, IosDeviceOptions
+  IosDeviceOptions
 , IosNotifierPlugin
 , IosOrientation
 , Push
@@ -34,6 +32,7 @@ import activeOrNewSession from './session.js'
 import pushSyrup from '../../support/push.js'
 // Fork (Zebrunner)
 import {startFastInput, stopFastInput} from './fast-input.js'
+import devicestateSyrup, {type IosDeviceStatePlugin} from '../devicestate.js'
 
 const LOG_REQUEST_MSG = 'Request has been sent to WDA with data: '
 var NO_RESULT: undefined
@@ -43,21 +42,15 @@ function getErrorMessage(err: unknown): string {
   return body.error?.value?.message || ''
 }
 
-function numericDisplayValue(
-  display: DisplayDocument
-, key: 'height' | 'width' | 'scale'
-): number | null {
-  var value = display[key]
-  return typeof value === 'number' ? value : null
-}
-
 export default syrup.serial()
   .dependency(notifierSyrup)
   .dependency(pushSyrup)
+  .dependency(devicestateSyrup)
   .define(function(
     options: IosDeviceOptions
   , notifier: IosNotifierPlugin
   , push: Push
+  , devicestate: IosDeviceStatePlugin
   ): WdaClientPlugin {
     var log = logger.createLogger('wdaClient')
     log.info('WdaClient.js initializing...')
@@ -84,17 +77,11 @@ export default syrup.serial()
           return this.deviceType
         }
 
-        return dbapi.getDeviceType(options.serial).then((deviceType) => {
-          if (!deviceType) {
-            return null
-          }
-
-          log.info('Reusing device type value: ', deviceType)
+        return devicestate.type().then((deviceType) => {
           this.deviceType = deviceType
           return this.deviceType
-        }).catch(function(err) {
-          log.error('Error getting device type from DB')
-          lifecycle.fatal(err)
+        }).catch(function(err: Error) {
+          log.warn('Unable to get the device type from WDA: %s', err.message)
           return null
         })
       }
@@ -418,34 +405,24 @@ export default syrup.serial()
         }
         log.info('getting device window size...')
 
-        return dbapi.getDeviceSize(options.serial).then((deviceSize) => {
-          if (!deviceSize) {
-            return null
-          }
-
-          var dbHeight = numericDisplayValue(deviceSize, 'height')
-          var dbWidth = numericDisplayValue(deviceSize, 'width')
-          var dbScale = numericDisplayValue(deviceSize, 'scale')
-
-          if (!dbHeight || !dbWidth || !dbScale) {
-            return null
-          }
-
-          log.info('Reusing device size/scale')
+        // Fork (Zebrunner): the screen in pixels from WDA (plugins/devicestate), not from the database
+        return devicestate.screen().then((screen) => {
+          var width = screen.width / screen.scale
+          var height = screen.height / screen.scale
           if (this.orientation === 'PORTRAIT' || !this.orientation) {
-            this.deviceSize = {height: dbHeight / dbScale, width: dbWidth / dbScale}
+            this.deviceSize = {height: height, width: width}
           }
           else if (this.orientation === 'LANDSCAPE') {
-            this.deviceSize = {height: dbWidth / dbScale, width: dbHeight / dbScale}
+            this.deviceSize = {height: width, width: height}
           }
           else if (this.deviceType === 'Apple TV') {
-            this.deviceSize = {height: dbHeight, width: dbWidth}
+            this.deviceSize = {height: screen.height, width: screen.width}
           }
           return this.deviceSize
         })
-          .catch(function(err) {
-            log.error('Error getting device size from DB')
-            lifecycle.fatal(err)
+          .catch(function(err: Error) {
+            log.warn('Unable to get the device size from WDA: %s', err.message)
+            return null
           })
       }
 

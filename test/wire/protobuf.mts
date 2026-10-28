@@ -145,6 +145,7 @@ var pbjs5MessageType: Record<string, number> = {
 , IosDeviceInfoMessage: 126
 , IosNetworkEvent: 127
 , TouchPathIosMessage: 128
+, IosDeviceScreenMessage: 129
 }
 
 var pbjs5Encodings = [

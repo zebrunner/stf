@@ -12,6 +12,7 @@ import type {
   BatteryIosEventFields
 , InitializeIosDeviceStateFields
 , IosDeviceInfoMessageFields
+, IosDeviceScreenMessageFields
 , IosNetworkEventFields
 , SdkIosVersionFields
 } from '../types/wire.js'
@@ -51,16 +52,10 @@ export interface ZebrunnerDbApi {
   setIosDeviceInfo(message: IosDeviceInfoMessageFields): Promise<r.WriteResult>
   setIosNetwork(message: IosNetworkEventFields): Promise<r.WriteResult>
   setDeviceIosVersion(message: SdkIosVersionFields): Promise<void>
-  sizeIosDevice(
-    serial: string
-  , height: number
-  , width: number
-  , scale: number
-  ): Promise<r.WriteResult>
+  setIosDeviceScreen(message: IosDeviceScreenMessageFields): Promise<r.WriteResult>
   getDeviceSize(serial: string): Promise<DeviceDocument['display'] | null>
   getDeviceGroupOwner(serial: string): Promise<DeviceGroup['owner'] | null>
   setDeviceGroupOwner(message: {serial: string}): Promise<r.WriteResult>
-  setDeviceType(serial: string, type: string): Promise<r.WriteResult>
   getDeviceType(serial: string): Promise<string | null | undefined>
   initializeIosDeviceState(
     publicIp: string
@@ -181,12 +176,14 @@ export default function extendDbApi(dbapi: DbApi, db: Db) {
       })
   }
 
-  dbapi.sizeIosDevice = function(serial, height, width, scale) {
-    return db.run(r.table('devices').get<DeviceDocument>(serial).update({
-      display: {
-        height: height
-      , width: width
-      , scale: scale
+  // The type and the screen of an iOS device, which its unit reads from WebDriverAgent
+  dbapi.setIosDeviceScreen = function(message) {
+    return db.run(r.table('devices').get<DeviceDocument>(message.serial).update({
+      deviceType: message.deviceType
+    , display: {
+        height: message.height
+      , width: message.width
+      , scale: message.scale
       }
     }))
   }
@@ -211,12 +208,6 @@ export default function extendDbApi(dbapi: DbApi, db: Db) {
         , name: process.env.STF_ADMIN_NAME || 'administrator'
         }
       }
-    }))
-  }
-
-  dbapi.setDeviceType = function(serial, type) {
-    return db.run(r.table('devices').get<DeviceDocument>(serial).update({
-      deviceType: type
     }))
   }
 

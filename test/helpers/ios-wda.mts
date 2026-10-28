@@ -1,6 +1,6 @@
-// Fork (Zebrunner): loads the WDA client of the ios-device unit with its STF side faked (database,
-// ZeroMQ, lifecycle), for the tests against a fake WDA (test/units/zebrunner/) and a real one on
-// an iOS simulator (test/zebrunner-ios/)
+// Fork (Zebrunner): loads the WDA client of the ios-device unit with its STF side faked (the state
+// of the device, ZeroMQ, lifecycle), for the tests against a fake WDA (test/units/zebrunner/) and a
+// real one on an iOS simulator (test/zebrunner-ios/)
 import syrup from '@devicefarmer/stf-syrup'
 
 import wire from '../../lib/wire/index.js'
@@ -45,15 +45,21 @@ export async function loadWdaClient(options: IosWdaOptions): Promise<IosWda> {
   var display: Display | null = null
 
   var restores = [
-    mockModule(module('db/index.js'), {default: {}})
-  , mockModule(module('db/api.js'), {default: {
-      getDeviceType: function() {
-        return Promise.resolve(options.deviceType || 'iPhone')
-      }
-    , getDeviceSize: function() {
-        return Promise.resolve(display)
-      }
-    }})
+    mockModule(module('units/ios-device/plugins/devicestate.js'), {
+      default: syrup.serial().define(function() {
+        return {
+          type: function() {
+            return Promise.resolve(options.deviceType || 'iPhone')
+          }
+        , screen: function() {
+            return display ? Promise.resolve(display) : Promise.reject(new Error('no display'))
+          }
+        , report: function() {
+            return Promise.resolve()
+          }
+        }
+      })
+    })
   , mockModule(module('util/lifecycle.js'), {default: {
       fatal: function(err: unknown) {
         fatal.push(err)

@@ -8,10 +8,6 @@ import wire from '../../../wire/index.js'
 import wireutil from '../../../wire/util.js'
 import grouputil from '../../../util/grouputil.js'
 import lifecycle from '../../../util/lifecycle.js'
-import dbapi from '../../../db/api.js'
-import request from './util/rp.js'
-import iosutil from './util/iosutil.js'
-import activeOrNewSession from './wda/session.js'
 import type {
   IosDeviceOptions
 , IosGroupPlugin
@@ -20,60 +16,14 @@ import type {
 , Router
 , Sub
 , Channels
-, WdaBatteryInfo
-, WdaScreenInfo
-, WdaValueResponse
-, WdaWindowSize
 } from '../../../types/ios-device.js'
-import type {DeviceDocument} from '../../../types/stf.js'
 import type {OwnerMessage} from '../../../types/wire.js'
 import soloSyrup from './solo.js'
 import routerSyrup from '../support/router.js'
 import pushSyrup from '../support/push.js'
 import subSyrup from '../support/sub.js'
 import channelsSyrup from '../support/channels.js'
-
-type Log = ReturnType<typeof logger.createLogger>
-
-interface WdaDeviceInfo {
-  model: string
-  name: string
-}
-
-function missingFirstSessionData(device: DeviceDocument | null): boolean {
-  return !device?.display?.width || !device.display.height || !device.deviceType
-}
-
-function storeDeviceSize(
-  options: IosDeviceOptions
-, baseUrl: string
-, sessionId: string
-, log: Log
-) {
-  return request<WdaValueResponse<WdaWindowSize>>({
-    method: 'GET'
-  , uri: `${baseUrl}/session/${sessionId}/window/size`
-  , json: true
-  }).then(function(firstSessionSize) {
-    var width = firstSessionSize.value.width
-    var height = firstSessionSize.value.height
-
-    return request<string>({
-      method: 'GET'
-    , uri: `${baseUrl}/session/${sessionId}/wda/screen`
-    }).then(function(scaleResponse) {
-      var parsedResponse = JSON.parse(scaleResponse) as WdaValueResponse<WdaScreenInfo>
-      var scale = parsedResponse.value.scale
-
-      height *= scale
-      width *= scale
-
-      log.info('Storing device size/scale')
-
-      return dbapi.sizeIosDevice(options.serial, height, width, scale)
-    })
-  })
-}
+import devicestateSyrup, {type IosDeviceStatePlugin} from './devicestate.js'
 
 export default syrup.serial()
   .dependency(soloSyrup)
@@ -81,6 +31,7 @@ export default syrup.serial()
   .dependency(pushSyrup)
   .dependency(subSyrup)
   .dependency(channelsSyrup)
+  .dependency(devicestateSyrup)
   .define(function(
     options: IosDeviceOptions
   , solo: IosSoloPlugin
@@ -88,9 +39,9 @@ export default syrup.serial()
   , push: Push
   , sub: Sub
   , channels: Channels
+  , devicestate: IosDeviceStatePlugin
   ): IosGroupPlugin {
     var log = logger.createLogger('device:plugins:group')
-    var baseUrl = iosutil.getUri(options.wdaHost, options.wdaPort)
     var currentGroup: OwnerMessage | null = null
     var plugin = new events.EventEmitter() as IosGroupPlugin
 
@@ -131,84 +82,9 @@ export default syrup.serial()
             ))
           ])
 
-          dbapi.loadDeviceBySerial(options.serial).then(function(device) {
-            if (!missingFirstSessionData(device)) {
-              return
-            }
-
-            var deviceType: string | undefined
-            request<WdaValueResponse<WdaDeviceInfo>>({
-              method: 'GET'
-            , uri: `${baseUrl}/wda/device/info`
-            , json: true
-            })
-              .then(function(deviceInfo) {
-                var deviceInfoModel = deviceInfo.value.model.toLowerCase()
-                var deviceInfoName = deviceInfo.value.name.toLowerCase()
-                if (deviceInfoModel.includes('tv') || deviceInfoName.includes('tv')) {
-                  deviceType = 'Apple TV'
-                }
-                else {
-                  deviceType = 'iPhone'
-                }
-                log.info('Storing device type value: ' + deviceType)
-                return dbapi.setDeviceType(options.serial, deviceType)
-              })
-              .catch(function(err) {
-                log.error('Error storing device type')
-                lifecycle.fatal(err)
-              })
-
-            activeOrNewSession(baseUrl, request)
-              .then(function(session) {
-                var sessionResponse = session.response
-                var sessionId = sessionResponse.sessionId
-
-                log.info('Storing device version')
-                push.send([
-                  wireutil.global
-                , wireutil.envelope(new wire.SdkIosVersion(
-                    options.serial
-                  , sessionResponse.value.capabilities.device
-                  , sessionResponse.value.capabilities.sdkVersion
-                  ))
-                ])
-
-                if (deviceType !== 'Apple TV') {
-                  request<WdaValueResponse<WdaBatteryInfo>>({
-                    method: 'GET'
-                  , uri: `${baseUrl}/session/${sessionId}/wda/batteryInfo`
-                  , json: true
-                  })
-                    .then(function(batteryInfoResponse) {
-                      var batteryState = iosutil.batteryState(batteryInfoResponse.value.state)
-                      var batteryLevel = iosutil.batteryLevel(batteryInfoResponse.value.level)
-
-                      push.send([
-                        wireutil.global
-                      , wireutil.envelope(new wire.BatteryIosEvent(
-                          options.serial
-                        , 'good'
-                        , 'usb'
-                        , batteryState
-                        , batteryLevel
-                        , 'n/a'
-                        , 100
-                        ))
-                      ])
-                    })
-                    .catch(function(err) {
-                      log.error('Error storing battery', err)
-                    })
-                }
-
-                return storeDeviceSize(options, baseUrl, sessionId, log)
-              })
-              .catch(function(err) {
-                log.error('Error storing device size/scale')
-                lifecycle.fatal(err)
-              })
-          })
+          // Fork (Zebrunner): the type, the screen and the version of the device again, in case the
+          // processor had no row of the device when the unit started (plugins/devicestate)
+          devicestate.report()
 
           plugin.emit('join', currentGroup)
 
