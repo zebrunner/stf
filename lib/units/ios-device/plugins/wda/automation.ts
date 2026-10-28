@@ -96,17 +96,23 @@ export default class WdaAutomation {
   }
 
   // restore <bundleId> [keep]: brings back the app that was in front, the home screen when it is
-  // not known; keep is an app that is left in front
+  // not known; keep is an app that is left in front. The app is waited for: WDA answers before
+  // the switch ends (up to a second on iOS 15 to 18), and an operation started in the meantime
+  // would take the app that is leaving, like the runner of WDA, for the one to bring back
   protected restore(bundleId: string | null, keep?: string): Promise<unknown> {
+    if (bundleId && bundleId === keep) {
+      return Promise.resolve(null)
+    }
+    var target = bundleId || SPRINGBOARD_BUNDLE_ID
     return Promise.try(() => {
-      if (bundleId && bundleId === keep) {
-        return null
-      }
-      if (!bundleId || bundleId === SPRINGBOARD_BUNDLE_ID) {
+      if (target === SPRINGBOARD_BUNDLE_ID) {
         return this.send({method: 'POST', uri: this.options.baseUrl + '/wda/homescreen', body: {}})
       }
-      return this.post('/wda/apps/activate', {bundleId: bundleId})
+      return this.post('/wda/apps/activate', {bundleId: target})
     })
+      .then(() => this.poll(() => this.activeApp().then(function(active) {
+        return active === target ? active : null
+      })))
       .catch(function() {
         return null
       })

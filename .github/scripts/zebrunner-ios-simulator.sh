@@ -35,7 +35,9 @@ runtime() {
     })"
 }
 
-# iphone <runtime>: the newest iPhone type the runtime supports, by the iOS version it came with
+# iphone <runtime>: the newest iPhone type the runtime supports, by the iOS version it came with.
+# Not the iPhone Duo of Xcode 27.1 when the runtime has another iPhone: XCTest fails to background
+# the runner of WDA on it ("Failed to background test runner") on every launch
 iphone() {
   local types
   types=$(xcrun simctl list devicetypes -j)
@@ -46,9 +48,12 @@ iphone() {
       const since = {}
       JSON.parse(process.env.TYPES).devicetypes.forEach((t) => { since[t.identifier] = t.minRuntimeVersion || 0 })
       const r = JSON.parse(d).runtimes.find((r) => r.identifier === '$1')
-      const phones = (r.supportedDeviceTypes || [])
+      const all = (r.supportedDeviceTypes || [])
         .filter((t) => t.productFamily === 'iPhone')
         .sort((a, b) => (since[a.identifier] || 0) - (since[b.identifier] || 0))
+      console.error('iPhone types: ' + all.map((t) => t.identifier.split('.').pop()).join(' '))
+      const others = all.filter((t) => !/[.]iPhone-Duo/.test(t.identifier))
+      const phones = others.length ? others : all
       process.stdout.write(phones.length ? phones[phones.length - 1].identifier : '')
     })"
 }
@@ -99,21 +104,48 @@ xcodebuild build-for-testing \
 note "starting WebDriverAgent"
 # The runner app starts its tests itself when launched, `xcodebuild test` hung on iOS 16
 runner="$wda_dir/build/Build/Products/Debug-iphonesimulator/WebDriverAgentRunner-Runner.app"
+runner_id=com.facebook.WebDriverAgentRunner.xctrunner
 xcrun simctl install "$udid" "$runner"
-xcrun simctl launch --console-pty "$udid" com.facebook.WebDriverAgentRunner.xctrunner \
-  > "$log_dir/wda.log" 2>&1 &
-echo $! > "$log_dir/wda.pid"
 
-# The first launch on an older runtime takes minutes
-for _ in $(seq 1 300); do
-  if curl -sf http://127.0.0.1:8100/status > /dev/null; then
-    note "WebDriverAgent is up"
-    echo "wda=up" >> "$stages"
-    echo "$udid"
-    exit 0
+# WDA answers within two minutes of a launch, the first one on an older runtime included. A
+# runner that hangs without a word (iOS 16), or whose UI testing fails to start ("Failed to
+# background test runner", iOS 27), does not come back: it is launched again, the last time on a
+# rebooted simulator
+attempts=3
+attempt_seconds=240
+for attempt in $(seq 1 "$attempts"); do
+  wda_log="$log_dir/wda.log"
+  if (( attempt > 1 )); then
+    wda_log="$log_dir/wda-$attempt.log"
   fi
-  sleep 2
+  if (( attempt == attempts )); then
+    note "rebooting the simulator"
+    xcrun simctl shutdown "$udid" >&2 || true
+    xcrun simctl boot "$udid"
+    xcrun simctl bootstatus "$udid" -b >&2
+  fi
+
+  xcrun simctl launch --console-pty "$udid" "$runner_id" > "$wda_log" 2>&1 &
+  launcher=$!
+  echo "$launcher" > "$log_dir/wda.pid"
+  deadline=$((SECONDS + attempt_seconds))
+  while (( SECONDS < deadline )); do
+    if curl -sf --max-time 5 http://127.0.0.1:8100/status > /dev/null; then
+      note "WebDriverAgent is up (attempt $attempt)"
+      echo "wda=up" >> "$stages"
+      echo "$udid"
+      exit 0
+    fi
+    if ! kill -0 "$launcher" 2> /dev/null || grep -q "Failed to initialize for UI testing" "$wda_log"; then
+      break
+    fi
+    sleep 2
+  done
+
+  note "WebDriverAgent did not start (attempt $attempt of $attempts)"
+  tail -50 "$wda_log" >&2
+  kill "$launcher" 2> /dev/null || true
+  xcrun simctl terminate "$udid" "$runner_id" 2> /dev/null || true
 done
-tail -50 "$log_dir/wda.log" >&2
 echo "::error::WebDriverAgent did not start" >&2
 exit 1
