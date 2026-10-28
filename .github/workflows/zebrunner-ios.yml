@@ -41,6 +41,8 @@ jobs:
     needs: plan
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
+    # An optional leg of .github/zebrunner-ci.json does not fail the workflow either
+    continue-on-error: ${{ matrix.optional && true || false }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
