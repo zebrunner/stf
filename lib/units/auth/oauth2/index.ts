@@ -10,6 +10,9 @@ import passport from 'passport'
 import logger from '../../../util/logger.js'
 import urlutil from '../../../util/urlutil.js'
 import jwtutil from '../../../util/jwtutil.js'
+import pathutil from '../../../util/pathutil.js'
+// Fork (Zebrunner): the domain, the verified email and the short token of the sign-in
+import signin from '../../../util/zebrunner-signin.js'
 import Strategy from './strategy.js'
 
 import dbapi from '../../../db/api.js'
@@ -31,6 +34,9 @@ export default function(options: OAuth2AuthOptions) {
 
   app.set('strict routing', true)
   app.set('case sensitive routing', true)
+  // Fork (Zebrunner): the page of a rejected email, it was rendered without a view engine (500)
+  app.set('view engine', 'pug')
+  app.set('views', pathutil.resource('app/views'))
 
   app.get('/auth/contact', function(req, res) {
     dbapi.getRootGroup().then(function(group) {
@@ -69,29 +75,25 @@ export default function(options: OAuth2AuthOptions) {
 
   app.disable('x-powered-by')
 
-  function isEmailAllowed(email: string | undefined): email is string {
-    if (email) {
-      if (options.domain) {
-        return email.endsWith(options.domain)
-      }
-      return true
-    }
-    return false
+  // Fork (Zebrunner): `user@<domain>` only and not an email the provider reports as unverified
+  function isEmailAllowed(profile: Express.User): boolean {
+    return signin.isEmailAllowed(profile.email, options.domain) && signin.isEmailVerified(profile)
   }
 
   app.get(
     '/auth/oauth/callback'
   , function(req, res) {
-      if (isEmailAllowed(req.user!.email)) {
+      if (isEmailAllowed(req.user!)) {
         res.redirect(urlutil.addParams(options.appUrl, {
           jwt: jwtutil.encode({
             payload: {
-              email: req.user!.email
-            , name: req.user!.email.split('@', 1).join('')
+              email: req.user!.email!
+            , name: req.user!.email!.split('@', 1).join('')
             }
           , secret: options.secret
           , header: {
-              exp: Date.now() + 24 * 3600 * 1000
+              // Fork (Zebrunner)
+              exp: signin.signInTokenExpiry()
             }
           })
         }))
