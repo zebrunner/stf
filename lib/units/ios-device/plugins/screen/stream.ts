@@ -1,8 +1,7 @@
 import {Transform} from 'stream'
 
 import syrup from '@devicefarmer/stf-syrup'
-import {WebSocketServer} from 'ws'
-import websocketStream from 'websocket-stream'
+import {WebSocketServer, createWebSocketStream} from 'ws'
 import MjpegConsumer from 'mjpeg-consumer'
 import Promise from 'bluebird'
 import request from '@cypress/request'
@@ -49,7 +48,9 @@ export default syrup.serial()
       var consumer = new MjpegConsumer()
       var frameStream: request.Request | null = null
       var chain = Promise.resolve()
-      var stream = websocketStream(ws)
+      var stream = createWebSocketStream(ws)
+      // the messages of the browser are not used: they are read and dropped, so the socket is not paused
+      stream.resume()
 
       // Fork (Zebrunner): a browser that is gone without closing its socket is noticed by the missed pong
       var heartbeat = setInterval(function() {
@@ -154,9 +155,6 @@ export default syrup.serial()
       })
 
       stream.on('error', function(_err) {
-      })
-
-      stream.socket.on('error', function(_err) {
       })
 
       ws.on('close', function() {

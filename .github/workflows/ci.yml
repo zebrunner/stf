@@ -69,11 +69,12 @@ jobs:
             libzmq3-dev libprotobuf-dev protobuf-compiler \
             graphicsmagick yasm nasm git curl zip unzip wget
 
+      # Fork (Zebrunner): the dependencies are the ones of the committed package-lock.json
       - name: Compute dependency cache key
         id: cachekey
         run: |
           flags="$(printf '%s' "$NPM_INSTALL_FLAGS" | sha256sum | cut -c1-12)"
-          echo "key=stf-deps-${CACHE_EPOCH}-${{ runner.os }}-${flags}-${{ hashFiles('package.json', '.nvmrc') }}" >> "$GITHUB_OUTPUT"
+          echo "key=stf-deps-${CACHE_EPOCH}-${{ runner.os }}-${flags}-${{ hashFiles('package.json', 'package-lock.json', '.nvmrc') }}" >> "$GITHUB_OUTPUT"
 
       - name: Restore dependency cache
         id: deps
@@ -83,9 +84,10 @@ jobs:
             node_modules
           key: ${{ steps.cachekey.outputs.key }}
 
+      # Fork (Zebrunner): npm ci installs the committed package-lock.json
       - name: Install npm dependencies
         if: steps.deps.outputs.cache-hit != 'true'
-        run: npm install $NPM_INSTALL_FLAGS
+        run: npm ci $NPM_INSTALL_FLAGS
 
       - name: Compile lib
         run: node build.mts compile
@@ -358,7 +360,8 @@ jobs:
         timeout-minutes: 15
         run: |
           cd test/playwright
-          bash ../../.github/scripts/retry.sh 3 npm install --no-audit --no-fund
+          # Fork (Zebrunner): npm ci installs the committed test/playwright/package-lock.json
+          bash ../../.github/scripts/retry.sh 3 npm ci --no-audit --no-fund
           bash ../../.github/scripts/retry.sh 3 npx playwright install --with-deps chromium
 
       - name: Type-check the Playwright suite
@@ -524,7 +527,8 @@ jobs:
         timeout-minutes: 15
         run: |
           cd test/playwright
-          bash ../../.github/scripts/retry.sh 3 npm install --no-audit --no-fund
+          # Fork (Zebrunner): npm ci installs the committed test/playwright/package-lock.json
+          bash ../../.github/scripts/retry.sh 3 npm ci --no-audit --no-fund
           bash ../../.github/scripts/retry.sh 3 npx playwright install --with-deps chromium
 
       - name: Type-check the Playwright suite
@@ -790,7 +794,8 @@ jobs:
         run: |
           bash .github/scripts/apt-install.sh socat
           cd test/playwright
-          bash ../../.github/scripts/retry.sh 3 npm install --no-audit --no-fund
+          # Fork (Zebrunner): npm ci installs the committed test/playwright/package-lock.json
+          bash ../../.github/scripts/retry.sh 3 npm ci --no-audit --no-fund
           bash ../../.github/scripts/retry.sh 3 npx playwright install --with-deps chromium
 
       - name: Validate and pull the Compose services

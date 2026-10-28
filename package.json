@@ -102,19 +102,23 @@
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "split": "^1.0.0",
-    "swagger-router": "^0.7.4",
     "temp": "^0.9.4",
     "transliteration": "^2.2.0",
     "url-join": "5.1.1",
     "utf-8-validate": "^6.0.6",
     "uuid": "^14.0.2",
-    "websocket-stream": "^5.5.0",
     "ws": "^8.21.3",
     "yargs": "^18.1.0",
     "yauzl": "^3.4.0",
     "zeromq": "^6.1.2"
   },
   "overrides": {
+    "@devicefarmer/stf-syrup": {
+      "lodash": "^4.18.1"
+    },
+    "@sailshq/request": {
+      "qs": "^6.17.0"
+    },
     "autodesk-forks-swagger-express-mw": {
       "autodesk-forks-swagger-node-runner": {
         "autodesk-forks-sway": {
@@ -198,7 +202,6 @@
     "ldapjs": "^3.0.7",
     "memory-fs": "^0.5.0",
     "mocha": "^12.0.0",
-    "node-libs-browser": "^2.2.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router": "^8.4.0",

@@ -59,7 +59,7 @@ jobs:
         # The flags are split on purpose
         # shellcheck disable=SC2086
         run: |
-          npm install $NPM_INSTALL_FLAGS
+          npm ci $NPM_INSTALL_FLAGS
           node build.mts compile
 
       - name: Boot the simulator and start WebDriverAgent
