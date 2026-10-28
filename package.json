@@ -128,7 +128,8 @@
           "path-loader": {
             "superagent": "^10.2.1"
           }
-        }
+        },
+        "multer": "^2.5.0"
       }
     },
     "gm": {
