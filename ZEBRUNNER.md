@@ -75,6 +75,7 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 | Variable | Default | Description |
 | --- | --- | --- |
 | `SECRET` | | Secret of the session cookies and tokens: `--secret` of `app`, `auth-*`, `websocket` and, in the fork, of `storage-temp`/`storage-s3` |
+| `RETHINKDB_ENV_AUTHKEY` | | Password of the `admin` of RethinkDB the units connect with; `stf migrate` sets it when the database has no password yet (`lib/db/zebrunner-password.ts`) and stops when the database has another one |
 | `STF_STORAGE_TOKEN` | | Token the STF units send to the storage (`x-stf-internal-token`); set for `storage-temp`/`storage-s3` (mcloud `variables.env`) and for the device containers (mcloud-agent). It turns the protection of the storage on, the Zebrunner deployments must set it |
 | `STF_STORAGE_TEMP_DOWNLOAD_ALLOW` | | Private network (CIDR or address) users may install apps from by URL, e.g. an artifact server; `--download-allow` can be repeated |
 | `SSID` | `ssid` | Name of the session cookie of the app unit |
@@ -137,6 +138,7 @@ From the images built from `develop` (3.0 and earlier):
 - use a mcloud-device image that installs go-ios, socat and curl itself;
 - the device units no longer connect to RethinkDB (`RETHINKDB_PORT_28015_TCP` of mcloud-device is not needed): the iOS unit sends the type, the screen and the version of the device to the processor, which needs this STF too;
 - run `stf migrate` (the `stf-migrate` service of mcloud does) for the `sessions` table; the users sign in once more;
+- RethinkDB of the deployment has no password: with `RETHINKDB_ENV_AUTHKEY` set (`./zebrunner.sh setup` of mcloud generates it for a new deployment) `stf migrate` sets it as the password of `admin`, every unit with the database needs the variable then. A change of the password is made in RethinkDB itself (`r.db('rethinkdb').table('users').get('admin').update({password: ...})`);
 - `stf storage-temp` still accepts the `--connect-push`/`--connect-sub` mcloud passes, they are not used.
 
 ## Development

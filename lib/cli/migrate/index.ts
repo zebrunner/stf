@@ -66,4 +66,18 @@ var handler = function() {
     })
 }
 
+// Fork (Zebrunner): the password of RethinkDB before lib/db/index.js connects with it
+var migrateHandler = handler
+handler = function() {
+  var Bluebird: typeof import('bluebird') = require('bluebird')
+  var dbpassword: typeof import('../../db/zebrunner-password.js').default =
+    require('../../db/zebrunner-password.js').default
+  var password = Bluebird.resolve(dbpassword.ensureAdminPassword())
+  return password.then(migrateHandler, function(err: Error) {
+    require('../../util/logger.js').default.createLogger('cli:migrate')
+      .fatal('Unable to set the password of RethinkDB:', err.message)
+    process.exit(1)
+  })
+}
+
 export {command, describe, builder, handler}
