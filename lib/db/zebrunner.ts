@@ -57,6 +57,8 @@ export interface ZebrunnerDbApi {
   getDeviceGroupOwner(serial: string): Promise<DeviceGroup['owner'] | null>
   setDeviceGroupOwner(message: {serial: string}): Promise<r.WriteResult>
   getDeviceType(serial: string): Promise<string | null | undefined>
+  ownedDeviceChannels(email: string): Promise<string[]>
+  visibleDeviceChannel(email: string, channel: string): Promise<boolean>
   initializeIosDeviceState(
     publicIp: string
   , message: InitializeIosDeviceStateFields
@@ -295,5 +297,35 @@ export default function extendDbApi(dbapi: DbApi, db: Db) {
 
         return Promise.resolve(stats)
       })
+  }
+
+  // The channels of the present devices the user uses now: the websocket sends the commands of
+  // the user to them only (lib/units/websocket/zebrunner-channels.ts)
+  dbapi.ownedDeviceChannels = function(email) {
+    return db.run(r.table('devices').getAll(email, {index: 'owner'}).getField('channel'))
+      .then(function(cursor) {
+        return (cursor as unknown as r.Cursor).toArray<string>()
+      })
+      .then(function(channels) {
+        return channels.filter(Boolean)
+      })
+  }
+
+  // Whether the device of the channel is in a group of the user: the user may invite it
+  dbapi.visibleDeviceChannel = function(email, channel) {
+    return dbapi.loadUser(email).then(function(user) {
+      if (!user) {
+        return false
+      }
+      return db.run(r.table('devices')
+        .filter({channel: channel})
+        .filter(function(device) {
+          return r.expr(user.groups.subscribed).contains(device('group')('id'))
+        })
+        .count())
+        .then(function(count) {
+          return Number(count) > 0
+        })
+    })
   }
 }

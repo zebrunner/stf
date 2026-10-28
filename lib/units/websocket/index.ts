@@ -69,6 +69,7 @@ import type {WebsocketOptions, WebsocketRequest} from '../../types/units-websock
 import {iosNetwork} from '../../db/zebrunner.js'
 import {touchPathIosMessage} from '../../wire/zebrunner.js'
 import {guardSocket} from '../../util/zebrunner-guard.js'
+import {channelGuard} from './zebrunner-channels.js'
 
 var request = Promise.promisifyAll(cypressRequest) as unknown as PromisifiedRequest
 var adb = adbutil()
@@ -249,6 +250,8 @@ export default function(options: WebsocketOptions) {
     // Fork (Zebrunner): a malformed event of the client is logged and dropped,
     // see lib/util/zebrunner-guard.ts
     guardSocket(log, socket, () => `${user.email} from ${user.ip}`)
+    // Fork (Zebrunner): the commands go to the devices of the user only, see zebrunner-channels.ts
+    socket.use(channelGuard(log, user, dbapi) as Parameters<typeof socket.use>[0])
     var channels: string[] = []
     var messageListener: MessageListener
 
