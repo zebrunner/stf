@@ -11,6 +11,8 @@
 import zmq from 'zeromq/v5-compat.js'
 
 import logger from './logger.js'
+// Fork (Zebrunner): CURVE security of the tcp endpoints
+import zmqcurve from './zmqcurve.js'
 
 var log = logger.createLogger('util:zmqutil')
 
@@ -28,7 +30,8 @@ var socket = function(..._args: Parameters<typeof zmq.socket>) {
     }
   })
 
-  return sock
+  // Fork (Zebrunner): CURVE security of the tcp endpoints
+  return zmqcurve.secure(sock)
 }
 
 export default {socket}

@@ -84,6 +84,10 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 | `STF_PROVIDER_HOST` | `127.0.0.1` | Host of the device container; declared because the containers set it (the CLI is strict) |
 | `STF_PROVIDER_VNC_PORT` | `5900` | VNC port of the single device of a provider |
 | `STF_PROCESSOR_PUBLIC_IP` | `localhost` | Host of the screen URLs of iOS devices without a URL pattern |
+| `STF_ZMQ_CURVE_SERVER_SECRET_KEY` | | Secret key of the triproxies: their tcp endpoints are CURVE servers that accept only the clients of `STF_ZMQ_CURVE_CLIENT_KEYS`, see [ZeroMQ](#zeromq) |
+| `STF_ZMQ_CURVE_CLIENT_KEYS` | | Public keys of the clients the triproxies accept (the device hosts), separated by commas or spaces; the key of `STF_ZMQ_CURVE_SECRET_KEY` of the triproxy is accepted too |
+| `STF_ZMQ_CURVE_SERVER_PUBLIC_KEY` | | Public key of the triproxies: the units and the device providers connect to them over CURVE |
+| `STF_ZMQ_CURVE_SECRET_KEY` | | Secret key of the client, with `STF_ZMQ_CURVE_SERVER_PUBLIC_KEY`; its public key is derived from it |
 
 `stf ios-device` takes the options of a device unit plus `--wda-host`, `--wda-port`, `--mjpeg-port`, `--device-name` and `--host`, see `node lib/cli ios-device --help`.
 
@@ -113,11 +117,21 @@ The apk and image plugins forward the credentials of their caller, so `/s/apk/..
 
 Without the token the storage works as in upstream (open routes, any download URL) and logs a warning at start: the upstream tests and CI use it that way. `--storage-token` needs `--secret` (`SECRET`), the secret of the session cookies of the app unit.
 
+## ZeroMQ
+
+The units and the device providers talk over ZeroMQ through the triproxies, which have no authentication in upstream: anyone who reaches their ports reads the events of all the devices and sends commands to them. With the `STF_ZMQ_CURVE_*` variables every tcp endpoint uses [CURVE](http://curvezmq.org) (`lib/util/zmqcurve.ts`, applied by `lib/util/zmqutil.ts` to every socket):
+
+- the triproxies (the only units that bind) are CURVE servers with `STF_ZMQ_CURVE_SERVER_SECRET_KEY`; their ZAP handler accepts the public keys of `STF_ZMQ_CURVE_CLIENT_KEYS` and refuses the others, logging the address and the key once a minute. Without a running ZAP handler libzmq refuses every client (`ZMQ_ZAP_ENFORCE_DOMAIN`);
+- the other units and the providers connect as CURVE clients of `STF_ZMQ_CURVE_SERVER_PUBLIC_KEY` with `STF_ZMQ_CURVE_SECRET_KEY`.
+
+The keys are 64 hex characters: `stf curve-keygen` prints a new pair (`public=...`, `secret=...`), `stf curve-keygen --secret-key <key>` the pair of a secret key. A deployment has one server pair and a client pair for the server units (their public key is accepted by the triproxies as the one of `STF_ZMQ_CURVE_SECRET_KEY`); every device host has its own client pair, its public key goes to `STF_ZMQ_CURVE_CLIENT_KEYS` and its removal from there disconnects the host. A unit with an incomplete or invalid configuration does not start. Without the variables the sockets have no security, as in upstream; CURVE is all or nothing for a triproxy, the clients without it cannot connect.
+
 ## Upgrade
 
 From the images built from `develop` (3.0 and earlier):
 
 - set `STF_STORAGE_TOKEN` in `variables.env` of mcloud (`./zebrunner.sh setup` generates it), the same value as `STF_STORAGE_TOKEN` of mcloud-agent; without it the storage stays open;
+- the ZeroMQ security is off until the `STF_ZMQ_CURVE_*` variables are set (`./zebrunner.sh setup` of mcloud generates them for a new deployment): the device hosts need a mcloud-device image of this STF with their client keys first, see [ZeroMQ](#zeromq);
 - use a mcloud-device image that installs go-ios, socat and curl itself;
 - run `stf migrate` (the `stf-migrate` service of mcloud does) for the `sessions` table; the users sign in once more;
 - `stf storage-temp` still accepts the `--connect-push`/`--connect-sub` mcloud passes, they are not used.

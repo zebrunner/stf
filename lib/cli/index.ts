@@ -24,6 +24,8 @@ var _argv = yargs(hideBin(process.argv))
   .command(require('./auth-openid/index.js'))
   .command(require('./auth-saml2/index.js'))
   .command(require('./auth-zebrunner/index.js'))
+  // Fork (Zebrunner): the CURVE keys of the ZeroMQ security
+  .command(require('./curve-keygen/index.js'))
   .command(require('./groups-engine/index.js'))
   .command(require('./ios-device/index.js'))
   .command(require('./device/index.js'))
