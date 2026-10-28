@@ -43,6 +43,18 @@ function internalHeaders(): Record<string, string> {
 }
 
 // Adds the token header to the options of a request, leaves them as they are without a token
+// storageUrl <base> <href>: the URL of a file of the storage of the deployment (`/s/...` of the origin of base), which a
+// device unit downloads with the token; an href of the user that leaves it (another host, `//host`, `@host`, another
+// path) is refused, the token would go there
+function storageUrl(base: string, href: string): string {
+  const root = new URL(base)
+  const target = new URL(href, root)
+  if (target.origin !== root.origin || !target.pathname.startsWith('/s/')) {
+    throw new Error(`Not a file of the storage: ${href}`)
+  }
+  return target.href
+}
+
 function sign<T extends object>(options: T & {headers?: Record<string, string>}): T {
   const headers = internalHeaders()
   if (!Object.keys(headers).length) {
@@ -119,4 +131,5 @@ export default {
 , internalHeaders
 , middleware
 , sign
+, storageUrl
 }
