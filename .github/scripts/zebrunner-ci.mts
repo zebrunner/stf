@@ -18,6 +18,8 @@ export interface IosLeg {
   runner: string
   xcode?: string
   download?: string
+  // Why the leg does not count in the report for now, and what makes it required again
+  optional?: string
 }
 
 interface ZebrunnerCi {
@@ -109,14 +111,30 @@ const CHECK_ICON: Record<string, string> = {
 }
 
 // iosReport <verdicts>: the iOS part of the report, from the verdicts of the group ios
+// iosOptional: the reason of every optional leg, by its iOS version
+export function iosOptional(): Record<string, string> {
+  var optional: Record<string, string> = {}
+  iosLegs().forEach(function(leg) {
+    if (leg.optional) {
+      optional[leg.ios] = leg.optional
+    }
+  })
+  return optional
+}
+
 export function iosReport(verdicts: IosVerdict[]) {
+  var optional = iosOptional()
   var ios = verdicts.filter(function(v) {
     return v.group === 'ios'
   }).sort(function(a, b) {
     return Number(a.ios) - Number(b.ios)
   })
-  var failed = ios.filter(function(v) {
+  var failing = ios.filter(function(v) {
     return v.status === 'fail'
+  })
+  // An optional leg is in the matrix, but does not fail the report
+  var failed = failing.filter(function(v) {
+    return !optional[v.ios || '']
   }).length
   var lines: string[] = []
 
@@ -133,7 +151,7 @@ export function iosReport(verdicts: IosVerdict[]) {
     ios.forEach(function(v) {
       var checks = v.checks || {}
       lines.push('| ' + [
-        ICON[v.status] || ':question:'
+        v.status === 'fail' && optional[v.ios || ''] ? ':warning:' : ICON[v.status] || ':question:'
       , v.ios || '?'
       , v.runtime || '-'
       , v.xcode || '-'
@@ -148,12 +166,21 @@ export function iosReport(verdicts: IosVerdict[]) {
         return check.label + ', ' + check.failure
       }).join(' · ') + '</sub>')
     lines.push('')
+    ios.forEach(function(v) {
+      if (optional[v.ios || '']) {
+        lines.push('> [!NOTE]')
+        lines.push('> iOS ' + v.ios + ' is optional, it does not fail the report: ' +
+          optional[v.ios || ''])
+        lines.push('')
+      }
+    })
   }
 
   return {
     lines: lines
   , failed: failed
-  , summary: ios.length + ' iOS versions (' + (ios.length - failed) + ' passing)'
+  , summary: ios.length + ' iOS versions (' + (ios.length - failing.length) + ' passing' +
+      (failing.length > failed ? ', ' + (failing.length - failed) + ' optional failing' : '') + ')'
   }
 }
 

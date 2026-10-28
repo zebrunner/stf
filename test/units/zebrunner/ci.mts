@@ -120,5 +120,23 @@ describe('zebrunner: CI', function() {
       expect(report.lines[4]).to.match(/^\| :x: \| 15 \|/)
       expect(report.lines[5]).to.match(/^\| :white_check_mark: \| 26 \|/)
     })
+
+    // iOS 27 is optional in .github/zebrunner-ci.json
+    it('should show a failing optional leg without counting it', function() {
+      var report = iosReport([
+        {id: 'ios-27', label: 'iOS 27', group: 'ios', status: 'fail', ios: '27', checks: {}}
+      , {id: 'ios-26', label: 'iOS 26', group: 'ios', status: 'pass', ios: '26', checks: {}}
+      , {id: 'ios-15', label: 'iOS 15', group: 'ios', status: 'fail', ios: '15', checks: {}}
+      ])
+      expect(report.failed).to.equal(1)
+      expect(report.summary).to.equal('3 iOS versions (1 passing, 1 optional failing)')
+      expect(report.lines[4]).to.match(/^\| :x: \| 15 \|/)
+      expect(report.lines[6]).to.match(/^\| :warning: \| 27 \|/)
+      expect(report.lines.join('\n'))
+        .to.match(/iOS 27 is optional, it does not fail the report: .*#1083/)
+      expect(iosMissing({}).find(function(v) {
+        return v.id === 'ios-27'
+      })!.status).to.equal('fail')
+    })
   })
 })

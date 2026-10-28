@@ -7,7 +7,7 @@
 import fs from 'fs'
 import path from 'path'
 import * as layers from './checks.mts'
-import {androidLegs, iosMissing, iosReport} from './zebrunner-ci.mts'
+import {androidLegs, iosMissing, iosOptional, iosReport} from './zebrunner-ci.mts'
 
 interface Verdict {
   id: string
@@ -17,6 +17,7 @@ interface Verdict {
   details?: string
   android?: string | number
   api?: string | number
+  ios?: string
   checks?: layers.Checks
   attempt?: string | number
 }
@@ -266,8 +267,10 @@ function main() {
   if (problems.length) {
     lines.push('### Failures')
     lines.push('')
+    var optional = iosOptional()
     problems.forEach(function(v) {
-      lines.push('- **' + v.label + '**: ' + v.details)
+      var isOptional = v.group === 'ios' && optional[String(v.ios)]
+      lines.push('- **' + v.label + '**' + (isOptional ? ' (optional)' : '') + ': ' + v.details)
     })
     lines.push('')
   }

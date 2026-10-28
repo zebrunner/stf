@@ -12,7 +12,9 @@
     "runs, and the iOS legs the report expects. download: the simulator runtime",
     "to install when the image has none of that version (iOS 15 comes from",
     "xcodes). xcode: the Xcode of the runner image, its default without it",
-    "(the xcode-27 preview image)."
+    "(the xcode-27 preview image). optional: why the leg does not fail the",
+    "report for now and what makes it required again; the report shows it as",
+    "a warning and the job may fail. Remove it once the leg passes."
   ],
   "android": {
     "minApi": 31
@@ -24,7 +26,11 @@
       {"ios": "17", "runner": "macos-15", "xcode": "16.4", "download": "17.5"},
       {"ios": "18", "runner": "macos-15", "xcode": "16.4"},
       {"ios": "26", "runner": "macos-26", "xcode": "26.6"},
-      {"ios": "27", "runner": "xcode-27"}
+      {
+        "ios": "27",
+        "runner": "xcode-27",
+        "optional": "TODO make it required again (#1083). The iOS 27.1 runtime of the xcode-27 image has only the iPhone Duo, on which XCTest fails to start WebDriverAgent."
+      }
     ]
   }
 }
