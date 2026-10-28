@@ -36,8 +36,8 @@ runtime() {
 }
 
 # iphone <runtime>: the newest iPhone type the runtime supports, by the iOS version it came with.
-# Not the iPhone Duo of Xcode 27.1: XCTest fails to background the runner of WDA on it ("Failed to
-# background test runner") on every launch, the iOS 27 leg passed on the iPhone 18 Pro Max before
+# Not the iPhone Duo of Xcode 27.1 when the runtime has another iPhone: XCTest fails to background
+# the runner of WDA on it ("Failed to background test runner") on every launch
 iphone() {
   local types
   types=$(xcrun simctl list devicetypes -j)
@@ -48,9 +48,12 @@ iphone() {
       const since = {}
       JSON.parse(process.env.TYPES).devicetypes.forEach((t) => { since[t.identifier] = t.minRuntimeVersion || 0 })
       const r = JSON.parse(d).runtimes.find((r) => r.identifier === '$1')
-      const phones = (r.supportedDeviceTypes || [])
-        .filter((t) => t.productFamily === 'iPhone' && !/[.]iPhone-Duo/.test(t.identifier))
+      const all = (r.supportedDeviceTypes || [])
+        .filter((t) => t.productFamily === 'iPhone')
         .sort((a, b) => (since[a.identifier] || 0) - (since[b.identifier] || 0))
+      console.error('iPhone types: ' + all.map((t) => t.identifier.split('.').pop()).join(' '))
+      const others = all.filter((t) => !/[.]iPhone-Duo/.test(t.identifier))
+      const phones = others.length ? others : all
       process.stdout.write(phones.length ? phones[phones.length - 1].identifier : '')
     })"
 }
