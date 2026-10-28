@@ -113,9 +113,6 @@
     "zeromq": "^6.1.2"
   },
   "overrides": {
-    "@devicefarmer/stf-syrup": {
-      "lodash": "^4.18.1"
-    },
     "@sailshq/request": {
       "qs": "^6.17.0"
     },
