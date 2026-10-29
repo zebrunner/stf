@@ -151,5 +151,12 @@ RUN apt-get update && \
 # Switch to the app user.
 USER stf
 
+# The version of the image: make build VERSION=<tag> (ZEBRUNNER.md#build)
+ARG VERSION=dev
+LABEL org.opencontainers.image.title="Zebrunner STF" \
+      org.opencontainers.image.source="https://github.com/zebrunner/stf" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.licenses="Apache-2.0"
+
 # Show help by default.
 CMD ["stf", "--help"]

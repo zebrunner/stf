@@ -56,8 +56,17 @@ go-ios, socat and curl, which the `ios-device` unit and the scripts of the devic
 ## Build
 
 ```bash
-docker build -t public.ecr.aws/zebrunner/stf:dev .
+make build VERSION=3.1   # public.ecr.aws/zebrunner/stf:3.1 in the local docker
+make push VERSION=3.1    # linux/amd64 and linux/arm64 built by docker buildx and pushed: docker login public.ecr.aws first
 ```
+
+`make build` builds the image for the platform of this machine, `make push` builds `linux/amd64` and `linux/arm64`
+(`PLATFORMS`) with `docker buildx` and pushes them as one multi-platform image, which mcloud-device builds on.
+`IMAGE_REPO` sets another repository, `VERSION` is the tag and the `org.opencontainers.image.version` label (`dev` by
+default, required by `push`). `make push` uses the buildx builder `mcloud` (docker-container driver), which it creates
+once; the other platform is built emulated by QEMU (`docker run --privileged --rm tonistiigi/binfmt --install all`),
+which takes long for the native modules: building every platform on its own machine and joining them with
+`docker buildx imagetools create` (as `.github/workflows/docker-build.yml`) is faster.
 
 Without docker (Node.js 22.18 or later):
 
