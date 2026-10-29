@@ -160,6 +160,12 @@ export default syrup.serial()
         , apk: resources.apk.dest
         , run: function(mode: string, cmd: string) {
             var runCmd
+            // minicap-prebuilt has no minicap.so for the newer SDKs: without it the bin
+            // would fail and the screen would start only after the fallback to the apk
+            if(mode === 'minicap-bin' && !resources.lib.src && resources.apk.src) {
+              log.info('No minicap.so for SDK %s, using minicap-apk', sdk.level)
+              mode = 'minicap-apk'
+            }
             if(mode === 'minicap-bin' && resources.lib.src) {
               runCmd = util.format(
                 'LD_LIBRARY_PATH=%s exec %s %s'
