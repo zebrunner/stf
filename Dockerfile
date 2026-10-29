@@ -148,6 +148,11 @@ RUN apt-get update && \
     cp /app/icon/x120/tvOS.png x120/tvOS && \
     cp /app/icon/x24/tvOS.png x24/tvOS
 
+# Fork (Zebrunner): /data of storage-temp (--save-dir /data) belongs to stf: a new
+# volume mounted there gets the owner of the directory of the image, the uploads
+# (screenshots, apps, images) fail without it
+RUN mkdir -p /data && chown stf:stf /data
+
 # Switch to the app user.
 USER stf
 
