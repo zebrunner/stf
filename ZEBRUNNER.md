@@ -47,7 +47,9 @@ The type of the device (iPhone or Apple TV), its screen and its iOS version come
 
 | Component | Why |
 | --- | --- |
-| STF with the fork, Node.js 22, bundletool | the STF units |
+| Ubuntu 26.04, STF with the fork, Node.js 22 | the STF units; the build tools stay in the build stage |
+| bundletool 1.18.3, OpenJDK 21 (JRE) | converts the uploaded `.aab` files into `.apk` files (storage-temp) |
+| GraphicsMagick, TurboJPEG | resize the images and the screenshots (storage-plugin-image) |
 | `libplist-utils` (`plistutil`) | reads the binary `Info.plist` of uploaded `.ipa` files |
 | iOS, Android and tvOS icons | replace the generic icons of `@devicefarmer/stf-device-db` |
 

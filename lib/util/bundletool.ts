@@ -144,9 +144,12 @@ export default function<F extends BundleFile>(options: BundletoolOptions<F>) {
       checkIfJava()
       .then(function() {
         if (!fs.existsSync(keystore.ksPath)) {
+          // JKS as the keytool of Java 8: a PKCS12 keystore (the default of Java 9+) has one password, the
+          // --key-pass of bundletool would not match when ks-key-pass is not ks-pass
           cp.spawnSync('keytool', [
             '-genkey'
           , '-noprompt'
+          , '-storetype', 'JKS'
           , '-keystore', keystore.ksPath
           , '-alias', keystore.ksKeyAlias
           , '-keyalg', keystore.ksKeyalg
