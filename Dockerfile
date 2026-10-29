@@ -5,7 +5,7 @@
 # Fork (Zebrunner): the build stage builds /app with the build tools (gcc,
 # python3, cmake, the -dev packages, the JDK), the image gets /app, node and
 # the runtime packages only.
-FROM ubuntu:22.04 AS build
+FROM ubuntu:26.04 AS build
 
 WORKDIR /app
 COPY . /tmp/build/
@@ -35,16 +35,11 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
     tar -xJf node-v*.tar.xz --strip-components 1 -C /usr/local && \
     rm node-v*.tar.xz && \
     su stf -s /bin/bash -c '/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js install' && \
-    apt-get -y install --no-install-recommends libzmq3-dev libprotobuf-dev git graphicsmagick openjdk-8-jdk yasm cmake && \
+    apt-get -y install --no-install-recommends libzmq3-dev libprotobuf-dev git yasm cmake && \
     apt-get clean && \
     rm -rf /var/cache/apt/* /var/lib/apt/lists/* && \
-    mkdir /tmp/bundletool && \
-    cd /tmp/bundletool && \
-    wget --progress=dot:mega \
-      https://github.com/google/bundletool/releases/download/1.2.0/bundletool-all-1.2.0.jar && \
-    mv bundletool-all-1.2.0.jar bundletool.jar && \
     mkdir -p /app && \
-    chown -R stf:stf /tmp/build /tmp/bundletool /app && \
+    chown -R stf:stf /tmp/build /app && \
     set -x && \
     echo '--- Building app' && \
     cd /tmp/build && \
@@ -57,8 +52,6 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
     npm prune --omit=dev && \
     mv node_modules /app && \
     rm -rf ~/.node-gyp && \
-    mkdir /app/bundletool && \
-    mv /tmp/bundletool/* /app/bundletool && \
     chown -R root:root /app && \
     echo '--- Cleaning up' && \
     apt-get -y purge wget python3 build-essential cmake && \
@@ -93,7 +86,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       --shell /usr/sbin/nologin \
       stf && \
     su stf -s /bin/bash -c '/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js install' && \
-    apt-get -y install --no-install-recommends libzmq3-dev libprotobuf-dev git graphicsmagick openjdk-8-jdk yasm && \
+    apt-get -y install --no-install-recommends libzmq3-dev libprotobuf-dev git yasm && \
     echo '--- Building app' && \
     mkdir -p /app && \
     chown -R stf:stf /tmp/build && \
@@ -108,10 +101,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /app && \
     test -d /app/res/build && \
     echo 'npm prune --omit=dev' | su stf -s /bin/bash && \
-    wget --progress=dot:mega \
-      https://github.com/google/bundletool/releases/download/1.2.0/bundletool-all-1.2.0.jar && \
-    mkdir -p /app/bundletool && \
-    mv bundletool-all-1.2.0.jar /app/bundletool/bundletool.jar && \
     mv node_modules /app && \
     chown -R root:root /app && \
     echo '--- Cleaning up' && \
@@ -134,7 +123,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 RUN find /app/node_modules \( -path '*/prebuilds/*win32*' -o -path '*/prebuilds/*darwin*' \
       -o -path '*/zeromq/build/win32' -o -path '*/zeromq/build/darwin' \) -prune -exec rm -rf {} +
 
-FROM ubuntu:22.04
+FROM ubuntu:26.04
 
 # Sneak the stf executable into $PATH.
 ENV PATH=/app/bin:$PATH
@@ -146,10 +135,10 @@ WORKDIR /app
 # for now.
 EXPOSE 3000
 
-# Fork (Zebrunner): the runtime packages: java and keytool of bundletool
-# (storage-temp, .aab), gm (storage-plugin-image), plistutil (the binary
-# Info.plist of the uploaded .ipa files, storage-plugin-apk), libturbojpeg of
-# @julusian/jpeg-turbo; stf has the uid 998, /app belongs to root.
+# Fork (Zebrunner): the runtime packages: java (OpenJDK 21) and keytool of
+# bundletool (storage-temp, .aab), gm (storage-plugin-image), plistutil (the
+# binary Info.plist of the uploaded .ipa files, storage-plugin-apk), the
+# TurboJPEG of @julusian/jpeg-turbo; stf has the uid 998, /app belongs to root.
 RUN useradd --system \
       --uid 998 \
       --create-home \
@@ -159,12 +148,18 @@ RUN useradd --system \
     apt-get update && \
     apt-get -y dist-upgrade && \
     apt-get -y install --no-install-recommends \
-      ca-certificates graphicsmagick openjdk-8-jre-headless libplist-utils libturbojpeg && \
+      ca-certificates graphicsmagick openjdk-21-jre-headless libplist-utils libturbojpeg0 && \
     apt-get clean && \
     rm -rf /var/cache/apt/* /var/lib/apt/lists/*
 
 COPY --from=build /usr/local/bin/node /usr/local/bin/node
 COPY --from=build /app /app
+
+# Fork (Zebrunner): bundletool converts the uploaded .aab files into universal .apk
+# files (storage-temp, --bundletool-path), the release checked by its sha256
+ADD --checksum=sha256:a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29 \
+    https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar /app/bundletool/bundletool.jar
+RUN chmod 644 /app/bundletool/bundletool.jar
 
 # Fork (Zebrunner): the platform icons replace the generic ones of
 # stf-device-db. The iOS tools (go-ios, socat) are in the mcloud-device image.
