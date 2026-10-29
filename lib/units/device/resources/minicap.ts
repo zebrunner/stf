@@ -158,8 +158,9 @@ export default syrup.serial()
           bin: resources.bin.dest
         , lib: resources.lib.dest
         , apk: resources.apk.dest
-        , run: function(mode: string, cmd: string) {
+        , run: function(grabber: string, cmd: string) {
             var runCmd
+            var mode = grabber
             // minicap-prebuilt has no minicap.so for the newer SDKs: without it the bin
             // would fail and the screen would start only after the fallback to the apk
             if(mode === 'minicap-bin' && !resources.lib.src && resources.apk.src) {
