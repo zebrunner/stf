@@ -2,18 +2,13 @@
 # Copyright © 2022-2024 contains code contributed by Orange SA, authors: Denis Barbaron - Licensed under the Apache license 2.0
 #
 
-FROM ubuntu:22.04
+# Fork (Zebrunner): the build stage builds /app with the build tools (gcc,
+# python3, cmake, the -dev packages, the JDK), the image gets /app, node and
+# the runtime packages only.
+FROM ubuntu:22.04 AS build
 
-# Sneak the stf executable into $PATH.
-ENV PATH=/app/bin:$PATH
-
-# Work in app dir by default.
 WORKDIR /app
 COPY . /tmp/build/
-
-# Export default app port, not enough for all processes but it should do
-# for now.
-EXPOSE 3000
 
 ARG TARGETARCH
 
@@ -134,13 +129,46 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     rm -rf /tmp/*; \
   fi
 
-# Fork (Zebrunner): plistutil reads the binary Info.plist of uploaded .ipa
-# files (storage-plugin-apk), the platform icons replace the generic ones of
+# Fork (Zebrunner): the prebuilt addons of Windows and macOS are not loaded on
+# Linux (node-gyp-build and cmake-ts pick the one of the platform)
+RUN find /app/node_modules \( -path '*/prebuilds/*win32*' -o -path '*/prebuilds/*darwin*' \
+      -o -path '*/zeromq/build/win32' -o -path '*/zeromq/build/darwin' \) -prune -exec rm -rf {} +
+
+FROM ubuntu:22.04
+
+# Sneak the stf executable into $PATH.
+ENV PATH=/app/bin:$PATH
+
+# Work in app dir by default.
+WORKDIR /app
+
+# Export default app port, not enough for all processes but it should do
+# for now.
+EXPOSE 3000
+
+# Fork (Zebrunner): the runtime packages: java and keytool of bundletool
+# (storage-temp, .aab), gm (storage-plugin-image), plistutil (the binary
+# Info.plist of the uploaded .ipa files, storage-plugin-apk), libturbojpeg of
+# @julusian/jpeg-turbo; stf has the uid 998, /app belongs to root.
+RUN useradd --system \
+      --uid 998 \
+      --create-home \
+      --shell /usr/sbin/nologin \
+      stf && \
+    export DEBIAN_FRONTEND=noninteractive && \
+    apt-get update && \
+    apt-get -y dist-upgrade && \
+    apt-get -y install --no-install-recommends \
+      ca-certificates graphicsmagick openjdk-8-jre-headless libplist-utils libturbojpeg && \
+    apt-get clean && \
+    rm -rf /var/cache/apt/* /var/lib/apt/lists/*
+
+COPY --from=build /usr/local/bin/node /usr/local/bin/node
+COPY --from=build /app /app
+
+# Fork (Zebrunner): the platform icons replace the generic ones of
 # stf-device-db. The iOS tools (go-ios, socat) are in the mcloud-device image.
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends libplist-utils && \
-    rm -rf /var/cache/apt/* /var/lib/apt/lists/* && \
-    cd /app/node_modules/@devicefarmer/stf-device-db/dist/icon && \
+RUN cd /app/node_modules/@devicefarmer/stf-device-db/dist/icon && \
     cp /app/icon/x120/iOS.jpg x120/iOS && \
     cp /app/icon/x24/iOS.jpg x24/iOS && \
     cp /app/icon/x120/Android.jpg x120/Android && \
