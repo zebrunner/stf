@@ -7,23 +7,11 @@ export const viewTabsInBasicMode = true
 
 export function readStoredDeviceFilter(): string {
   try {
-    const direct = window.localStorage.getItem('deviceFilter')
-    if (direct) {
-      return direct
-    }
-    const legacy = window.localStorage.getItem('deviceFilters')
-    const filters = legacy ? JSON.parse(legacy) : null
-    const filter = Array.isArray(filters) ? filters[0] : null
-    if (filter && typeof filter === 'object') {
-      const field = typeof filter.field === 'string' ? `${filter.field}: ` : ''
-      const query = typeof filter.query === 'string' ? filter.query : ''
-      return `${field}${query}`.trim()
-    }
+    return window.localStorage.getItem('deviceFilter') || ''
   }
   catch {
     return ''
   }
-  return ''
 }
 
 function storeDeviceFilter(value: string): void {
@@ -33,7 +21,6 @@ function storeDeviceFilter(value: string): void {
     }
     else {
       window.localStorage.removeItem('deviceFilter')
-      window.localStorage.setItem('deviceFilters', JSON.stringify([]))
     }
   }
   catch {
