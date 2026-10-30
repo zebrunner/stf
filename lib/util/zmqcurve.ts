@@ -9,7 +9,9 @@
 *   (separated by commas or spaces) and the key of the unit itself; without the handler libzmq
 *   refuses every client (ZAP_ENFORCE_DOMAIN), it does not let them in.
 * - STF_ZMQ_CURVE_SERVER_PUBLIC_KEY and STF_ZMQ_CURVE_SECRET_KEY: the connecting tcp sockets are
-*   CURVE clients of that server with this secret key; its public key is derived from it.
+*   CURVE clients of that server with this secret key; its public key is derived from it. A client
+*   logs the refusal of its key: libzmq does not connect a refused socket again, the refusal is the
+*   only trace of it on this side.
 * Without these variables the sockets have no security, as in upstream.
 **/
 
@@ -27,7 +29,8 @@ const KEY = /^[0-9a-f]{64}$/i
 const PKCS8_X25519 = Buffer.from('302e020100300506032b656e04220420', 'hex')
 const ZAP_ENDPOINT = 'inproc://zeromq.zap.01'
 const ZAP_DOMAIN = 'stf'
-// A refused address is logged once in this time, not on every reconnect of its client
+// A refused client (or a server refusing this one) is logged once in this time, not on every
+// reconnect
 const DENIED_LOG_INTERVAL = 60 * 1000
 
 export interface CurveKeyPair {
@@ -165,6 +168,35 @@ function currentConfig(): CurveConfig {
   return current
 }
 
+// What to check when the messages of this client do not reach the server, for the fatal errors of
+// the device units
+export function clientHint(curve: CurveConfig = currentConfig()): string {
+  if (curve.client) {
+    return 'Check that the ZeroMQ server lets this host in: its CURVE public key ' +
+      `${curve.client.publicKey.toString('hex')} in STF_ZMQ_CURVE_CLIENT_KEYS of the server ` +
+      '(restart the server after a change), STF_ZMQ_CURVE_SERVER_PUBLIC_KEY the one of the ' +
+      'server, the triproxy endpoints reachable.'
+  }
+  return 'Check that the triproxy endpoints are reachable.'
+}
+
+// once <logged> <key>: true when the key was not logged in DENIED_LOG_INTERVAL, its time kept then
+function once(logged: Map<string, number>, key: string): boolean {
+  const now = Date.now()
+  if ((logged.get(key) || 0) > now - DENIED_LOG_INTERVAL) {
+    return false
+  }
+  if (logged.size > 1000) {
+    logged.forEach(function(time, other) {
+      if (time <= now - DENIED_LOG_INTERVAL) {
+        logged.delete(other)
+      }
+    })
+  }
+  logged.set(key, now)
+  return true
+}
+
 // The ZAP handler of the process: one for all the CURVE servers, as libzmq asks the single
 // inproc://zeromq.zap.01 endpoint of the context
 let zapHandler: zmq.Router | null = null
@@ -172,19 +204,31 @@ let allowedClients = new Set<string>()
 const deniedLogged = new Map<string, number>()
 
 function logDenied(address: string, key: string) {
-  const now = Date.now()
-  if ((deniedLogged.get(address) || 0) > now - DENIED_LOG_INTERVAL) {
+  if (once(deniedLogged, address)) {
+    log.warn('Refused the ZeroMQ client %s with the unknown key "%s"', address, key)
+  }
+}
+
+// The refusals of the key of this client, by the address of the server
+const refusedLogged = new Map<string, number>()
+const monitored = new WeakSet<zmq.Socket>()
+
+// A refusal ends the connection for good (a protocol error for libzmq, no reconnect)
+function monitorRefusal(native: zmq.Socket, publicKey: Buffer) {
+  if (monitored.has(native)) {
     return
   }
-  if (deniedLogged.size > 1000) {
-    deniedLogged.forEach(function(time, logged) {
-      if (time <= now - DENIED_LOG_INTERVAL) {
-        deniedLogged.delete(logged)
-      }
-    })
-  }
-  deniedLogged.set(address, now)
-  log.warn('Refused the ZeroMQ client %s with the unknown key "%s"', address, key)
+  monitored.add(native)
+  native.events.on('handshake:error:auth', function(event) {
+    if (once(refusedLogged, event.address)) {
+      log.warn(
+        'The ZeroMQ server %s refused the CURVE key %s of this host: add it to ' +
+        'STF_ZMQ_CURVE_CLIENT_KEYS of the server and restart it'
+      , event.address
+      , publicKey.toString('hex')
+      )
+    }
+  })
 }
 
 async function serveZap(router: zmq.Router) {
@@ -299,6 +343,7 @@ export function secure<S extends CompatSocket>(sock: S, curve: CurveConfig = cur
         native.curveServerKey = z85(client.serverKey)
         native.curvePublicKey = z85(client.publicKey)
         native.curveSecretKey = z85(client.secretKey)
+        monitorRefusal(native, client.publicKey)
       }
       return connect.call(sock, address)
     }
@@ -307,4 +352,4 @@ export function secure<S extends CompatSocket>(sock: S, curve: CurveConfig = cur
   return sock
 }
 
-export default {config, generateKeyPair, publicKeyOf, secure, stopZapHandler, z85}
+export default {clientHint, config, generateKeyPair, publicKeyOf, secure, stopZapHandler, z85}

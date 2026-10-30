@@ -6,6 +6,7 @@ import sinon from 'sinon'
 import zmq from 'zeromq/v5-compat.js'
 
 import * as curveKeygen from '../../../lib/cli/curve-keygen/index.js'
+import logger from '../../../lib/util/logger.js'
 import zmqcurve, {type CurveConfig} from '../../../lib/util/zmqcurve.js'
 
 function freePort(): Promise<number> {
@@ -93,6 +94,15 @@ describe('zebrunner: ZeroMQ CURVE', function() {
         })
       }).to.throw(/STF_ZMQ_CURVE_CLIENT_KEYS must be a key/)
     })
+
+    it('should tell a client what to check when the server does not get its messages', function() {
+      expect(zmqcurve.clientHint(clientConfig(server, allowed))).to.equal(
+        'Check that the ZeroMQ server lets this host in: its CURVE public key ' +
+        `${allowed.publicKey} in STF_ZMQ_CURVE_CLIENT_KEYS of the server (restart the server ` +
+        'after a change), STF_ZMQ_CURVE_SERVER_PUBLIC_KEY the one of the server, the triproxy ' +
+        'endpoints reachable.')
+      expect(zmqcurve.clientHint({})).to.equal('Check that the triproxy endpoints are reachable.')
+    })
   })
 
   describe('sockets', function() {
@@ -163,6 +173,41 @@ describe('zebrunner: ZeroMQ CURVE', function() {
       pub.send('event')
       await delay(500)
       expect(received).to.deep.equal({allowed: ['event'], plain: []})
+    })
+
+    it('should log on the client the refusal of its key, once a minute', async function() {
+      var endpoint = `tcp://127.0.0.1:${await freePort()}`
+      var warnings: string[] = []
+      var onEntry = function(entry: logger.Entry) {
+        if (entry.tag === 'util:zmqcurve' && entry.priority === logger.Level.WARNING) {
+          warnings.push(entry.message)
+        }
+      }
+      logger.on('entry', onEntry)
+      try {
+        socket('pull', zmqcurve.config({
+          STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey
+        , STF_ZMQ_CURVE_CLIENT_KEYS: allowed.publicKey
+        })).bindSync(endpoint)
+        // the ZAP handler is up before the clients come
+        await delay(200)
+        socket('push', clientConfig(server, allowed)).connect(endpoint)
+        socket('push', clientConfig(server, unknown)).connect(endpoint)
+        await delay(500)
+        socket('sub', clientConfig(server, unknown)).connect(endpoint)
+        await delay(500)
+      }
+      finally {
+        logger.removeListener('entry', onEntry)
+      }
+
+      // the server logs its side too, once a minute for 127.0.0.1 of all the tests
+      expect(warnings.filter(function(message) {
+        return message.startsWith('The ZeroMQ server')
+      })).to.deep.equal([
+        `The ZeroMQ server ${endpoint} refused the CURVE key ${unknown.publicKey} of this host: ` +
+        'add it to STF_ZMQ_CURVE_CLIENT_KEYS of the server and restart it'
+      ])
     })
 
     it('should leave the sockets as they are without the variables', async function() {
