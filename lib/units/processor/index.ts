@@ -259,7 +259,7 @@ export default db.ensureConnectivity(function(options: ProcessorOptions) {
     .on(wire.DeviceReadyMessage, function(channel, message, data) {
       dbapi.setDeviceReady(message.serial, message.channel)
         .then(function(stats) {
-          // Fork (Zebrunner): the worker also waits for the registration ack here
+          // Fork (Zebrunner): the registration ack of the worker, the ios-device unit exits without it
           devDealer.send([
             message.channel
           , wireutil.envelope(new wire.DeviceRegisteredMessage(message.serial))

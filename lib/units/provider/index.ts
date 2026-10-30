@@ -15,6 +15,8 @@ import procutil from '../../util/procutil.js'
 import lifecycle from '../../util/lifecycle.js'
 import srv from '../../util/srv.js'
 import zmqutil from '../../util/zmqutil.js'
+// Fork (Zebrunner): what to check when the processor does not ack a device
+import zmqcurve from '../../util/zmqcurve.js'
 
 import timeutil from '../../util/timeutil.js'
 import type {ChildProcess, Serializable} from 'child_process'
@@ -23,6 +25,11 @@ import type adbutil from '../../util/adbutil.js'
 import type {ProviderOptions} from '../../types/provider.js'
 
 var require = createRequire(import.meta.url)
+
+// Fork (Zebrunner): how long the processor gets to ack a device. Without the ack the messages of
+// the provider do not reach it (a refused CURVE key is not connected again by libzmq), so the
+// provider exits and the restart of its container is the retry
+var REGISTER_TIMEOUT = 15000
 
 interface WorkerPromise extends Promise<void> {
   stop(): Promise<Promise.Inspection<void> | void>
@@ -178,24 +185,7 @@ export default function(options: ProviderOptions) {
       var timer: NodeJS.Timeout | undefined, worker: WorkerPromise | null | undefined
 
       // Wait for others to acknowledge the device
-      var register = new Promise(function(resolve) {
-        var registerTimeout = 15000
-        var settled = false
-        function settle(viaAck: boolean) {
-          if (settled) {
-            return
-          }
-          settled = true
-          if (!viaAck) {
-            log.warn(
-              'Registration ack for "%s" not received in %dms; proceeding anyway'
-            , device.id
-            , registerTimeout
-            )
-          }
-          resolve()
-        }
-
+      var register = new Promise<void>(function(resolve) {
         // Tell others we found a device
         push.send([
           wireutil.global
@@ -210,12 +200,21 @@ export default function(options: ProviderOptions) {
           ))
         ])
 
+        var registerTimer = setTimeout(function() {
+          log.fatal(
+            'No registration ack for "%s" in %d ms: the STF processor does not get the ' +
+            'messages of this provider. %s'
+          , device.id
+          , REGISTER_TIMEOUT
+          , zmqcurve.clientHint()
+          )
+          lifecycle.fatal()
+        }, REGISTER_TIMEOUT)
+
         privateTracker.once('register', function() {
-          settle(true)
+          clearTimeout(registerTimer)
+          resolve()
         })
-        setTimeout(function() {
-          settle(false)
-        }, registerTimeout)
       })
         .catch(function(err) {
           // #444 Exit process on EHOSTUNREACH
@@ -403,11 +402,17 @@ export default function(options: ProviderOptions) {
 
       register.then(function() {
         log.info('Registered device "%s"', device.id)
+        // Fork (Zebrunner): the totals give the worker 10 s from the registration on
+        _.pull(lists.waiting, device.id)
+        delayedTotals()
         check()
       })
 
       // Statistics
       lists.all.push(device.id)
+      // Fork (Zebrunner): waiting from now on, not from its worker only: the totals came before the
+      // registration and gave the device up while it was still pending
+      lists.waiting.push(device.id)
       delayedTotals()
 
       // Will be set to false when the device is removed
