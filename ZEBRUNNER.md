@@ -19,6 +19,7 @@ The image `public.ecr.aws/zebrunner/stf` runs the STF units of [mcloud](https://
 | The WebSocket sends the commands of a user (input, shell, install, remote ADB, files, ...) to the devices the user uses only (an admin: to any device), the invitations to the devices of the groups of the user, and subscribes the client to the channels of its transactions only: the channel of a device is `base64(sha1(serial))`, so any user controlled any device. A released device gets no command later than 2 s after it | `lib/units/websocket/zebrunner-channels.ts`, `lib/db/zebrunner.ts` |
 | A malformed ZeroMQ message or WebSocket event (or a listener failing on it) is logged once a minute and dropped instead of ending the unit: the listeners run in `process.nextTick`, so their exceptions were uncaught | `lib/util/zebrunner-guard.ts`, `lib/wire/router.ts`, `lib/units/websocket/index.ts` |
 | UI: iOS/tvOS controls, the app under `/stf`, device list filter and scroll position | `res/app/src/` (`zebrunner` in the file name, or marked `Fork (Zebrunner)`) |
+| The REST API keeps the owner of an absent device for an admin and for the owner, as it answers `using` (upstream hid it): a device whose host went away during a session stays controlled. Settings > Devices tells why the API did not remove a device (`Unchanged`): it does not match the removing filters (present, booked, annotated, controlled), such a controlled device needs them at Any | `lib/util/datautil.ts`, `res/app/src/features/settings/devices/` |
 
 ## iOS devices
 

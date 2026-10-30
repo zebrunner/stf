@@ -10,6 +10,17 @@ export interface DeviceRemovalFilters {
   controlled: TriState
 }
 
+export interface DeviceRemovalResponse {
+  success: boolean
+  description: string
+}
+
+// Fork (Zebrunner): the API answers 200 "Unchanged (device)" or "Unchanged (devices)" when no device
+// matches the removing filters
+export function isRemovalUnchanged(response: DeviceRemovalResponse | null | undefined): boolean {
+  return Boolean(response?.description?.startsWith('Unchanged'))
+}
+
 function removalQuery(filters: DeviceRemovalFilters): string {
   const parts: string[] = []
   const keys: Array<keyof DeviceRemovalFilters> = ['present', 'booked', 'annotated', 'controlled']
@@ -25,9 +36,12 @@ export const devicesApi = {
   getDevices: (target: string, fields: string) =>
     api.get<{devices: Device[]}>(`/api/v1/devices?target=${target}&fields=${fields}`)
   , removeDevice: (serial: string, filters: DeviceRemovalFilters) =>
-    api.delete(`/api/v1/devices/${serial}${removalQuery(filters)}`)
+    api.delete<DeviceRemovalResponse>(`/api/v1/devices/${serial}${removalQuery(filters)}`)
   , removeDevices: (filters: DeviceRemovalFilters, serials?: string[]) =>
-    api.delete(`/api/v1/devices${removalQuery(filters)}`, serials ? {serials: serials.join()} : undefined)
+    api.delete<DeviceRemovalResponse>(
+      `/api/v1/devices${removalQuery(filters)}`
+      , serials ? {serials: serials.join()} : undefined
+    )
   , addOriginGroupDevice: (id: string, serial: string) =>
     api.put(`/api/v1/devices/${serial}/groups/${id}`)
   , addOriginGroupDevices: (id: string, serials?: string[]) =>

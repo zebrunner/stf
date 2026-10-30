@@ -43,5 +43,33 @@ describe('datautil', function() {
       datautil.normalize(free, user)
       expect(free.claimed).to.be.false
     })
+
+    // Fork (Zebrunner): the host of the device went away during a session, the device stays
+    // controlled; the API answered `owner: null` with `using: true` to an admin
+    describe('of an absent device with an owner', function() {
+      var owner = {email: 'owner@example.com', name: 'Owner'}
+
+      function absent(): datautil.Device {
+        return {present: false, group: {id: 'group1'}, owner: {...owner}}
+      }
+
+      it('should keep the owner for an admin and the owner, consistent with `using`', function() {
+        var admin: deviceutil.Viewer = {email: 'admin@example.com', privilege: 'admin'}
+        var viewers: deviceutil.Viewer[] = [admin, {email: owner.email, privilege: 'user'}]
+        viewers.forEach(function(viewer) {
+          var seen = absent()
+          datautil.normalize(seen, viewer)
+          expect(seen.owner, viewer.email).to.deep.equal(owner)
+          expect(seen.using, viewer.email).to.be.true
+        })
+      })
+
+      it('should hide the owner from the other users', function() {
+        var seen = absent()
+        datautil.normalize(seen, user)
+        expect(seen.owner).to.be.null
+        expect(seen.using).to.be.false
+      })
+    })
   })
 })

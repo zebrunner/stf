@@ -105,7 +105,9 @@ datautil.normalize = function(device: DeviceView, user: deviceutil.Viewer) {
   datautil.applyBrowsers(device)
   datautil.applyOwner(device, user)
   datautil.applyOwnerOnlyInfo(device, user)
-  if (!device.present) {
+  // Fork (Zebrunner): an absent device keeps its owner for whom `using` is true (an admin, the
+  // owner): a device whose host went away during a session stays controlled, and they must see by whom
+  if (!device.present && !device.using) {
     device.owner = null
   }
   // Whether a device is being held is worth knowing; who it is being held for is not anyone
