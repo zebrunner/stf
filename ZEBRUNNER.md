@@ -77,6 +77,9 @@ npm ci
 node build.mts build
 ```
 
+`make help` lists the targets; `make check` runs the lint and the unit tests of CI before a build, see
+[Development](#development).
+
 ## Run
 
 The units are started by the `docker-compose.yml` of mcloud (`stf app`, `stf auth-zebrunner`, `stf processor`, `stf storage-temp`, ...) and by `start_all.sh` of mcloud-device (`stf provider` for Android, `node /app/lib/cli ios-device` for iOS). For development, `stf local` starts all the server units on one machine, `--auth-type zebrunner` uses the Zebrunner sign-in.
@@ -146,10 +149,15 @@ The keys are 64 hex characters: `stf curve-keygen` prints a new pair (`public=..
 
 | Command | What it checks |
 | --- | --- |
+| `make check` | `make lint` and `make test`, every one of them, as CI; fails when one failed |
+| `make lint` | the Lint job of CI: `npm run lint` and the shell of the `run:` blocks of the workflows (`.github/scripts/check-run-blocks.mts`) |
+| `make test` | the Unit tests job of CI: `npm run test:unit` |
 | `node build.mts compile` | compiles `lib/` (the tests and `stf` run the compiled files) |
 | `npm run lint` | eslint, type checks, JSON and the translation template |
 | `npm run test:unit` | the mocha tests of `test/`, the fork ones are in `test/units/zebrunner/` |
 | `npm run test:component` | the vitest tests of the UI, the fork ones are `*.zebrunner.test.ts` and `device-list/zebrunner.test.ts` |
+
+The `make` targets are thin wrappers over the npm scripts. They run `npm ci` first when `node_modules` is missing or older than `package-lock.json` (the stamp is `node_modules/.package-lock.json`, the hidden lock file npm writes); the `prepare` script of `npm ci` builds `lib/` and the UI.
 
 ### CI
 
@@ -174,11 +182,11 @@ The fork merges [DeviceFarmer/stf](https://github.com/DeviceFarmer/stf) `master`
 - `package-lock.json` and `test/playwright/package-lock.json` are committed (upstream ignores them): the image and CI install them with `npm ci`. After a merge that changes `package.json`, `npm install` updates the lock file, commit it with the merge; `npm audit` should stay clean, `overrides` in `package.json` pins the fixed versions of nested dependencies;
 - no editor settings, generated files or permission changes.
 
-A sync: `git fetch upstream && git merge upstream/master`, `npm install` when `package.json` changed, then `npm run lint`, `npm run test:unit` and `npm run test:component`.
+A sync: `git fetch upstream && git merge upstream/master`, `npm install` when `package.json` changed, then `make check` and `npm run test:component`.
 
 ### Conventions
 
-The repository follows [mcloud-conventions](https://github.com/zebrunner/mcloud-conventions) where they do not touch upstream files: [Conventional Commits](https://www.conventionalcommits.org/), `kebab-case` branch names, pull requests into `develop`, ASCII-only documentation. It is not synced by mcloud-conventions: `LICENSE`, `.editorconfig`, `.gitignore` and the lint setup belong to upstream and the shell checks do not apply to a Node.js project.
+The repository follows [mcloud-conventions](https://github.com/zebrunner/mcloud-conventions) where they do not touch upstream files: [Conventional Commits](https://www.conventionalcommits.org/), `kebab-case` branch names, pull requests into `develop`, ASCII-only documentation. The `Makefile` has the targets of the conventions (`help`, `check`, `lint`, `test`, then `build` and `push`) over the npm scripts, without `docker`: the image has no tests of its own. It is not synced by mcloud-conventions: `LICENSE`, `.editorconfig`, `.gitignore` and the lint setup belong to upstream and the shell checks do not apply to a Node.js project.
 
 ## Support
 
