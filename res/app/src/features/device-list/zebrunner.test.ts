@@ -13,16 +13,7 @@ describe('device list filter (Zebrunner)', () => {
     expect(readStoredDeviceFilter()).toBe('platform: iOS')
   })
 
-  it('reads the filter of the AngularJS UI', () => {
-    window.localStorage.setItem('deviceFilters', JSON.stringify([{field: 'model', query: 'iPhone'}]))
-    expect(readStoredDeviceFilter()).toBe('model: iPhone')
-    window.localStorage.setItem('deviceFilters', JSON.stringify([{query: 'Pixel'}]))
-    expect(readStoredDeviceFilter()).toBe('Pixel')
-  })
-
-  it('starts without a filter when nothing or garbage is stored', () => {
-    expect(readStoredDeviceFilter()).toBe('')
-    window.localStorage.setItem('deviceFilters', '{broken')
+  it('starts without a filter when nothing is stored', () => {
     expect(readStoredDeviceFilter()).toBe('')
   })
 
@@ -33,6 +24,5 @@ describe('device list filter (Zebrunner)', () => {
     expect(window.localStorage.getItem('deviceFilter')).toBe('serial: abc')
     rerender({search: ''})
     expect(window.localStorage.getItem('deviceFilter')).toBe(null)
-    expect(window.localStorage.getItem('deviceFilters')).toBe('[]')
   })
 })

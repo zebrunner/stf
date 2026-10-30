@@ -107,12 +107,13 @@ describe('zebrunner: CLI', function() {
       expect(argv.downloadAllow).to.eql(['10.1.0.0/16', '192.168.7.7'])
     })
 
-    it('should accept the endpoints older mcloud deployments pass', function() {
-      var argv = parse(storageTemp, [
-        '--connect-sub', 'tcp://stf-triproxy-app:7150'
-      , '--connect-push', 'tcp://stf-triproxy-app:7170'
-      ], storageEnv)
-      expect(argv.connectSub).to.eql(['tcp://stf-triproxy-app:7150'])
+    it('should take the options of mcloud and no ZeroMQ endpoints', function() {
+      var argv = parse(storageTemp, ['--port', '3000', '--save-dir', '/data'], storageEnv)
+      expect(argv.port).to.equal(3000)
+      expect(argv.saveDir).to.equal('/data')
+      expect(function() {
+        parse(storageTemp, ['--connect-sub', 'tcp://stf-triproxy-app:7150'], storageEnv)
+      }).to.throw(/Unknown argument/)
     })
   })
 
