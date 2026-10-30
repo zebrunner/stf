@@ -14,7 +14,8 @@ interface Reply {
 }
 
 var dbapi = {
-  loadDeviceBySerial: sinon.stub()
+  loadDevice: sinon.stub()
+, loadDeviceBySerial: sinon.stub()
 , setDeviceNote: sinon.stub()
 , setDeviceAbsent: sinon.stub()
 , setDeviceStatusOverride: sinon.stub()
@@ -39,16 +40,16 @@ var zebrunner = await importFresh(
 restoreDbApi()
 restoreDb()
 
-function request(params: Record<string, unknown>) {
+function request(params: Record<string, unknown>, user?: object) {
   var swagger: Record<string, {value: unknown}> = {}
   Object.keys(params).forEach(function(name) {
     swagger[name] = {value: params[name]}
   })
-  return {swagger: {params: swagger}}
+  return {swagger: {params: swagger}, user: user}
 }
 
-// call <route> <params>: the status code and the JSON body the route answers with
-function call(route: string, params: Record<string, unknown>): Promise<Reply> {
+// call <route> <params> [user]: the status code and the JSON body the route answers with
+function call(route: string, params: Record<string, unknown>, user?: object): Promise<Reply> {
   return new Promise<Reply>(function(resolve) {
     var reply = {code: 200, body: null as unknown}
     var res = {
@@ -63,7 +64,7 @@ function call(route: string, params: Record<string, unknown>): Promise<Reply> {
       }
     }
     var controller = route in zebrunner ? zebrunner : devices
-    controller[route](request(params), res)
+    controller[route](request(params, user), res)
   })
 }
 
@@ -167,6 +168,53 @@ describe('zebrunner: device API', function() {
     it('should answer 404 for an unknown device', async function() {
       dbapi.loadDeviceBySerial.resolves(null)
       expect((await putStatus('offline')).code).to.equal(404)
+    })
+  })
+
+  // Fork (Zebrunner): lib/util/datautil.ts, the host of the device went away during a session and
+  // the device stays controlled; the API answered `owner: null` with `using: true` to an admin
+  describe('GET /devices/{serial} of an absent device with an owner', function() {
+    var owner = {email: 'owner@example.com', name: 'Owner', group: 'group1'}
+    var admin = {email: 'admin@example.com', privilege: 'admin', groups: {subscribed: []}}
+    var other = {email: 'other@example.com', privilege: 'user', groups: {subscribed: []}}
+
+    beforeEach(function() {
+      dbapi.loadDevice.callsFake(function() {
+        return Promise.resolve({
+          next: function(callback: (err: Error | null, device: object) => void) {
+            callback(null, {
+              serial: 'serial'
+            , present: false
+            , ready: false
+            , owner: {...owner}
+            , group: {id: 'group1', origin: 'group1'}
+            })
+          }
+        })
+      })
+    })
+
+    it('should answer the owner to an admin, as it answers using', async function() {
+      var reply = await call('getDeviceBySerial', {serial: 'serial', fields: null}, admin)
+      expect(reply.body.device).to.include({present: false, using: true})
+      expect(reply.body.device.owner).to.eql(owner)
+
+      var fields = 'serial,owner,using'
+      reply = await call('getDeviceBySerial', {serial: 'serial', fields: fields}, admin)
+      expect(reply.body.device).to.eql({serial: 'serial', owner: owner, using: true})
+    })
+
+    it('should answer the owner to the owner', async function() {
+      var reply = await call('getDeviceBySerial', {serial: 'serial', fields: null}, {
+        ...other
+      , email: owner.email
+      })
+      expect(reply.body.device.owner).to.eql(owner)
+    })
+
+    it('should not answer the owner to another user', async function() {
+      var reply = await call('getDeviceBySerial', {serial: 'serial', fields: null}, other)
+      expect(reply.body.device).to.include({owner: null, using: false})
     })
   })
 
