@@ -1197,6 +1197,10 @@ msgstr ""
 msgid "No clipboard data"
 msgstr ""
 
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:142
+msgid "No device was removed: none matches the removing filters (present, booked, annotated, controlled). A device whose host went away during a session stays controlled: set the filters to Any to remove it."
+msgstr ""
+
 #: res/app/src/features/control/screen/DeviceScreen.tsx:160
 msgid "No device screen"
 msgstr ""
@@ -1929,6 +1933,10 @@ msgstr ""
 
 #: res/app/src/features/control/panes/automation/zebrunner-ios-settings.tsx:104
 msgid "The device switches them in its Settings app, which takes the screen for a few seconds"
+msgstr ""
+
+#: res/app/src/features/settings/devices/DevicesSettings.tsx:122
+msgid "The device was not removed: it does not match the removing filters (present, booked, annotated, controlled). A device whose host went away during a session stays controlled: set the filters to Any to remove it."
 msgstr ""
 
 #: res/app/src/features/control/panes/advanced/MaintenanceCard.tsx:11

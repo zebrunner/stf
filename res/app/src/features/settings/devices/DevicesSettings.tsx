@@ -21,7 +21,7 @@ import {
   , IconTrash
 } from '@tabler/icons-react'
 import sortBy from 'lodash/sortBy'
-import {devicesApi, type DeviceRemovalFilters} from '@/core/devices-api'
+import {devicesApi, isRemovalUnchanged, type DeviceRemovalFilters} from '@/core/devices-api'
 import {gettext, useTranslation} from '@/core/i18n'
 import {useSetting} from '@/core/settings'
 import {errorMessage, openGenericModal, withErrorModal} from '@/ui/modals'
@@ -114,7 +114,16 @@ export default function DevicesSettings() {
     })) {
       return
     }
-    await withErrorModal(() => devicesApi.removeDevice(serial, filters))
+    const {value} = await withErrorModal(() => devicesApi.removeDevice(serial, filters))
+    // Fork (Zebrunner): the API answers success without removing a device the filters skip
+    if (isRemovalUnchanged(value)) {
+      await openGenericModal({
+        type: 'Warning'
+        , message: gettext('The device was not removed: it does not match the removing filters (present, ' +
+          'booked, annotated, controlled). A device whose host went away during a session stays controlled: ' +
+          'set the filters to Any to remove it.')
+      })
+    }
   }
 
   async function removeSelection() {
@@ -126,7 +135,15 @@ export default function DevicesSettings() {
       return
     }
     const serials = search ? filtered.map((device) => device.serial) : undefined
-    await withErrorModal(() => devicesApi.removeDevices(filters, serials))
+    const {value} = await withErrorModal(() => devicesApi.removeDevices(filters, serials))
+    if (isRemovalUnchanged(value)) {
+      await openGenericModal({
+        type: 'Warning'
+        , message: gettext('No device was removed: none matches the removing filters (present, booked, ' +
+          'annotated, controlled). A device whose host went away during a session stays controlled: set the ' +
+          'filters to Any to remove it.')
+      })
+    }
   }
 
   function body() {
