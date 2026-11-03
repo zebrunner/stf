@@ -169,6 +169,9 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     var appium = await wda<{capabilities: object}>('POST', '/session', {
       capabilities: {alwaysMatch: {bundleId: 'com.apple.Preferences'}}
     })
+    await wda('POST', `/session/${appium.sessionId}/wda/apps/activate`, {
+      bundleId: 'com.apple.Preferences'
+    })
     await until(async function() {
       return await activeBundle() === 'com.apple.Preferences'
     })
