@@ -73,6 +73,7 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
   this.retries(process.env.CI ? 2 : 0)
 
   var ios: IosWda
+    , screenSize: {width: number, height: number}
 
   before(async function() {
     await until(async function() {
@@ -109,6 +110,18 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     })
     await ios.client.startSession()
     expect(ios.client.sessionId, 'fresh session').to.be.a('string')
+    screenSize = (await wda<{width: number, height: number}>(
+      'GET', `/session/${ios.client.sessionId}/window/size`
+    )).value
+    var scale = (await wda<{scale: number}>(
+      'GET', `/session/${ios.client.sessionId}/wda/screen`
+    )).value.scale
+    // The test double supplies the display that the real devicestate plugin reads from WDA.
+    ios.setDisplay({
+      width: screenSize.width * scale, height: screenSize.height * scale, scale: scale
+    })
+    ios.client.deviceSize = null
+    await ios.client.size()
     expect(ios.client.deviceSize, 'screen size before input').to.be.an('object')
   })
 
@@ -152,17 +165,9 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
   })
 
   it('[check:size] should know the size of the screen in points', async function() {
-    await ios.client.startSession()
-    var sessionId = ios.client.sessionId
-    var size = (await wda<{width: number, height: number}>(
-      'GET', `/session/${sessionId}/window/size`
-    )).value
-    var scale = (await wda<{scale: number}>('GET', `/session/${sessionId}/wda/screen`)).value.scale
-    // What the unit stores at the first join, see storeDeviceSize of plugins/group.ts
-    ios.setDisplay({width: size.width * scale, height: size.height * scale, scale: scale})
     ios.client.deviceSize = null
 
-    expect(await ios.client.size()).to.eql({width: size.width, height: size.height})
+    expect(await ios.client.size()).to.eql(screenSize)
   })
 
   it('[check:device] should read the orientation and the battery', async function() {
