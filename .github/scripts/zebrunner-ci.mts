@@ -44,19 +44,72 @@ function settings(): ZebrunnerCi {
   return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) as ZebrunnerCi : {}
 }
 
-// androidLegs <legs>: the legs at or above android.minApi, all of them without the setting
-export function androidLegs<T extends {api: unknown}>(legs: T[]): T[] {
-  const minApi = settings().android?.minApi
-  if (typeof minApi !== 'number') {
-    return legs
+export function matrixProfile(): 'quick' | 'full' {
+  var profile = process.env.CI_MATRIX_PROFILE || 'quick'
+  if (profile !== 'quick' && profile !== 'full') {
+    throw new Error('Unknown CI matrix profile: ' + profile)
   }
-  return legs.filter(function(leg) {
-    return parseFloat(String(leg.api)) >= minApi
+  return profile
+}
+
+// Keep the floor and the newest stable representative of each of the two newest OS majors.
+function quickLegs<T>(legs: T[], version: (leg: T) => number, revision: (leg: T) => number): T[] {
+  var sorted = legs.slice().sort(function(a, b) {
+    return revision(a) - revision(b)
+  })
+  var newest = new Map<number, T>()
+  sorted.forEach(function(leg) {
+    newest.set(version(leg), leg)
+  })
+  var selected = new Set([sorted[0], ...Array.from(newest.values()).slice(-2)])
+  return sorted.filter(function(leg) {
+    return selected.has(leg)
   })
 }
 
-export function iosLegs(): IosLeg[] {
-  return settings().ios?.include || []
+// androidLegs <legs>: the legs at or above android.minApi, all of them without the setting
+export function androidLegs<T extends {api: unknown, channel?: string}>(
+  legs: T[], profile = matrixProfile()
+): T[] {
+  var apis = legs.map(function(leg) {
+    return Number(leg.api)
+  })
+  if (apis.some(function(api) {
+    return !Number.isFinite(api) || api <= 0
+  }) || new Set(apis).size !== apis.length) {
+    throw new Error('Android matrix must have unique, positive numeric API values')
+  }
+  const minApi = settings().android?.minApi
+  var supported = legs.filter(function(leg) {
+    return typeof minApi !== 'number' || Number(leg.api) >= minApi
+  })
+  return profile === 'full' ? supported : quickLegs(
+    supported.filter(function(leg) {
+      return !leg.channel || leg.channel === 'stable'
+    })
+  , function(leg) {
+      // API 31/32 are both Android 12; dotted API revisions belong to the same OS.
+      return Number(leg.api) === 32 ? 31 : Math.floor(Number(leg.api))
+    }
+  , function(leg) {
+      return Number(leg.api)
+    }
+  )
+}
+
+export function iosLegs(profile = matrixProfile()): IosLeg[] {
+  var legs = settings().ios?.include || []
+  return profile === 'full' ? legs : quickLegs(
+    legs.filter(function(leg) {
+      return !leg.optional
+    })
+  , function(leg) {
+      return Number(leg.ios)
+    }
+  , function(leg) {
+      return Number(leg.ios)
+    }
+  )
 }
 
 // The columns of the iOS matrix, in the order a leg reaches them. The test keys are the
@@ -114,7 +167,7 @@ const CHECK_ICON: Record<string, string> = {
 // iosOptional: the reason of every optional leg, by its iOS version
 export function iosOptional(): Record<string, string> {
   var optional: Record<string, string> = {}
-  iosLegs().forEach(function(leg) {
+  iosLegs('full').forEach(function(leg) {
     if (leg.optional) {
       optional[leg.ios] = leg.optional
     }
@@ -186,6 +239,7 @@ export function iosReport(verdicts: IosVerdict[]) {
 
 interface MochaTest {
   title: string
+  currentRetry?: number
   err?: {message?: string}
 }
 
@@ -232,9 +286,9 @@ export function iosVerdict(env: NodeJS.ProcessEnv) {
       var key = checkKey(test.title)
       if (key) {
         checks[key] = status
-        if (status === 'fail') {
-          messages.push(String(test.err?.message || 'failed').split('\n')[0]!)
-        }
+      }
+      if (status === 'fail') {
+        messages.push(String(test.err?.message || 'failed').split('\n')[0]!)
       }
     })
   }
@@ -242,6 +296,12 @@ export function iosVerdict(env: NodeJS.ProcessEnv) {
   record(results.pending, 'skip')
   record(results.failures, 'fail')
 
+  IOS_CHECKS.slice(2).forEach(function(check) {
+    var supported = check.key !== 'url' || Number(env.IOS_VERSION || 17) >= 17
+    if (checks[check.key] !== 'pass' && !(checks[check.key] === 'skip' && !supported)) {
+      checks[check.key] = 'fail'
+    }
+  })
   var failing = IOS_CHECKS.filter(function(check) {
     return checks[check.key] === 'fail'
   })
@@ -249,10 +309,14 @@ export function iosVerdict(env: NodeJS.ProcessEnv) {
     return checks[check.key] === 'pass'
   })
   var ok = !failing.length && (results.passes || []).length > 0 &&
+    !(results.failures || []).length &&
     env.SETUP_OUTCOME === 'success' && env.TEST_OUTCOME === 'success'
+  var retried = [...(results.passes || []), ...(results.failures || [])].filter(function(test) {
+    return Number(test.currentRetry || 0) > 0
+  }).length
   var details = ok ? passing.length + ' checks pass' :
     failing.length ? failing[0]!.failure + (messages.length ? ': ' + messages[0] : '') :
-    'the tests did not run'
+    messages.length ? 'test suite failed: ' + messages[0] : 'the tests did not run'
 
   return {
     status: ok ? 'pass' : 'fail'
@@ -262,6 +326,7 @@ export function iosVerdict(env: NodeJS.ProcessEnv) {
     , runtime: stages.runtime || ''
     , xcode: stages.xcode || ''
     , checks: checks
+    , retried: retried
     }
   }
 }

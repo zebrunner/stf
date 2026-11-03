@@ -16,6 +16,7 @@ interface Summary {
   total: number
   passed: number
   skipped: number
+  flaky: number
   error?: string
   suite_errors?: number
 }
@@ -54,6 +55,7 @@ function reportOutputs(summary: Summary) {
       checks: summary.checks
     , playwright_total: summary.total
     , playwright_failed: summary.failed.length
+    , playwright_flaky: summary.flaky
     }) + '\n')
 }
 
@@ -90,8 +92,7 @@ function specStatus(spec: Spec) {
   })
 
   if (statuses.some(function(s) {
-    return s === 'unexpected' || s === 'failed' || s === 'timedOut' ||
-      s === 'interrupted'
+    return !['expected', 'passed', 'flaky', 'skipped'].includes(s)
   })) {
     return 'fail'
   }
@@ -107,10 +108,11 @@ function main() {
   var reportPath = process.argv[2]
   var outPath = process.argv[3] || 'playwright-checks.json'
 
-  var summary: Summary = {checks: {}, failed: [], total: 0, passed: 0, skipped: 0}
+  var summary: Summary = {checks: {}, failed: [], total: 0, passed: 0, skipped: 0, flaky: 0}
 
   if (!reportPath || !fs.existsSync(reportPath)) {
     summary.error = 'no playwright report at ' + reportPath
+    summary.checks.playwright_ui = 'fail'
     fs.writeFileSync(outPath, JSON.stringify(summary, null, 2))
     reportOutputs(summary)
     console.error(summary.error)
@@ -134,6 +136,11 @@ function main() {
     var title = spec.title || ''
 
     summary.total++
+    if ((spec.tests || []).some(function(test) {
+      return test.status === 'flaky'
+    })) {
+      summary.flaky++
+    }
     if (status === 'pass') {
       summary.passed++
     }
@@ -151,6 +158,10 @@ function main() {
     var key = tag[1]!
     summary.checks[key] = layers.merge(summary.checks[key], status)
   })
+
+  if (summary.suite_errors || !specs.length || summary.skipped === summary.total) {
+    summary.checks.playwright_ui = 'fail'
+  }
 
   fs.writeFileSync(outPath, JSON.stringify(summary, null, 2))
   console.log(JSON.stringify(summary, null, 2))

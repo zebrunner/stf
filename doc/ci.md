@@ -1,7 +1,10 @@
 # CI
 
 `.github/workflows/ci.yml` runs on every pull request and on pushes to
-`master`. Everything runs on `ubuntu-24.04` and needs no secrets: the only
+`master` and `develop`. A quick OS matrix runs by default; a full matrix runs
+weekly and with the manual `matrix-profile=full` input, see
+[Fork CI](../ZEBRUNNER.md#ci). Linux jobs run on `ubuntu-24.04`; iOS uses
+macOS simulators. CI needs no secrets: the only
 token involved is the automatic `GITHUB_TOKEN`, used to post the report.
 
 `.github/workflows/docker.yml` builds the images on the same events, and
@@ -19,7 +22,8 @@ described under Releasing below.
 | `unit` | `mocha` over `test/` (`lib/util`, `lib/wire`) |
 | `component` | `vitest` + jsdom over the UI specs in `res/app/src/**/*.test.ts(x)` |
 | `integration` | `stf local` boots against a RethinkDB service, fake devices round-trip through STF's own db layer, and the Playwright web UI suite passes without any device |
-| `android` (matrix) | one leg per Android release from 5.0 to 16: boot an emulator, attach `stf local` to it, and drive it from the browser |
+| `android` (matrix) | selected Android releases at API 31 and above: boot an emulator, attach `stf local` to it, and drive it from the browser |
+| `ios` (matrix) | selected stable iOS versions; full runs also include intermediate and optional preview versions |
 | `report` | aggregates everything into one sticky PR comment |
 
 ### The component tier
@@ -41,13 +45,24 @@ within another 5 seconds and preserves the test script's exit status. This
 prevents an emulator that acknowledges shutdown but stays alive from holding
 the action open until its 50 minute step timeout.
 
-Legs come from `.github/android-matrix.json`. To add or change one, edit that
+All available legs come from `.github/android-matrix.json`; the fork's minimum
+API and quick/full selection are applied by `zebrunner-ci.mts` to both the
+matrix and the report's expected coverage. To add or change an available leg, edit that
 file only: the matrix is generated from it and the report uses the same file to
 decide which legs were required to report, so the two cannot drift apart. API
 values must be unique. The flip side of that is that deleting a leg also deletes
 it from the required set, so a shrunk matrix still reports all green. `plan`
 only rejects an empty `include` and duplicate API values, it does not enforce a
 minimum.
+
+Playwright retries each failing test twice in CI, in fresh workers. iOS retries
+each failing test twice after resetting its session and foreground app. Reports
+show recovered failures as flaky; a missing/empty Playwright report, suite-level
+error, or missing required iOS capability cannot count as a pass. Unsupported
+URL opening before iOS 17 remains an explicit skip. iOS radio checks still reject
+transport timeouts rather than treating them as proof that a simulator has no
+Wi-Fi. These are simulator smoke checks, not proof of physical-device radio or
+gesture accuracy.
 
 Each leg walks these layers in order and records the result of each, so the
 report names the layer that broke rather than showing one opaque cross.

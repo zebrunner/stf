@@ -3,8 +3,17 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [master]
+    branches: [master, develop]
+  schedule:
+    # Fork (Zebrunner): exercise every supported version weekly.
+    - cron: "0 4 * * 1"
   workflow_dispatch:
+    inputs:
+      matrix-profile:
+        description: OS coverage
+        type: choice
+        options: [quick, full]
+        default: quick
 
 # Every job that needs more than this says so itself. The report job already
 # scopes pull-requests: write to itself; widening it here would hand write
@@ -20,6 +29,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # Fork (Zebrunner): use the same profile for planning and report coverage.
+  CI_MATRIX_PROFILE: ${{ github.event_name == 'schedule' && 'full' || inputs.matrix-profile || 'quick' }}
   NPM_INSTALL_FLAGS: --no-audit --no-fund --loglevel=http
   # Bump to invalidate the dependency cache without touching package.json.
   CACHE_EPOCH: v3
@@ -663,10 +674,13 @@ jobs:
           rm -rf stf-logs-attempt-1 checks-attempt-1.json
           mv stf-logs stf-logs-attempt-1 2>/dev/null || true
           mv checks.json checks-attempt-1.json 2>/dev/null || true
+          if [ -d test-results/playwright ]; then
+            mv test-results/playwright test-results/playwright-attempt-1
+          fi
           # A leg killed by the step timeout can leave the emulator alive, and a
           # second one cannot bind the ports it is still holding.
+          node .github/scripts/stop-emulator.mts
           adb kill-server 2>/dev/null || true
-          pkill -f qemu-system 2>/dev/null || true
           # The retry costs no extra disk: the action creates the AVD as
           # `avdmanager create --force -n test`, so the second attempt replaces
           # the first one's 6G userdata rather than adding to it, and the system
@@ -726,6 +740,7 @@ jobs:
             checks.json
             checks-attempt-1.json
             test-results/playwright
+            test-results/playwright-attempt-1
           retention-days: 5
           if-no-files-found: warn
 
@@ -888,6 +903,8 @@ jobs:
   # Fork (Zebrunner): the iOS simulator legs, see .github/workflows/zebrunner-ios.yml
   ios:
     uses: ./.github/workflows/zebrunner-ios.yml
+    with:
+      matrix-profile: ${{ github.event_name == 'schedule' && 'full' || inputs.matrix-profile || 'quick' }}
 
   report:
     name: Report

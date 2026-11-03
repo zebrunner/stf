@@ -7,7 +7,9 @@
 import fs from 'fs'
 import path from 'path'
 import * as layers from './checks.mts'
-import {androidLegs, iosMissing, iosOptional, iosReport} from './zebrunner-ci.mts'
+import {
+  androidLegs, iosLegs, iosMissing, iosOptional, iosReport, matrixProfile
+} from './zebrunner-ci.mts'
 
 interface Verdict {
   id: string
@@ -20,6 +22,8 @@ interface Verdict {
   ios?: string
   checks?: layers.Checks
   attempt?: string | number
+  retried?: number
+  playwright_flaky?: number
 }
 
 interface MatrixSpec {
@@ -62,19 +66,18 @@ var NO_VERDICT = 'no verdict: it never ran, was cancelled, or died before ' +
 // EXPECTED_ANDROID_FILE points at the same JSON the matrix is generated from,
 // so a leg cannot be added to the matrix and silently escape the coverage
 // check.
-function expectedAndroid() {
+function expectedAndroid(profile = matrixProfile()) {
   var file = process.env.EXPECTED_ANDROID_FILE
 
-  if (file && fs.existsSync(file)) {
-    try {
-      var spec = JSON.parse(fs.readFileSync(file, 'utf8')) as MatrixSpec
-      return androidLegs(spec.include || []).map(function(leg) {
-        return {android: String(leg.android), api: String(leg.api)}
-      })
+  if (file) {
+    var spec = JSON.parse(fs.readFileSync(file, 'utf8')) as MatrixSpec
+    var selected = androidLegs(spec.include || [], profile)
+    if (!selected.length) {
+      throw new Error('No expected Android legs in ' + file)
     }
-    catch (e) {
-      console.error('cannot read %s: %s', file, (e as Error).message)
-    }
+    return selected.map(function(leg) {
+      return {android: String(leg.android), api: String(leg.api)}
+    })
   }
 
   return []
@@ -190,10 +193,17 @@ function main() {
   })
 
   var coreCounts = tally(core)
-  var androidCounts = tally(android)
   // Fork (Zebrunner): the iOS simulator legs, see zebrunner-ci.mts
   var ios = iosReport(verdicts)
-  var failed = coreCounts.fail + androidCounts.fail + ios.failed
+  var failed = core.filter(function(v) {
+    return v.status !== 'pass'
+  }).length + android.filter(function(v) {
+    return v.status !== 'pass' && v.status !== 'skip'
+  }).length + ios.failed
+  var warnings = verdicts.some(function(v) {
+    return v.status !== 'pass' || Number(v.attempt || 1) > 1 ||
+      Number(v.retried || 0) > 0 || Number(v.playwright_flaky || 0) > 0
+  })
   var lines: string[] = []
 
   // Nothing reported at all means the run died before any job could speak.
@@ -203,7 +213,36 @@ function main() {
   }
 
   lines.push('<!-- stf-ci-report -->')
-  lines.push('## ' + (failed ? ':x:' : ':white_check_mark:') + ' STF CI report')
+  lines.push('## ' + (failed ? ':x:' : warnings ? ':warning:' : ':white_check_mark:') +
+    ' STF CI report')
+  lines.push('')
+
+  // Fork (Zebrunner): a quick run is not evidence that every OS was tested.
+  var profile = matrixProfile()
+  lines.push('**OS coverage: ' + profile + '**' + (profile === 'quick' ?
+    ' - oldest + two newest stable OS majors; intermediate and preview versions were not tested.' :
+    ' - all configured supported OS versions, including preview legs.'))
+  if (profile === 'quick') {
+    var selectedAndroid = expectedAndroid()
+    var omittedAndroid = expectedAndroid('full').filter(function(leg) {
+      return !selectedAndroid.some(function(selected) {
+        return selected.api === leg.api
+      })
+    })
+    var omittedIos = iosLegs('full').filter(function(leg) {
+      return !iosLegs().some(function(selected) {
+        return selected.ios === leg.ios
+      })
+    })
+    if (omittedAndroid.length) {
+      lines.push('Android APIs not selected: ' + omittedAndroid.map(function(leg) {
+        return leg.api
+      }).join(', ') + '.')
+    }
+    lines.push('iOS not selected: ' + omittedIos.map(function(leg) {
+      return leg.ios
+    }).join(', ') + '. Run CI with `matrix-profile: full` for complete coverage.')
+  }
   lines.push('')
 
   var androidReady = android.filter(function(v) {
@@ -211,7 +250,7 @@ function main() {
   }).length
 
   lines.push([
-    '**' + (failed ? failed + ' failing' : 'All green') + '**'
+    '**' + (failed ? failed + ' failing' : warnings ? 'Passing with warnings' : 'All green') + '**'
   , core.length + ' test tiers (' + coreCounts.pass + ' pass / ' +
       coreCounts.fail + ' fail / ' + coreCounts.skip + ' skip)'
   , android.length + ' Android versions (' + androidReady +
@@ -290,6 +329,15 @@ function main() {
     lines.push('')
   }
 
+  var flaky = verdicts.filter(function(v) {
+    return Number(v.retried || 0) > 0 || Number(v.playwright_flaky || 0) > 0
+  })
+  if (flaky.length) {
+    lines.push('> :warning: Tests retried after failure: ' + flaky.map(function(v) {
+      return v.label + ' (' + Number(v.retried || v.playwright_flaky) + ' tests)'
+    }).join(', ') + '. Passing after retry is flaky, not a clean first-attempt pass.')
+    lines.push('')
+  }
   var skipped = android.filter(function(v) {
     return v.checks && v.checks.image === 'skip'
   })
