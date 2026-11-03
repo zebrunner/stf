@@ -96,20 +96,27 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
   after(async function() {
     await ios.client.stopSession()
     await noSession()
+    expect(failures(ios.fatal)).to.eql([])
+    expect(failures(ios.absent)).to.eql([])
   })
 
-  beforeEach(async function() {
-    await ios.client.stopSession()
-    await noSession()
+  async function prepare() {
     ios.fatal.length = 0
     ios.absent.length = 0
+    await ios.client.stopSession()
+    await noSession()
     ios.client.isSwiping = false
-    await wda('POST', '/wda/homescreen', {})
-    await until(async function() {
-      return await activeBundle() === 'com.apple.springboard'
-    })
     await ios.client.startSession()
     expect(ios.client.sessionId, 'fresh session').to.be.a('string')
+    // Press Home rather than activating SpringBoard while Safari is still opening a URL.
+    await wda('POST', `/session/${ios.client.sessionId}/wda/pressButton`, {name: 'home'})
+    var active = ''
+    await until(async function() {
+      active = await activeBundle()
+      return active === 'com.apple.springboard'
+    }, 60000).catch(function(err) {
+      throw new Error('Home setup failed; active app: ' + active, {cause: err})
+    })
     screenSize = (await wda<{width: number, height: number}>(
       'GET', `/session/${ios.client.sessionId}/window/size`
     )).value
@@ -123,14 +130,27 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     ios.client.deviceSize = null
     await ios.client.size()
     expect(ios.client.deviceSize, 'screen size before input').to.be.an('object')
-  })
+  }
 
-  afterEach(function() {
-    expect(failures(ios.fatal), 'fatal WDA errors in this test').to.eql([])
-    expect(failures(ios.absent), 'device lost in this test').to.eql([])
-  })
+  // Mocha does not retry failed beforeEach hooks; setup belongs to the retriable attempt.
+  function check(title: string, operation: (this: Mocha.Context) => Promise<void> | void) {
+    it(title, async function() {
+      try {
+        await prepare()
+        await operation.call(this)
+      }
+      finally {
+        if (ios.fatal.length || ios.absent.length) {
+          // A real unit would have exited. Do not recover that as a simulator flake.
+          this.retries(0)
+          expect(failures(ios.fatal), 'fatal WDA errors in this test').to.eql([])
+          expect(failures(ios.absent), 'device lost in this test').to.eql([])
+        }
+      }
+    })
+  }
 
-  it('[check:session] should start a session and report the iOS version', async function() {
+  check('[check:session] should start a session and report the iOS version', async function() {
     expect(ios.client.ownSession).to.equal(true)
     var version = ios.sent().find(function(entry) {
       return entry.type === 'SdkIosVersion'
@@ -144,7 +164,7 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     })).to.equal(true)
   })
 
-  it('[check:appium] should keep the session of an Appium test and its app', async function() {
+  check('[check:appium] should keep the session of an Appium test and its app', async function() {
     await ios.client.stopSession()
     var appium = await wda<{capabilities: object}>('POST', '/session', {
       capabilities: {alwaysMatch: {bundleId: 'com.apple.Preferences'}}
@@ -164,13 +184,13 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     await wda('DELETE', `/session/${appium.sessionId}`)
   })
 
-  it('[check:size] should know the size of the screen in points', async function() {
+  check('[check:size] should know the size of the screen in points', async function() {
     ios.client.deviceSize = null
 
     expect(await ios.client.size()).to.eql(screenSize)
   })
 
-  it('[check:device] should read the orientation and the battery', async function() {
+  check('[check:device] should read the orientation and the battery', async function() {
     await ios.client.rotation({orientation: 'PORTRAIT'})
     await ios.client.getOrientation()
     expect(ios.client.orientation).to.equal('PORTRAIT')
@@ -180,7 +200,7 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     })).to.equal(true)
   })
 
-  it('[check:home] should go to the home screen', async function() {
+  check('[check:home] should go to the home screen', async function() {
     await wda('POST', `/session/${ios.client.sessionId}/wda/apps/activate`, {
       bundleId: 'com.apple.Preferences'
     })
@@ -193,7 +213,7 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     })
   })
 
-  it('[check:touch] should tap and swipe', async function() {
+  check('[check:touch] should tap and swipe', async function() {
     ios.client.tap({x: 0.5, y: 0.5})
     await ios.client.touchUp()
 
@@ -204,13 +224,13 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     expect(failures(ios.fatal)).to.eql([])
   })
 
-  it('[check:screenshot] should take a screenshot', async function() {
+  check('[check:screenshot] should take a screenshot', async function() {
     var screenshot = await ios.client.screenshot()
     expect(Buffer.from(screenshot.value, 'base64').subarray(1, 4).toString()).to.equal('PNG')
   })
 
   // A simulator has no Wi-Fi in Settings: the radio is either read, or missing (not a WDA error)
-  it('[check:settings] should look for Wi-Fi in Settings and bring back the app', async function() {
+  check('[check:settings] should look for Wi-Fi and restore the app', async function() {
     await ios.client.homeBtn()
     await until(async function() {
       return await activeBundle() === 'com.apple.springboard'
@@ -236,7 +256,7 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
   })
 
   // iOS 16+ gives the pasteboard to the app in front only, the runner of WDA comes to the front
-  it('[check:clipboard] should put text in the pasteboard and read it back', async function() {
+  check('[check:clipboard] should put text in the pasteboard and read it back', async function() {
     var pasteboard = new PasteboardAutomation({
       baseUrl: BASE
     , sessionId: function() {
@@ -251,7 +271,7 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     expect(failures(ios.fatal)).to.eql([])
   })
 
-  it('[check:url] should open an address in Safari from iOS 17 on, like the UI', async function() {
+  check('[check:url] should open an address in Safari from iOS 17 on', async function() {
     if (IOS_VERSION && Number(IOS_VERSION) < 17) {
       this.skip()
     }
@@ -261,7 +281,7 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     })
   })
 
-  it('[check:stream] should stream the screen as MJPEG', async function() {
+  check('[check:stream] should stream the screen as MJPEG', async function() {
     var frame = await new Promise<Buffer>(function(resolve, reject) {
       var data = Buffer.alloc(0)
       var socket = net.connect(MJPEG_PORT, WDA_HOST, function() {
@@ -290,7 +310,7 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     expect(frame[1]).to.equal(0xd8)
   })
 
-  it('[check:stable] should not have stopped the unit or reported the device absent', function() {
+  check('[check:stable] should not have stopped the unit or lost the device', function() {
     expect(failures(ios.fatal)).to.eql([])
     expect(failures(ios.absent)).to.eql([])
   })
