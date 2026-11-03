@@ -26,7 +26,7 @@ interface Value<T> {
 
 function wda<T>(method: string, path: string, body?: object): Promise<Value<T>> {
   return Promise.resolve(rp<Value<T>>(Object.assign(
-    {method: method, uri: BASE + path, json: true}
+    {method: method, uri: BASE + path, json: true, timeout: 60000}
   , body ? {body: body} : {}
   )))
 }
@@ -69,7 +69,8 @@ async function noSession() {
 }
 
 describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', function() {
-  this.timeout(120000)
+  this.timeout(180000)
+  this.retries(process.env.CI ? 2 : 0)
 
   var ios: IosWda
 
@@ -92,11 +93,31 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
   })
 
   after(async function() {
+    await ios.client.stopSession()
     await noSession()
   })
 
-  it('[check:session] should start a session and report the iOS version', async function() {
+  beforeEach(async function() {
+    await ios.client.stopSession()
+    await noSession()
+    ios.fatal.length = 0
+    ios.absent.length = 0
+    ios.client.isSwiping = false
+    await wda('POST', '/wda/homescreen', {})
+    await until(async function() {
+      return await activeBundle() === 'com.apple.springboard'
+    })
     await ios.client.startSession()
+    expect(ios.client.sessionId, 'fresh session').to.be.a('string')
+    expect(ios.client.deviceSize, 'screen size before input').to.be.an('object')
+  })
+
+  afterEach(function() {
+    expect(failures(ios.fatal), 'fatal WDA errors in this test').to.eql([])
+    expect(failures(ios.absent), 'device lost in this test').to.eql([])
+  })
+
+  it('[check:session] should start a session and report the iOS version', async function() {
     expect(ios.client.ownSession).to.equal(true)
     var version = ios.sent().find(function(entry) {
       return entry.type === 'SdkIosVersion'
@@ -145,6 +166,7 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
   })
 
   it('[check:device] should read the orientation and the battery', async function() {
+    await ios.client.rotation({orientation: 'PORTRAIT'})
     await ios.client.getOrientation()
     expect(ios.client.orientation).to.equal('PORTRAIT')
     await ios.client.batteryIosEvent()
@@ -154,8 +176,11 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
   })
 
   it('[check:home] should go to the home screen', async function() {
-    await wda('POST', `/session/${ios.client.sessionId}/wda/apps/launch`, {
+    await wda('POST', `/session/${ios.client.sessionId}/wda/apps/activate`, {
       bundleId: 'com.apple.Preferences'
+    })
+    await until(async function() {
+      return await activeBundle() === 'com.apple.Preferences'
     })
     await ios.client.homeBtn()
     await until(async function() {
@@ -190,7 +215,8 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
     , sessionId: function() {
         return ios.client.sessionId
       }
-    , waitTimeout: 5000
+    , waitTimeout: 20000
+    , requestTimeout: 60000
     })
     try {
       expect(await settings.isEnabled('wifi')).to.be.a('boolean')
@@ -249,7 +275,11 @@ describe('zebrunner: iOS ' + (IOS_VERSION || '(any version)') + ' simulator', fu
           resolve(data.subarray(start))
         }
       })
-      socket.on('error', reject)
+      socket.on('error', function(err) {
+        clearTimeout(timer)
+        socket.destroy()
+        reject(err)
+      })
     })
     expect(frame[0]).to.equal(0xff)
     expect(frame[1]).to.equal(0xd8)

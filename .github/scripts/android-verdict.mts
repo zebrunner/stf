@@ -114,6 +114,10 @@ function main() {
     }
   }
 
+  // Fork (Zebrunner): per-test retries stay visible even when the whole leg passed.
+  var summaryFile = process.env.PLAYWRIGHT_SUMMARY || 'stf-logs/playwright-checks.json'
+  var summary = (fs.existsSync(summaryFile) ?
+    JSON.parse(fs.readFileSync(summaryFile, 'utf8')) : {}) as {flaky?: number}
   var extra = {
     checks: checks
   , attempt: attempt
@@ -121,6 +125,7 @@ function main() {
   , api: process.env.ANDROID_API || ''
   , target: process.env.ANDROID_TARGET || ''
   , arch: process.env.ANDROID_ARCH || ''
+  , playwright_flaky: summary.flaky || 0
   }
 
   var out = [
