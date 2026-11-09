@@ -5,7 +5,7 @@ import {expect} from 'chai'
 
 import zebrunnerNodes from '../../../lib/util/zebrunner-nodes.js'
 import processorNodes, {type Registration} from '../../../lib/units/processor/zebrunner-nodes.js'
-import type {NodeDocument} from '../../../lib/db/zebrunner-nodes.js'
+import {relayPort, type NodeDocument} from '../../../lib/db/zebrunner-nodes.js'
 
 var TOKEN = zebrunnerNodes.generateNodeToken('node-1')
 
@@ -173,6 +173,19 @@ describe('zebrunner: nodes', function() {
         providerHost: ''
       }))
       expect([hostless.node, hostless.nodeProof]).to.eql([null, null])
+    })
+  })
+
+  describe('relay port', function() {
+    it('should be the connect port of the device, else the port after its screen port', function() {
+      expect(relayPort({connectPort: 7405, screenPort: 7404})).to.equal(7405)
+      expect(relayPort({connectPort: 5555, screenPort: 7404})).to.equal(5555)
+      expect(relayPort({connectPort: null, screenPort: 7404})).to.equal(7405)
+      expect(relayPort({screenPort: 7404})).to.equal(7405)
+      expect(relayPort({connectPort: 0, screenPort: 7404})).to.equal(7405)
+      expect(relayPort({})).to.equal(null)
+      expect(relayPort({screenPort: 65535})).to.equal(null)
+      expect(relayPort({connectPort: 70000})).to.equal(null)
     })
   })
 

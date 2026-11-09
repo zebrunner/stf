@@ -2482,8 +2482,8 @@ paths:
     get:
       summary: Gets the devices of the adb relay
       description: >
-        Returns the present Android devices bound to an active node, with the registered address of the node and the
-        connect port of the device (the adb relay of mcloud)
+        Returns every Android device bound to an active node, present or not, with the registered address of the
+        node and the connect port of the device (else its screen port + 1), for the adb relay of mcloud
       operationId: getNodeRelay
       tags:
         - nodes

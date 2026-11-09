@@ -225,7 +225,8 @@ function key() {
       expect((await dbapi.loadNode('node-1'))!.lastSeenAt!.getTime()).to.be.above(seen!.getTime())
     })
 
-    it('should list the present Android devices of active nodes for the relay', async function() {
+    // present or not: the relay of mcloud stays static, the node refuses an absent device
+    it('should list every Android device of an active node for the relay', async function() {
       await dbapi.enrollNode({
         label: 'node-1', address: 'node-1.lan', publicKey: key(), tokenHash: 'a'.repeat(64)
       })
@@ -240,15 +241,24 @@ function key() {
           display: {url: 'ws://elsewhere/d/evil/a/7404/'}
         })
       , Object.assign({serial: 'absent', connectPort: 7413}, android, {present: false})
+      , Object.assign({serial: 'gone', connectPort: 7433}, android, {present: null})
+      , Object.assign({serial: 'screen', screenPort: 7436}, android)
+      , Object.assign({serial: 'both', screenPort: 7440, connectPort: 7999}, android)
+      , Object.assign({serial: 'badport', screenPort: 65535, connectPort: 0}, android)
       , Object.assign({serial: 'ios', connectPort: 7417}, android, {platform: 'iOS'})
       , Object.assign({serial: 'old', connectPort: 7421}, android, {nodeGeneration: 0})
       , Object.assign({serial: 'revoked', connectPort: 7425}, android, {node: 'node-2'})
       , Object.assign({serial: 'legacy', connectPort: 7429}, android, {node: null})
       , Object.assign({serial: 'noport'}, android)
       ]))
+      var relay = {label: 'node-1', address: 'node-1.lan'}
       expect(await dbapi.loadRelayDevices()).to.eql([
-        {serial: 'a', label: 'node-1', address: 'node-1.lan', connectPort: 7409}
-      , {serial: 'b', label: 'node-1', address: 'node-1.lan', connectPort: 7405}
+        Object.assign({serial: 'a'}, relay, {connectPort: 7409})
+      , Object.assign({serial: 'absent'}, relay, {connectPort: 7413})
+      , Object.assign({serial: 'b'}, relay, {connectPort: 7405})
+      , Object.assign({serial: 'both'}, relay, {connectPort: 7999})
+      , Object.assign({serial: 'gone'}, relay, {connectPort: 7433})
+      , Object.assign({serial: 'screen'}, relay, {connectPort: 7437})
       ])
     })
 

@@ -71,7 +71,24 @@ interface BoundDevice {
   serial: string
   node: string
   nodeGeneration: number
-  connectPort?: number
+  connectPort?: number | null
+  screenPort?: number | null
+}
+
+function isPort(port: unknown): port is number {
+  return Number.isInteger(port) && (port as number) > 0 && (port as number) <= 65535
+}
+
+// relayPort <device>: the remote debug port of a device, its connect port or else the port after its
+// screen port (the second port of the group of a worker), null without either
+export function relayPort(device: {connectPort?: number | null, screenPort?: number | null}) {
+  if (isPort(device.connectPort)) {
+    return device.connectPort
+  }
+  if (isPort(device.screenPort) && isPort(device.screenPort + 1)) {
+    return device.screenPort + 1
+  }
+  return null
 }
 
 export interface NodesDbApi {
@@ -305,18 +322,18 @@ export default function extendNodesDbApi(dbapi: DbApi, db: Db) {
     })
   }
 
-  // The present Android devices bound to an active node, with the address of the node (never the
-  // display URL)
+  // Every Android device bound to an active node, present or not (the relay stays static: the node
+  // refuses the connections of an absent device), with the address of the node (never the display
+  // URL) and its connect port, or else the port after its screen port
   dbapi.loadRelayDevices = function() {
     return Promise.all([
       dbapi.loadNodes()
     , db.run(r.table('devices')
         .filter(function(device) {
           return device('node').default(null).ne(null)
-            .and(device('present').default(false).eq(true))
             .and(device('platform').default('').eq('Android'))
         })
-        .pluck('serial', 'node', 'nodeGeneration', 'connectPort'))
+        .pluck('serial', 'node', 'nodeGeneration', 'connectPort', 'screenPort'))
         .then(function(cursor) {
           return toArray<BoundDevice>(cursor)
         })
@@ -327,15 +344,14 @@ export default function extendNodesDbApi(dbapi: DbApi, db: Db) {
         }))
         return devices
           .filter(function(device) {
-            return isBoundTo(device, byLabel.get(device.node) || null) &&
-              Number.isInteger(device.connectPort) && device.connectPort! > 0
+            return isBoundTo(device, byLabel.get(device.node) || null) && relayPort(device) !== null
           })
           .map(function(device) {
             return {
               serial: device.serial
             , label: device.node
             , address: byLabel.get(device.node)!.address
-            , connectPort: device.connectPort!
+            , connectPort: relayPort(device)!
             }
           })
           .sort(function(a, b) {
