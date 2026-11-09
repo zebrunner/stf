@@ -77,6 +77,84 @@ describe('zebrunner: ZeroMQ CURVE', function() {
       expect(curve.client!.serverKey.toString('hex')).to.equal(server.publicKey)
     })
 
+    describe('STF_ZMQ_CURVE_CLIENT_KEY_<HOST>', function() {
+      var other = zmqcurve.generateKeyPair()
+
+      function clients(env: NodeJS.ProcessEnv) {
+        var curve = zmqcurve.config({STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey, ...env})
+        return {clients: [...curve.server!.clients].sort(), hosts: curve.server!.hosts}
+      }
+
+      it('should allow one key per variable, labeled by the host', function() {
+        expect(clients({
+          STF_ZMQ_CURVE_CLIENT_KEY_MAC_MINI_1: ` ${allowed.publicKey.toUpperCase()}\n`
+        , STF_ZMQ_CURVE_CLIENT_KEY_BUILD_UA: other.publicKey
+        })).to.deep.equal({
+          clients: [allowed.publicKey, other.publicKey].sort()
+        , hosts: ['BUILD_UA', 'MAC_MINI_1']
+        })
+      })
+
+      it('should add them to STF_ZMQ_CURVE_CLIENT_KEYS and the own key, deduplicated', function() {
+        expect(clients({
+          STF_ZMQ_CURVE_CLIENT_KEYS: `${allowed.publicKey}, ${server.publicKey}`
+        , STF_ZMQ_CURVE_CLIENT_KEY_A: allowed.publicKey.toUpperCase()
+        , STF_ZMQ_CURVE_CLIENT_KEY_B: other.publicKey
+        , STF_ZMQ_CURVE_CLIENT_KEY_C: other.publicKey
+        , STF_ZMQ_CURVE_SECRET_KEY: unknown.secretKey
+        , STF_ZMQ_CURVE_SERVER_PUBLIC_KEY: server.publicKey
+        }).clients).to.deep.equal(
+          [allowed.publicKey, other.publicKey, server.publicKey, unknown.publicKey].sort())
+      })
+
+      it('should ignore an empty variable, a placeholder', function() {
+        expect(clients({
+          STF_ZMQ_CURVE_CLIENT_KEY_BUILD_UA: allowed.publicKey
+        , STF_ZMQ_CURVE_CLIENT_KEY_MAC_MINI_1: ''
+        , STF_ZMQ_CURVE_CLIENT_KEY_MAC_MINI_2: '  '
+        })).to.deep.equal({clients: [allowed.publicKey], hosts: ['BUILD_UA']})
+        expect(function() {
+          zmqcurve.config({
+            STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey
+          , STF_ZMQ_CURVE_CLIENT_KEY_BUILD_UA: ''
+          })
+        }).to.throw('STF_ZMQ_CURVE_SERVER_SECRET_KEY needs the keys of the clients: ' +
+          'STF_ZMQ_CURVE_CLIENT_KEY_<HOST>, STF_ZMQ_CURVE_CLIENT_KEYS or STF_ZMQ_CURVE_SECRET_KEY')
+      })
+
+      it('should refuse a value that is not one key, naming the variable', function() {
+        var values = ['abc', `${allowed.publicKey},${other.publicKey}`, `${allowed.publicKey} x`]
+        for (var value of values) {
+          expect(clients.bind(null, {
+            STF_ZMQ_CURVE_CLIENT_KEY_A: allowed.publicKey
+          , STF_ZMQ_CURVE_CLIENT_KEY_BUILD_UA: value
+          })).to.throw('STF_ZMQ_CURVE_CLIENT_KEY_BUILD_UA must be a key of 64 hex characters ' +
+            '(stf curve-keygen)')
+        }
+      })
+
+      it('should ignore the variables of other names', function() {
+        expect(clients({
+          STF_ZMQ_CURVE_CLIENT_KEY_A: allowed.publicKey
+        , STF_ZMQ_CURVE_CLIENT_KEY_: 'not a key'
+        , STF_ZMQ_CURVE_CLIENT_KEYS_OLD: 'not a key'
+        , STF_ZMQ_CURVE_CLIENT_KEY: 'not a key'
+        , 'STF_ZMQ_CURVE_CLIENT_KEY_A-B': 'not a key'
+        , stf_zmq_curve_client_key_b: 'not a key'
+        , X_STF_ZMQ_CURVE_CLIENT_KEY_C: 'not a key'
+        })).to.deep.equal({clients: [allowed.publicKey], hosts: ['A']})
+      })
+
+      it('should leave STF_ZMQ_CURVE_CLIENT_KEYS to its own list', function() {
+        expect(clients({STF_ZMQ_CURVE_CLIENT_KEYS: `${allowed.publicKey} ${other.publicKey}`}))
+          .to.deep.equal({clients: [allowed.publicKey, other.publicKey].sort(), hosts: []})
+      })
+
+      it('should not be read without STF_ZMQ_CURVE_SERVER_SECRET_KEY', function() {
+        expect(zmqcurve.config({STF_ZMQ_CURVE_CLIENT_KEY_A: 'not a key'})).to.deep.equal({})
+      })
+    })
+
     it('should refuse an incomplete or invalid configuration', function() {
       expect(function() {
         zmqcurve.config({STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey})
@@ -97,10 +175,10 @@ describe('zebrunner: ZeroMQ CURVE', function() {
 
     it('should tell a client what to check when the server does not get its messages', function() {
       expect(zmqcurve.clientHint(clientConfig(server, allowed))).to.equal(
-        'Check that the ZeroMQ server lets this host in: its CURVE public key ' +
-        `${allowed.publicKey} in STF_ZMQ_CURVE_CLIENT_KEYS of the server (restart the server ` +
-        'after a change), STF_ZMQ_CURVE_SERVER_PUBLIC_KEY the one of the server, the triproxy ' +
-        'endpoints reachable.')
+        'Check that the ZeroMQ server lets this host in: its CURVE public key as ' +
+        `STF_ZMQ_CURVE_CLIENT_KEY_<HOST>=${allowed.publicKey} (or in STF_ZMQ_CURVE_CLIENT_KEYS) ` +
+        'of the server (restart the server after a change), STF_ZMQ_CURVE_SERVER_PUBLIC_KEY the ' +
+        'one of the server, the triproxy endpoints reachable.')
       expect(zmqcurve.clientHint({})).to.equal('Check that the triproxy endpoints are reachable.')
     })
   })
@@ -143,6 +221,26 @@ describe('zebrunner: ZeroMQ CURVE', function() {
       socket('push', clientConfig(server, unknown)).connect(endpoint).send('unknown')
       socket('push', clientConfig(allowed, allowed)).connect(endpoint).send('wrong server key')
       socket('push', {}).connect(endpoint).send('plain')
+
+      await delay(1500)
+      expect(received).to.deep.equal(['allowed'])
+    })
+
+    it('should let in the clients of STF_ZMQ_CURVE_CLIENT_KEY_<HOST>', async function() {
+      var endpoint = `tcp://127.0.0.1:${await freePort()}`
+      var received: string[] = []
+      var pull = socket('pull', zmqcurve.config({
+        STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey
+      , STF_ZMQ_CURVE_CLIENT_KEY_BUILD_UA: allowed.publicKey
+      , STF_ZMQ_CURVE_CLIENT_KEY_MAC_MINI_1: ''
+      }))
+      pull.on('message', function(message: Buffer) {
+        received.push(message.toString())
+      })
+      pull.bindSync(endpoint)
+
+      socket('push', clientConfig(server, allowed)).connect(endpoint).send('allowed')
+      socket('push', clientConfig(server, unknown)).connect(endpoint).send('unknown')
 
       await delay(1500)
       expect(received).to.deep.equal(['allowed'])
@@ -206,7 +304,8 @@ describe('zebrunner: ZeroMQ CURVE', function() {
         return message.startsWith('The ZeroMQ server')
       })).to.deep.equal([
         `The ZeroMQ server ${endpoint} refused the CURVE key ${unknown.publicKey} of this host: ` +
-        'add it to STF_ZMQ_CURVE_CLIENT_KEYS of the server and restart it'
+        'add it to the server as STF_ZMQ_CURVE_CLIENT_KEY_<HOST>=<key> (or to ' +
+        'STF_ZMQ_CURVE_CLIENT_KEYS) and restart it'
       ])
     })
 

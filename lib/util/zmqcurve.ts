@@ -5,9 +5,12 @@
 *
 * The keys are hex strings of 32 bytes (64 characters), `stf curve-keygen` prints them:
 * - STF_ZMQ_CURVE_SERVER_SECRET_KEY: the bound tcp sockets (the triproxies) are CURVE servers with
-*   this key. A ZAP handler (RFC 27) lets in only the public keys of STF_ZMQ_CURVE_CLIENT_KEYS
-*   (separated by commas or spaces) and the key of the unit itself; without the handler libzmq
-*   refuses every client (ZAP_ENFORCE_DOMAIN), it does not let them in.
+*   this key. A ZAP handler (RFC 27) lets in only the public keys of the clients and the key of
+*   the unit itself; without the handler libzmq refuses every client (ZAP_ENFORCE_DOMAIN), it does
+*   not let them in. The keys of the clients are:
+*   - STF_ZMQ_CURVE_CLIENT_KEY_<HOST>: one key per variable, <HOST> ([A-Za-z0-9_]+) a free label
+*     of the device host; an empty one is ignored (a placeholder);
+*   - STF_ZMQ_CURVE_CLIENT_KEYS: keys separated by commas or spaces.
 * - STF_ZMQ_CURVE_SERVER_PUBLIC_KEY and STF_ZMQ_CURVE_SECRET_KEY: the connecting tcp sockets are
 *   CURVE clients of that server with this secret key; its public key is derived from it. A client
 *   logs the refusal of its key: libzmq does not connect a refused socket again, the refusal is the
@@ -25,6 +28,8 @@ import logger from './logger.js'
 const log = logger.createLogger('util:zmqcurve')
 
 const KEY = /^[0-9a-f]{64}$/i
+// One client key per variable, the suffix a label of the host
+const CLIENT_KEY_VAR = /^STF_ZMQ_CURVE_CLIENT_KEY_([A-Za-z0-9_]+)$/
 // The DER prefixes of the X25519 keys, followed by the 32 bytes of the key
 const PKCS8_X25519 = Buffer.from('302e020100300506032b656e04220420', 'hex')
 const ZAP_ENDPOINT = 'inproc://zeromq.zap.01'
@@ -43,6 +48,8 @@ export interface CurveConfig {
     secretKey: Buffer
     // the hex public keys of the allowed clients
     clients: Set<string>
+    // the labels of the STF_ZMQ_CURVE_CLIENT_KEY_<HOST> variables with a key, sorted
+    hosts: string[]
   }
   client?: {
     serverKey: Buffer
@@ -121,16 +128,26 @@ export function config(env: NodeJS.ProcessEnv = process.env): CurveConfig {
       .map(function(key) {
         return parseKey('STF_ZMQ_CURVE_CLIENT_KEYS', key).toString('hex')
       }))
+    const hosts: string[] = []
+    Object.keys(env).sort().forEach(function(name) {
+      const match = CLIENT_KEY_VAR.exec(name)
+      const value = (env[name] || '').trim()
+      if (match && value) {
+        clients.add(parseKey(name, value).toString('hex'))
+        hosts.push(match[1]!)
+      }
+    })
     if (own) {
       clients.add(publicKeyOf(own).toString('hex'))
     }
     if (!clients.size) {
       throw new Error('STF_ZMQ_CURVE_SERVER_SECRET_KEY needs the keys of the clients: ' +
-        'STF_ZMQ_CURVE_CLIENT_KEYS or STF_ZMQ_CURVE_SECRET_KEY')
+        'STF_ZMQ_CURVE_CLIENT_KEY_<HOST>, STF_ZMQ_CURVE_CLIENT_KEYS or STF_ZMQ_CURVE_SECRET_KEY')
     }
     result.server = {
       secretKey: parseKey('STF_ZMQ_CURVE_SERVER_SECRET_KEY', env.STF_ZMQ_CURVE_SERVER_SECRET_KEY)
     , clients: clients
+    , hosts: hosts
     }
   }
 
@@ -159,7 +176,11 @@ function currentConfig(): CurveConfig {
   if (!current) {
     current = config()
     if (current.server) {
-      log.info('CURVE server: %d client keys are allowed', current.server.clients.size)
+      log.info(
+        'CURVE server: %d client keys are allowed (STF_ZMQ_CURVE_CLIENT_KEY_<HOST> of: %s)'
+      , current.server.clients.size
+      , current.server.hosts.join(', ') || 'none'
+      )
     }
     if (current.client) {
       log.info('CURVE client with the public key %s', current.client.publicKey.toString('hex'))
@@ -172,10 +193,10 @@ function currentConfig(): CurveConfig {
 // the device units
 export function clientHint(curve: CurveConfig = currentConfig()): string {
   if (curve.client) {
-    return 'Check that the ZeroMQ server lets this host in: its CURVE public key ' +
-      `${curve.client.publicKey.toString('hex')} in STF_ZMQ_CURVE_CLIENT_KEYS of the server ` +
-      '(restart the server after a change), STF_ZMQ_CURVE_SERVER_PUBLIC_KEY the one of the ' +
-      'server, the triproxy endpoints reachable.'
+    return 'Check that the ZeroMQ server lets this host in: its CURVE public key as ' +
+      `STF_ZMQ_CURVE_CLIENT_KEY_<HOST>=${curve.client.publicKey.toString('hex')} (or in ` +
+      'STF_ZMQ_CURVE_CLIENT_KEYS) of the server (restart the server after a change), ' +
+      'STF_ZMQ_CURVE_SERVER_PUBLIC_KEY the one of the server, the triproxy endpoints reachable.'
   }
   return 'Check that the triproxy endpoints are reachable.'
 }
@@ -205,7 +226,12 @@ const deniedLogged = new Map<string, number>()
 
 function logDenied(address: string, key: string) {
   if (once(deniedLogged, address)) {
-    log.warn('Refused the ZeroMQ client %s with the unknown key "%s"', address, key)
+    log.warn(
+      'Refused the ZeroMQ client %s with the unknown key "%s" (allow it with ' +
+      'STF_ZMQ_CURVE_CLIENT_KEY_<HOST>=<key> or STF_ZMQ_CURVE_CLIENT_KEYS)'
+    , address
+    , key
+    )
   }
 }
 
@@ -222,8 +248,8 @@ function monitorRefusal(native: zmq.Socket, publicKey: Buffer) {
   native.events.on('handshake:error:auth', function(event) {
     if (once(refusedLogged, event.address)) {
       log.warn(
-        'The ZeroMQ server %s refused the CURVE key %s of this host: add it to ' +
-        'STF_ZMQ_CURVE_CLIENT_KEYS of the server and restart it'
+        'The ZeroMQ server %s refused the CURVE key %s of this host: add it to the server as ' +
+        'STF_ZMQ_CURVE_CLIENT_KEY_<HOST>=<key> (or to STF_ZMQ_CURVE_CLIENT_KEYS) and restart it'
       , event.address
       , publicKey.toString('hex')
       )

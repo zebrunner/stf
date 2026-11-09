@@ -22,7 +22,8 @@ var builder = function(yargs: Argv) {
     .epilog('Prints `public=<key>` and `secret=<key>`, the keys are 64 hex characters. ' +
       'The secret key of a server goes to STF_ZMQ_CURVE_SERVER_SECRET_KEY, its public key to ' +
       'STF_ZMQ_CURVE_SERVER_PUBLIC_KEY of the clients; the secret key of a client goes to ' +
-      'STF_ZMQ_CURVE_SECRET_KEY, its public key to STF_ZMQ_CURVE_CLIENT_KEYS of the server.')
+      'STF_ZMQ_CURVE_SECRET_KEY, its public key to STF_ZMQ_CURVE_CLIENT_KEY_<HOST> (one key per ' +
+      'variable) or STF_ZMQ_CURVE_CLIENT_KEYS of the server.')
 }
 
 var handler = function(argv: CommandArgv<typeof builder>) {
