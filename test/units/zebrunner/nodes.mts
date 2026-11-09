@@ -120,6 +120,15 @@ describe('zebrunner: nodes', function() {
         expect(zebrunnerNodes.normalizeAddress(value), value).to.equal(null)
       })
       expect(zebrunnerNodes.normalizeAddress('169.253.0.1')).to.equal('169.253.0.1')
+    })
+
+    it('should accept loopback for stf node-add only', function() {
+      var loopback = {loopback: true}
+      expect(zebrunnerNodes.normalizeAddress('127.0.0.1', loopback)).to.equal('127.0.0.1')
+      expect(zebrunnerNodes.normalizeAddress('LocalHost', loopback)).to.equal('localhost')
+      expect(zebrunnerNodes.normalizeAddress('0.0.0.0', loopback)).to.equal(null)
+      expect(zebrunnerNodes.normalizeAddress('169.254.169.254', loopback)).to.equal(null)
+      expect(zebrunnerNodes.normalizeAddress('metadata', loopback)).to.equal(null)
       expect(zebrunnerNodes.normalizeAddress('223.255.255.255')).to.equal('223.255.255.255')
     })
   })

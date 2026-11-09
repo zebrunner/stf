@@ -94,9 +94,12 @@ export function isInvite(value: unknown): value is string {
   return typeof value === 'string' && INVITE.test(value)
 }
 
-function ipv4Allowed(octets: number[]): boolean {
+function ipv4Allowed(octets: number[], loopback: boolean): boolean {
   const [a, b] = octets as [number, number, number, number]
-  if (a === 0 || a === 127 || a >= 224) {
+  if (a === 127) {
+    return loopback
+  }
+  if (a === 0 || a >= 224) {
     // this network and 0.0.0.0, loopback, multicast, reserved and broadcast
     return false
   }
@@ -107,7 +110,11 @@ function ipv4Allowed(octets: number[]): boolean {
 // normalizeAddress <value>: the address of a node in lower case, null when it is not an IPv4
 // address or a host name (a scheme, a port, a path, an IPv6 address) or a forbidden one: loopback,
 // link-local, metadata, 0.0.0.0, multicast
-export function normalizeAddress(value: unknown): string | null {
+// (loopback: also 127/8 and localhost, for `stf node-add` of a development or test setup)
+export function normalizeAddress(
+  value: unknown
+, options: {loopback?: boolean} = {}
+): string | null {
   if (typeof value !== 'string' || !value || value.length > 253) {
     return null
   }
@@ -126,7 +133,7 @@ export function normalizeAddress(value: unknown): string | null {
     })) {
       return null
     }
-    return ipv4Allowed(octets) ? address : null
+    return ipv4Allowed(octets, Boolean(options.loopback)) ? address : null
   }
   const labels = address.split('.')
   if (!labels.every(function(label) {
@@ -137,6 +144,9 @@ export function normalizeAddress(value: unknown): string | null {
   // 1.2.3, 10.1 and the like are IPv4 addresses for some resolvers
   if (/^[0-9]+$/.test(labels[labels.length - 1]!)) {
     return null
+  }
+  if (options.loopback && address === 'localhost') {
+    return address
   }
   return FORBIDDEN_HOSTS.test(address) ? null : address
 }

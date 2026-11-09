@@ -277,6 +277,50 @@ function key() {
       })
     })
 
+    it('should enroll a node without an invite with stf node-add', async function() {
+      function nodeAdd(args: string[], token?: string) {
+        var env: Record<string, string> = {}
+        Object.entries(process.env).forEach(function([name, value]) {
+          if (!/^(STF_|RETHINKDB_)/.test(name) && typeof value === 'string') {
+            env[name] = value
+          }
+        })
+        Object.assign(env, {RETHINKDB_PORT_28015_TCP: address!, RETHINKDB_ENV_DATABASE: database})
+        if (token) {
+          env.STF_NODE_TOKEN = token
+        }
+        return new Promise<{code: number | null, stdout: string}>(function(resolve) {
+          var child = spawn(process.execPath, [
+            fileURLToPath(new URL('../../../lib/cli/index.js', import.meta.url))
+          , 'node-add'
+          ].concat(args), {env: env, stdio: ['ignore', 'pipe', 'ignore']})
+          var stdout = ''
+          child.stdout!.on('data', function(chunk) {
+            stdout += chunk
+          })
+          child.on('exit', function(code) {
+            resolve({code: code, stdout: stdout})
+          })
+        })
+      }
+
+      var first = await nodeAdd(['--label', 'local', '--address', '127.0.0.1'])
+      expect(first.code).to.equal(0)
+      var token = /^token=(mcn1\.local\.[A-Za-z0-9_-]{43})$/m.exec(first.stdout)![1]!
+      var node = await dbapi.loadNode('local')
+      expect(node).to.include({address: '127.0.0.1', status: 'active', generation: 1})
+      expect(node!.tokenHash).to.equal(zebrunnerNodes.sha256(token))
+
+      var given = zebrunnerNodes.generateNodeToken('local')
+      var second = await nodeAdd(['--label', 'local', '--address', '127.0.0.1'], given)
+      expect(second).to.eql({code: 0, stdout: ''})
+      expect((await dbapi.loadNode('local'))!.tokenHash).to.equal(zebrunnerNodes.sha256(given))
+
+      expect((await nodeAdd(['--label', 'other', '--address', '127.0.0.1'])).code).to.equal(1)
+      expect((await nodeAdd(['--label', 'other', '--address', '127.0.0.2'], given)).code)
+        .to.equal(1)
+    })
+
     it('should list the devices bound to a node or claiming it', async function() {
       await run(r.table('devices').insert([
         {serial: 'b', platform: 'iOS', present: false, node: 'node-1', nodeGeneration: 1

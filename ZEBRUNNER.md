@@ -84,7 +84,7 @@ node build.mts build
 
 ## Run
 
-The units are started by the `docker-compose.yml` of mcloud (`stf app`, `stf auth-zebrunner`, `stf processor`, `stf storage-temp`, ...) and by `start_all.sh` of mcloud-device (`stf provider` for Android, `node /app/lib/cli ios-device` for iOS). For development, `stf local` starts all the server units on one machine, `--auth-type zebrunner` uses the Zebrunner sign-in.
+The units are started by the `docker-compose.yml` of mcloud (`stf app`, `stf auth-zebrunner`, `stf processor`, `stf storage-temp`, ...) and by `start_all.sh` of mcloud-device (`stf provider` for Android, `node /app/lib/cli ios-device` for iOS). For development, `stf local` starts all the server units on one machine, `--auth-type zebrunner` uses the Zebrunner sign-in; its provider is the enrolled node `local` at `127.0.0.1`, which it enrolls with `stf node-add` after the migration (only enrolled nodes provide devices, see [Nodes (enrollment)](#nodes-enrollment)).
 
 ## Configuration
 
@@ -185,6 +185,10 @@ provide devices. mcloud wraps the routes in `./zebrunner.sh node-invite` and `./
    (`POST /api/v1/nodes/verify`), its devices are bound to it (below).
 5. Revocation (`POST /api/v1/nodes/{label}/revoke`) stops all of it; a new invite of the label re-enrolls the node with
    a new token and key (rotation).
+
+`stf node-add --label <label> --address <host> [--public-key <key>]` enrolls a node directly in the database, without an
+invite, for development and tests: `stf local` and the Compose test of CI use it for their provider (a loopback address
+is accepted there). It takes the token from `STF_NODE_TOKEN`, or prints a new one as `token=<token>`.
 
 ### Identifiers and secrets
 

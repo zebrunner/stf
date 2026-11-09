@@ -3,6 +3,11 @@ set -euo pipefail
 HOST_SERIAL="emulator-${EMULATOR_PORT:-5554}"
 export STF_DEVICE_SERIAL=host.docker.internal:15555
 export STF_ADB_KEYS="${STF_ADB_KEYS:-$HOME/.android}"
+# the provider is an enrolled node (the node service of test/compose/docker-compose.yaml)
+if [ -z "${STF_NODE_TOKEN:-}" ]; then
+  STF_NODE_TOKEN="mcn1.compose.$(node -e "process.stdout.write(require('crypto').randomBytes(32).toString('base64url'))")"
+  export STF_NODE_TOKEN
+fi
 
 mkdir -p test-results/compose
 
