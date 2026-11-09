@@ -71,6 +71,13 @@ var builder = function(yargs: Argv) {
     , type: 'array'
     , default: []
     })
+    // Fork (Zebrunner): the fixed remote debug port of the device, lib/util/zebrunner-connect-port.ts
+    .option('connect-port', {
+      describe: 'Fixed port of `adb connect` for the device (1..65535), taken out of the ' +
+        '--min-port..--max-port pool. Only one device holds it at a time, the others get a ' +
+        'port of the pool.'
+    , type: 'number'
+    })
     .option('connect-push', {
       alias: 'p'
     , describe: 'Device-side ZeroMQ PULL endpoint to connect to.'
@@ -217,6 +224,15 @@ var builder = function(yargs: Argv) {
     , demand: true
     , default: '127.0.0.1'
     })
+    .check(function(argv) {
+      var connectPort: typeof import('../../util/zebrunner-connect-port.js') =
+        require('../../util/zebrunner-connect-port.js')
+      return connectPort.checkConnectPort(
+        argv.minPort as number
+      , argv.maxPort as number
+      , argv.connectPort as number | undefined
+      )
+    })
     .epilog('Each option can be be overwritten with an environment variable ' +
       'by converting the option to uppercase, replacing dashes with ' +
       'underscores and prefixing it with `STF_PROVIDER_` (e.g. ' +
@@ -228,25 +244,26 @@ type CliArg = string | number
 var handler = function(argv: CommandArgv<typeof builder, {serial: (string | number)[]}>) {
   var path = require('path')
   var cli = path.resolve(import.meta.dirname, '..')
-
-  function range(from: number, to: number) {
-    var items: number[] = []
-    for (var i = from; i <= to; ++i) {
-      items.push(i)
-    }
-    return items
-  }
+  // Fork (Zebrunner): the fixed connect port is out of the pool, given to one worker at a time
+  var zebrunnerConnectPort: typeof import('../../util/zebrunner-connect-port.js') =
+    require('../../util/zebrunner-connect-port.js')
+  var connectPorts = zebrunnerConnectPort.connectPorts(
+    zebrunnerConnectPort.range(argv.minPort, argv.maxPort)
+  , argv.connectPort
+  )
 
   return require('../../units/provider/index.js').default({
     name: argv.name
   , killTimeout: 10000
-  , ports: range(argv.minPort, argv.maxPort)
+  , ports: connectPorts.pool
   , filter: function(device: Device) {
       return argv.serial.length === 0 || argv.serial.indexOf(device.id) !== -1
     }
   , allowRemote: argv.allowRemote
-  , fork: function(device: Device, ports: number[]) {
+  , fork: function(device: Device, pool: number[]) {
       var fork = require('child_process').fork
+      var worker = connectPorts.worker(device.id, pool)
+      var ports = worker.ports
 
       var args = [
         'device'
@@ -284,7 +301,9 @@ var handler = function(argv: CommandArgv<typeof builder, {serial: (string | numb
       .concat(argv.cleanupFolder ? ['--cleanup-folder' as CliArg].concat(argv.cleanupFolder) : [])
       .concat(!argv.screenReset ? ['--no-screen-reset'] : [])
 
-      return fork(cli, args)
+      var proc = fork(cli, args)
+      proc.once('exit', worker.release)
+      return proc
     }
   , endpoints: {
       sub: argv.connectSub

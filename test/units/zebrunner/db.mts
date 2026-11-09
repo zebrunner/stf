@@ -150,6 +150,11 @@ describe('zebrunner: dbapi', function() {
     })
   })
 
+  it('should keep the ports of an Android device worker', async function() {
+    await dbapi.setDevicePorts({serial: 'serial', screenPort: 7404, connectPort: 7405})
+    expect(writes).to.eql([{screenPort: 7404, connectPort: 7405}])
+  })
+
   it('should make a ready device present', async function() {
     await dbapi.setDeviceReady('serial', 'channel')
     expect(writes[0].ready).to.equal(true)

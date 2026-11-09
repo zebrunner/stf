@@ -39,6 +39,7 @@ export interface DevicePluginOptions {
   groupTimeout: number
   screenReset: boolean
   lockRotation?: boolean
+  screenPort: number
   connectPort: number
   connectUrlPattern: string
   cleanup: boolean

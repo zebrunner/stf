@@ -72,6 +72,29 @@ describe('zebrunner: CLI', function() {
       expect(argv.host).to.equal('127.0.0.1')
     })
 
+    it('should take the fixed connect port of STF_PROVIDER_CONNECT_PORT', function() {
+      expect(parse(provider, providerArgs)).to.not.have.property('connectPort')
+      expect(parse(provider, providerArgs, {STF_PROVIDER_CONNECT_PORT: '7405'}).connectPort)
+        .to.equal(7405)
+      expect(parse(provider, providerArgs.concat(['--connect-port', '5555'])).connectPort)
+        .to.equal(5555)
+    })
+
+    it('should refuse an invalid connect port or a pool without the ports of a device',
+      function() {
+        expect(function() {
+          parse(provider, providerArgs, {STF_PROVIDER_CONNECT_PORT: '70000'})
+        }).to.throw('Invalid --connect-port "70000", expected a port of 1..65535')
+        expect(function() {
+          parse(provider, providerArgs, {STF_PROVIDER_CONNECT_PORT: 'adb'})
+        }).to.throw(/Invalid --connect-port/)
+        expect(function() {
+          parse(provider, providerArgs.concat(['--min-port', '7404', '--max-port', '7407']), {
+            STF_PROVIDER_CONNECT_PORT: '7405'
+          })
+        }).to.throw('--min-port 7404..--max-port 7407 needs 4 ports besides --connect-port 7405')
+      })
+
     it('should refuse a variable it does not declare', function() {
       expect(function() {
         parse(provider, providerArgs, {STF_PROVIDER_SOMETHING_ELSE: 'x'})

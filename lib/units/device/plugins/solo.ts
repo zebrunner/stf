@@ -73,6 +73,15 @@ export default syrup.serial()
     return {
       channel: channel
     , poke: function() {
+        // Fork (Zebrunner): the ports of the worker for the device document, before it is ready
+        push.send([
+          wireutil.global
+        , wireutil.envelope(new wire.DevicePortsMessage(
+            options.serial
+          , options.screenPort
+          , options.connectPort
+          ))
+        ])
         push.send([
           wireutil.global
         , wireutil.envelope(new wire.DeviceReadyMessage(

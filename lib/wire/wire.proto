@@ -99,6 +99,7 @@ enum MessageType {
   IosNetworkEvent                = 127;
   TouchPathIosMessage            = 128;
   IosDeviceScreenMessage         = 129;
+  DevicePortsMessage             = 130;
   reserved 20, 83 to 85, 97, 100 to 112, 115, 117 to 119, 122 to 125;
   GroupUserChangeMessage     = 1200;
   DeviceGroupChangeMessage   = 1201;
@@ -881,6 +882,14 @@ message IosDeviceScreenMessage {
   required double width = 3;
   required double height = 4;
   required double scale = 5;
+}
+
+// The ports of an Android device worker (plugins/solo of the device unit), kept in the device
+// document as the ones of an iOS device (InitializeIosDeviceState)
+message DevicePortsMessage {
+  required string serial = 1;
+  required int32 screenPort = 2;
+  required int32 connectPort = 3;
 }
 
 // The network of an iOS device from its system log (plugins/info of the ios-device unit): the
