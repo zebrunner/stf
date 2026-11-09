@@ -36,6 +36,8 @@ tags:
     description: Privileged Operations
   - name: metrics
     description: Metrics Operations
+  - name: nodes
+    description: Enrolled Device Hosts (Fork (Zebrunner))
 paths:
   /groups:
     x-swagger-router-controller: groups
@@ -2351,6 +2353,311 @@ paths:
             $ref: "#/definitions/UnexpectedErrorResponse"
       security:
         - accessTokenAuth: []
+  # Fork (Zebrunner): the enrolled device hosts, lib/units/api/controllers/zebrunner-nodes.ts and
+  # ZEBRUNNER.md#nodes-enrollment. The bodies are checked by the controller, every error is a generic
+  # {"success": false} (the reason is in the log of the unit)
+  /nodes:
+    x-swagger-router-controller: zebrunner-nodes
+    get:
+      summary: Gets the enrolled nodes
+      description: Returns the enrolled device hosts (nodes), active and revoked
+      operationId: getNodes
+      tags:
+        - nodes
+        - admin
+      responses:
+        "200":
+          description: The nodes
+          schema:
+            $ref: "#/definitions/NodeListResponse"
+        default:
+          description: >
+            Unexpected Error:
+              * 401: Unauthorized => bad credentials
+              * 403: Forbidden => privileged operation (admin)
+              * 500: Internal Server Error
+          schema:
+            $ref: "#/definitions/NodeErrorResponse"
+      security:
+        - accessTokenAuth: []
+  /nodes/invites:
+    x-swagger-router-controller: zebrunner-nodes
+    post:
+      summary: Creates an invite of a node
+      description: >
+        Creates a single-use invite of the node of the label at the address (IPv4 address or host name, not loopback,
+        link-local, multicast or the address of another node), valid for ttlMinutes (1..1440, 60 by default). It
+        invalidates the other unused invites of the label. An invite of the label of an enrolled node re-enrolls it
+        (rotation of its token and key). The invite is shown once
+      operationId: createNodeInvite
+      tags:
+        - nodes
+        - admin
+      parameters:
+        - name: body
+          in: body
+          description: "{label, address, ttlMinutes?}"
+          required: false
+          schema:
+            $ref: "#/definitions/NodeInvitePayload"
+      responses:
+        "201":
+          description: The invite
+          schema:
+            $ref: "#/definitions/NodeInviteResponse"
+        default:
+          description: >
+            Unexpected Error:
+              * 400: Bad Request => invalid label, address or ttlMinutes, or the address of another node
+              * 401: Unauthorized => bad credentials
+              * 403: Forbidden => privileged operation (admin)
+              * 500: Internal Server Error
+          schema:
+            $ref: "#/definitions/NodeErrorResponse"
+      security:
+        - accessTokenAuth: []
+  /nodes/enroll:
+    x-swagger-router-controller: zebrunner-nodes
+    post:
+      summary: Enrolls a node
+      description: >
+        Enrolls the node of an invite with its CURVE public key and returns its node token (shown once) and what it
+        needs to connect. No authentication: the invite is the credential (stf-proxy rate limits the route)
+      operationId: enrollNode
+      tags:
+        - nodes
+      parameters:
+        - name: body
+          in: body
+          description: "{invite, label, publicKey}"
+          required: false
+          schema:
+            $ref: "#/definitions/NodeEnrollPayload"
+      responses:
+        "200":
+          description: The node token and the settings of the node
+          schema:
+            $ref: "#/definitions/NodeEnrollResponse"
+        default:
+          description: >
+            Unexpected Error:
+              * 400: Bad Request => malformed request
+              * 403: Forbidden => invalid invite, label or key
+              * 500: Internal Server Error
+          schema:
+            $ref: "#/definitions/NodeErrorResponse"
+  /nodes/verify:
+    x-swagger-router-controller: zebrunner-nodes
+    post:
+      summary: Verifies a node token
+      description: Answers 200 only if the token is the token of an active node whose address is the host (mcloud-grid)
+      operationId: verifyNode
+      tags:
+        - nodes
+        - admin
+      parameters:
+        - name: body
+          in: body
+          description: "{token, host}"
+          required: false
+          schema:
+            $ref: "#/definitions/NodeVerifyPayload"
+      responses:
+        "200":
+          description: The node
+          schema:
+            $ref: "#/definitions/NodeVerifyResponse"
+        default:
+          description: >
+            Unexpected Error:
+              * 401: Unauthorized => bad credentials
+              * 403: Forbidden => not the token of an active node at the host, or privileged operation (admin)
+              * 500: Internal Server Error
+          schema:
+            $ref: "#/definitions/NodeErrorResponse"
+      security:
+        - accessTokenAuth: []
+  /nodes/relay:
+    x-swagger-router-controller: zebrunner-nodes
+    get:
+      summary: Gets the devices of the adb relay
+      description: >
+        Returns the present Android devices bound to an active node, with the registered address of the node and the
+        connect port of the device (the adb relay of mcloud)
+      operationId: getNodeRelay
+      tags:
+        - nodes
+        - admin
+      responses:
+        "200":
+          description: The devices
+          schema:
+            $ref: "#/definitions/NodeRelayResponse"
+        default:
+          description: >
+            Unexpected Error:
+              * 401: Unauthorized => bad credentials
+              * 403: Forbidden => privileged operation (admin)
+              * 500: Internal Server Error
+          schema:
+            $ref: "#/definitions/NodeErrorResponse"
+      security:
+        - accessTokenAuth: []
+  /nodes/{label}:
+    x-swagger-router-controller: zebrunner-nodes
+    delete:
+      summary: Deletes a revoked node
+      description: Deletes a revoked node and its invites
+      operationId: deleteNode
+      tags:
+        - nodes
+        - admin
+      parameters:
+        - name: label
+          in: path
+          description: Label of the node
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Deleted
+          schema:
+            $ref: "#/definitions/NodeSuccessResponse"
+        default:
+          description: >
+            Unexpected Error:
+              * 400: Bad Request => unknown or not revoked node
+              * 401: Unauthorized => bad credentials
+              * 403: Forbidden => privileged operation (admin)
+              * 500: Internal Server Error
+          schema:
+            $ref: "#/definitions/NodeErrorResponse"
+      security:
+        - accessTokenAuth: []
+  /nodes/{label}/revoke:
+    x-swagger-router-controller: zebrunner-nodes
+    post:
+      summary: Revokes a node
+      description: >
+        Revokes a node: its token and key stop working (new ZeroMQ connections of the key are refused, existing ones
+        last until the triproxies restart), its invites and the binding of its devices go
+      operationId: revokeNode
+      tags:
+        - nodes
+        - admin
+      parameters:
+        - name: label
+          in: path
+          description: Label of the node
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Revoked
+          schema:
+            $ref: "#/definitions/NodeSuccessResponse"
+        default:
+          description: >
+            Unexpected Error:
+              * 400: Bad Request => unknown node
+              * 401: Unauthorized => bad credentials
+              * 403: Forbidden => privileged operation (admin)
+              * 500: Internal Server Error
+          schema:
+            $ref: "#/definitions/NodeErrorResponse"
+      security:
+        - accessTokenAuth: []
+  /zebrunner/screen-auth:
+    x-swagger-router-controller: zebrunner-nodes
+    get:
+      summary: Authorizes a screen
+      description: >
+        The auth_request of the screens of stf-proxy: 204 only if the user (session cookie or access token) uses the
+        device of X-Original-URI (/d/<host>/<serial>/<port>/), or is an admin, and the host and port are the address
+        of the active node of the device and its screen port (a legacy unbound device: the host in AGENT_HOSTS and not
+        the address of a node)
+      operationId: getScreenAuth
+      tags:
+        - user
+      parameters:
+        - name: X-Original-URI
+          in: header
+          description: The URI of the screen, /d/<host>/<serial>/<port>/
+          required: false
+          type: string
+      responses:
+        "204":
+          description: Allowed
+        default:
+          description: >
+            Unexpected Error:
+              * 401: Unauthorized => bad credentials
+              * 403: Forbidden => not allowed
+              * 500: Internal Server Error
+      security:
+        - accessTokenAuth: []
+  /zebrunner/nodes/keys:
+    x-swagger-router-controller: zebrunner-nodes
+    get:
+      summary: Gets the CURVE keys of the nodes
+      description: >
+        The keys of the active nodes and the refused ones (revoked nodes, retired keys) for the ZAP handler of the
+        triproxies; only for the server units (x-stf-internal-token with STF_STORAGE_TOKEN)
+      operationId: getNodeKeys
+      tags:
+        - nodes
+      parameters:
+        - name: x-stf-internal-token
+          in: header
+          description: STF_STORAGE_TOKEN
+          required: false
+          type: string
+      responses:
+        "200":
+          description: The keys
+          schema:
+            $ref: "#/definitions/NodeKeysResponse"
+        default:
+          description: >
+            Unexpected Error:
+              * 403: Forbidden => not a server unit
+              * 500: Internal Server Error
+          schema:
+            $ref: "#/definitions/NodeErrorResponse"
+  /zebrunner/nodes/token:
+    x-swagger-router-controller: zebrunner-nodes
+    post:
+      summary: Checks a node token
+      description: >
+        Answers 200 only if the token is the token of an active node, for the storage units; only for the server units
+        (x-stf-internal-token with STF_STORAGE_TOKEN)
+      operationId: checkNodeToken
+      tags:
+        - nodes
+      parameters:
+        - name: x-stf-internal-token
+          in: header
+          description: STF_STORAGE_TOKEN
+          required: false
+          type: string
+        - name: body
+          in: body
+          description: "{token}"
+          required: false
+          schema:
+            $ref: "#/definitions/NodeTokenPayload"
+      responses:
+        "200":
+          description: The node of the token
+          schema:
+            $ref: "#/definitions/NodeTokenResponse"
+        default:
+          description: >
+            Unexpected Error:
+              * 403: Forbidden => not the token of an active node, or not a server unit
+              * 500: Internal Server Error
+          schema:
+            $ref: "#/definitions/NodeErrorResponse"
   /swagger.json:
     x-swagger-pipe: swagger_raw
 definitions:
@@ -2712,6 +3019,146 @@ definitions:
       - message
     properties:
       message:
+        type: string
+  # Fork (Zebrunner): the enrolled device hosts
+  NodeErrorResponse:
+    required:
+      - success
+    properties:
+      success:
+        type: boolean
+        default: false
+  NodeSuccessResponse:
+    required:
+      - success
+    properties:
+      success:
+        type: boolean
+  Node:
+    properties:
+      label:
+        type: string
+      address:
+        type: string
+      publicKey:
+        type: string
+      status:
+        type: string
+        enum:
+          - active
+          - revoked
+      createdAt:
+        type: string
+      revokedAt:
+        type: string
+      lastSeenAt:
+        type: string
+  NodeListResponse:
+    required:
+      - nodes
+    properties:
+      nodes:
+        type: array
+        items:
+          $ref: "#/definitions/Node"
+  NodeInvitePayload:
+    description: "label: ^[a-z0-9][a-z0-9-]{0,39}$; address: IPv4 address or host name; ttlMinutes: 1..1440"
+    type: object
+  NodeInviteResponse:
+    required:
+      - invite
+      - label
+      - address
+      - expiresAt
+    properties:
+      invite:
+        type: string
+      label:
+        type: string
+      address:
+        type: string
+      expiresAt:
+        type: string
+  NodeEnrollPayload:
+    description: "invite: mci1.<secret>; label: the label of the invite; publicKey: the CURVE public key, 64 hex"
+    type: object
+  NodeEnrollResponse:
+    required:
+      - nodeToken
+      - label
+      - address
+      - stfUrl
+      - endpoints
+    properties:
+      nodeToken:
+        type: string
+      label:
+        type: string
+      address:
+        type: string
+      serverPublicKey:
+        type: string
+      stfUrl:
+        type: string
+      endpoints:
+        properties:
+          sub:
+            type: string
+          push:
+            type: string
+          appDealer:
+            type: string
+          devDealer:
+            type: string
+  NodeVerifyPayload:
+    description: "token: mcn1.<label>.<secret>; host: the host of the node URL"
+    type: object
+  NodeVerifyResponse:
+    required:
+      - label
+      - address
+    properties:
+      label:
+        type: string
+      address:
+        type: string
+  NodeRelayResponse:
+    required:
+      - devices
+    properties:
+      devices:
+        type: array
+        items:
+          properties:
+            serial:
+              type: string
+            label:
+              type: string
+            address:
+              type: string
+            connectPort:
+              type: integer
+  NodeKeysResponse:
+    required:
+      - allowed
+      - denied
+    properties:
+      allowed:
+        type: array
+        items:
+          type: string
+      denied:
+        type: array
+        items:
+          type: string
+  NodeTokenPayload:
+    description: "token: mcn1.<label>.<secret>"
+    type: object
+  NodeTokenResponse:
+    required:
+      - label
+    properties:
+      label:
         type: string
 securityDefinitions:
   accessTokenAuth:

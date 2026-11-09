@@ -3,11 +3,13 @@
 import {expect} from 'chai'
 import yargs, {type Argv} from 'yargs'
 
+import * as api from '../../../lib/cli/api/index.js'
 import * as authZebrunner from '../../../lib/cli/auth-zebrunner/index.js'
 import * as local from '../../../lib/cli/local/index.js'
 import * as provider from '../../../lib/cli/provider/index.js'
 import * as storageS3 from '../../../lib/cli/storage-s3/index.js'
 import * as storageTemp from '../../../lib/cli/storage-temp/index.js'
+import {mockModule} from '../../helpers/module-mock.mts'
 
 interface Command {
   builder(yargs: Argv): Argv
@@ -166,6 +168,62 @@ describe('zebrunner: CLI', function() {
       expect(function() {
         parse(authZebrunner, ['--app-url', 'http://stf/'], {SECRET: 'secret'})
       }).to.throw(/zebrunner-login-url|zebrunner-userinfo-url/)
+    })
+  })
+
+  describe('api', function() {
+    var apiArgs = [
+      '--connect-push', 'tcp://app:7170', '--connect-sub', 'tcp://app:7150'
+    , '--connect-push-dev', 'tcp://dev:7270', '--connect-sub-dev', 'tcp://dev:7250'
+    ]
+
+    it('should take the settings of the enrollment of the nodes', function() {
+      var argv = parse(api, apiArgs.concat([
+        '--nodes-connect-sub', 'tcp://10.0.0.1:7250'
+      , '--nodes-connect-push', 'tcp://10.0.0.1:7270'
+      ]), {
+        SECRET: 'secret'
+      , STF_URL: 'https://mcloud.example.com'
+      , STF_API_NODES_CONNECT_APP_DEALER: 'tcp://10.0.0.1:7160'
+      , STF_API_NODES_CONNECT_DEV_DEALER: 'tcp://10.0.0.1:7260'
+      })
+      expect(argv).to.include({
+        nodesStfUrl: 'https://mcloud.example.com'
+      , nodesConnectSub: 'tcp://10.0.0.1:7250'
+      , nodesConnectPush: 'tcp://10.0.0.1:7270'
+      , nodesConnectAppDealer: 'tcp://10.0.0.1:7160'
+      , nodesConnectDevDealer: 'tcp://10.0.0.1:7260'
+      })
+    })
+
+    it('should give the API unit the settings of the nodes', function() {
+      var argv = parse(api, apiArgs.concat(['--nodes-stf-url', 'https://stf']), {SECRET: 'secret'})
+      var options: Record<string, any> = {}
+      var restore = mockModule(new URL('../../../lib/units/api/index.js', import.meta.url), {
+        default: function(unitOptions: Record<string, unknown>) {
+          options = unitOptions
+        }
+      })
+      var saved = [process.env.AGENT_HOSTS, process.env.STF_STORAGE_TOKEN]
+      process.env.AGENT_HOSTS = 'Build-UA, 10.0.0.7 mac-mini'
+      process.env.STF_STORAGE_TOKEN = 'internal'
+      try {
+        api.handler(argv as Parameters<typeof api.handler>[0])
+      }
+      finally {
+        restore()
+        ;['AGENT_HOSTS', 'STF_STORAGE_TOKEN'].forEach(function(name, index) {
+          if (typeof saved[index] === 'undefined') {
+            delete process.env[name]
+          }
+          else {
+            process.env[name] = saved[index]
+          }
+        })
+      }
+      expect(options.nodes.stfUrl).to.equal('https://stf')
+      expect(options.nodes.agentHosts).to.eql(['build-ua', '10.0.0.7', 'mac-mini'])
+      expect(options.nodes.internalToken).to.equal('internal')
     })
   })
 

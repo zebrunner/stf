@@ -1,5 +1,6 @@
 import events from 'events'
 import zmq from 'zeromq/v5-compat.js'
+import type {NodesOptions} from './units-api.js'
 
 declare global {
   namespace Express {
@@ -10,6 +11,8 @@ declare global {
       subdev: zmq.Socket
       channelRouter: events.EventEmitter
       secret: string
+      // Fork (Zebrunner)
+      nodes?: NodesOptions
     }
 
     interface Request {
