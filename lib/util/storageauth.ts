@@ -3,7 +3,10 @@
 *
 * Two kinds of callers are let in:
 * - the units of STF (device workers, storage plugins) with the shared token of the deployment
-*   (STF_STORAGE_TOKEN) in the `x-stf-internal-token` header;
+*   (STF_STORAGE_TOKEN) in the `x-stf-internal-token` header, or the device units of an enrolled
+*   node with the token of the node there (`mcn1.<label>.<secret>`, ZEBRUNNER.md#nodes-enrollment),
+*   checked with the API unit (STF_NODES_API_URL, lib/util/zebrunner-nodes-client.ts) and trusted
+*   for 30 s;
 * - signed-in users with the session cookie of the app unit, signed with the auth secret.
 *
 * The storage plugins proxy /s/blob, they forward the credentials of their caller instead of having
@@ -18,6 +21,8 @@ import type express from 'express'
 
 import {isFresh, type SessionJwt} from './sessionjwt.js'
 import logger from './logger.js'
+import nodesClient from './zebrunner-nodes-client.js'
+import zebrunnerNodes from './zebrunner-nodes.js'
 
 export const TOKEN_HEADER = 'x-stf-internal-token'
 
@@ -27,6 +32,8 @@ export interface StorageAuthOptions {
   secret?: string
   storageToken?: string
   ssid?: string
+  // checks the token of an enrolled node, by default with the API unit of STF_NODES_API_URL
+  verifyNodeToken?: ((token: string) => PromiseLike<boolean>) | null
 }
 
 // The options the storage units take for the fork: auth and the networks of urlsafety.download()
@@ -103,12 +110,22 @@ function middleware(options: StorageAuthOptions): express.RequestHandler {
     name: options.ssid || 'ssid'
   , keys: [options.secret]
   })
-
-  return function(req, res, next) {
-    if (sameToken(req.headers[TOKEN_HEADER], expectedToken)) {
-      next()
-      return
+  let verifyNodeToken = options.verifyNodeToken
+  if (typeof verifyNodeToken === 'undefined') {
+    const nodes = nodesClient.clientOptions(Object.assign({}, process.env, {
+      STF_STORAGE_TOKEN: options.storageToken
+    }))
+    verifyNodeToken = nodes ? nodesClient.createTokenVerifier(nodes) : null
+    if (nodes) {
+      log.info('The tokens of the enrolled nodes are checked with %s', nodes.url)
     }
+  }
+
+  const checkSession = function(
+    req: express.Request
+  , res: express.Response
+  , next: express.NextFunction
+  ) {
     parseSession(req, res, function() {
       const session = req.session as {jwt?: SessionJwt} | null | undefined
       // The storage has no database, it checks the expiry the cookie carries
@@ -122,6 +139,28 @@ function middleware(options: StorageAuthOptions): express.RequestHandler {
       , error: 'Unauthorized'
       })
     })
+  }
+
+  return function(req, res, next) {
+    const given = req.headers[TOKEN_HEADER]
+    const session = function() {
+      checkSession(req, res, next)
+    }
+    if (sameToken(given, expectedToken)) {
+      next()
+      return
+    }
+    if (verifyNodeToken && zebrunnerNodes.tokenLabel(given)) {
+      Promise.resolve(verifyNodeToken(given as string)).then(function(valid) {
+        if (valid) {
+          next()
+          return
+        }
+        session()
+      }, session)
+      return
+    }
+    session()
   }
 }
 

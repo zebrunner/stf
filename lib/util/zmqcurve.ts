@@ -16,6 +16,11 @@
 *   logs the refusal of its key: libzmq does not connect a refused socket again, the refusal is the
 *   only trace of it on this side.
 * Without these variables the sockets have no security, as in upstream.
+*
+* The keys of the enrolled nodes (ZEBRUNNER.md#nodes-enrollment) come from the API unit when
+* STF_NODES_API_URL is set (lib/util/zebrunner-nodes-client.ts): the keys of the active nodes are
+* allowed too, the keys of the revoked nodes and the retired keys are refused even when a variable
+* has them (deny wins).
 **/
 
 import crypto from 'crypto'
@@ -24,6 +29,12 @@ import * as zmq from 'zeromq'
 
 import lifecycle from './lifecycle.js'
 import logger from './logger.js'
+import nodesClient, {
+  KEYS_INTERVAL
+, type ClientOptions
+, type NodeKeys
+, type Watcher
+} from './zebrunner-nodes-client.js'
 
 const log = logger.createLogger('util:zmqcurve')
 
@@ -50,6 +61,8 @@ export interface CurveConfig {
     clients: Set<string>
     // the labels of the STF_ZMQ_CURVE_CLIENT_KEY_<HOST> variables with a key, sorted
     hosts: string[]
+    // the API unit with the keys of the enrolled nodes (STF_NODES_API_URL)
+    nodes?: ClientOptions | null
   }
   client?: {
     serverKey: Buffer
@@ -140,7 +153,9 @@ export function config(env: NodeJS.ProcessEnv = process.env): CurveConfig {
     if (own) {
       clients.add(publicKeyOf(own).toString('hex'))
     }
-    if (!clients.size) {
+    // Fork (Zebrunner): or the keys of the enrolled nodes
+    const nodes = nodesClient.clientOptions(env)
+    if (!clients.size && !nodes) {
       throw new Error('STF_ZMQ_CURVE_SERVER_SECRET_KEY needs the keys of the clients: ' +
         'STF_ZMQ_CURVE_CLIENT_KEY_<HOST>, STF_ZMQ_CURVE_CLIENT_KEYS or STF_ZMQ_CURVE_SECRET_KEY')
     }
@@ -148,6 +163,7 @@ export function config(env: NodeJS.ProcessEnv = process.env): CurveConfig {
       secretKey: parseKey('STF_ZMQ_CURVE_SERVER_SECRET_KEY', env.STF_ZMQ_CURVE_SERVER_SECRET_KEY)
     , clients: clients
     , hosts: hosts
+    , nodes: nodes
     }
   }
 
@@ -224,8 +240,55 @@ let zapHandler: zmq.Router | null = null
 let allowedClients = new Set<string>()
 const deniedLogged = new Map<string, number>()
 
+export interface NodeKeySets {
+  allowed: Set<string>
+  denied: Set<string>
+}
+
+const NO_NODE_KEYS: NodeKeySets = {allowed: new Set(), denied: new Set()}
+let nodeKeys = NO_NODE_KEYS
+let nodeWatcher: Watcher | null = null
+
+// isAllowedKey <key> <clients> <nodes>: the keys of the variables and of the active nodes, minus
+// the keys of the revoked nodes and the retired ones: deny wins
+export function isAllowedKey(
+  key: string
+, clients: Set<string>
+, nodes: NodeKeySets = nodeKeys
+): boolean {
+  return !nodes.denied.has(key) && (clients.has(key) || nodes.allowed.has(key))
+}
+
+function sameSet(a: Set<string>, b: Set<string>) {
+  return a.size === b.size && Array.from(a).every(function(key) {
+    return b.has(key)
+  })
+}
+
+// The keys of the enrolled nodes from the API unit
+export function setNodeKeys(keys: NodeKeys) {
+  const next = {allowed: new Set(keys.allowed), denied: new Set(keys.denied)}
+  if (!sameSet(next.allowed, nodeKeys.allowed) || !sameSet(next.denied, nodeKeys.denied)) {
+    log.info(
+      'CURVE server: %d keys of active nodes are allowed, %d keys of revoked nodes or retired ' +
+      'are refused'
+    , next.allowed.size
+    , next.denied.size
+    )
+  }
+  nodeKeys = next
+}
+
 function logDenied(address: string, key: string) {
   if (once(deniedLogged, address)) {
+    if (nodeKeys.denied.has(key)) {
+      log.warn(
+        'Refused the ZeroMQ client %s with the key "%s" of a revoked node (or a retired key)'
+      , address
+      , key
+      )
+      return
+    }
     log.warn(
       'Refused the ZeroMQ client %s with the unknown key "%s" (allow it with ' +
       'STF_ZMQ_CURVE_CLIENT_KEY_<HOST>=<key> or STF_ZMQ_CURVE_CLIENT_KEYS)'
@@ -263,7 +326,7 @@ async function serveZap(router: zmq.Router) {
       // routing id, delimiter, version, request id, domain, address, identity, mechanism, key
       const [routingId, delimiter, , requestId, , address, , mechanism, credentials] = frames
       const key = credentials ? Buffer.from(credentials).toString('hex') : ''
-      const allowed = String(mechanism) === 'CURVE' && allowedClients.has(key)
+      const allowed = String(mechanism) === 'CURVE' && isAllowedKey(key, allowedClients)
       if (!allowed) {
         logDenied(String(address), key)
       }
@@ -292,10 +355,28 @@ export function stopZapHandler() {
     zapHandler.close()
     zapHandler = null
   }
+  if (nodeWatcher) {
+    nodeWatcher.stop()
+    nodeWatcher = null
+  }
+  nodeKeys = NO_NODE_KEYS
 }
 
-function startZapHandler(clients: Set<string>) {
+function watchNodeKeys(nodes: ClientOptions | null | undefined) {
+  if (!nodes || nodeWatcher) {
+    return
+  }
+  log.info(
+    'CURVE server: the keys of the enrolled nodes are read from %s every %d s'
+  , nodes.url
+  , KEYS_INTERVAL / 1000
+  )
+  nodeWatcher = nodesClient.watchNodeKeys(nodes, setNodeKeys)
+}
+
+function startZapHandler(clients: Set<string>, nodes?: ClientOptions | null) {
   allowedClients = clients
+  watchNodeKeys(nodes)
   if (zapHandler) {
     return
   }
@@ -344,7 +425,7 @@ export function secure<S extends CompatSocket>(sock: S, curve: CurveConfig = cur
         native.curveSecretKey = z85(server.secretKey)
         native.zapDomain = ZAP_DOMAIN
         native.zapEnforceDomain = true
-        startZapHandler(server.clients)
+        startZapHandler(server.clients, server.nodes)
       }
     }
     const bind = sock.bind
@@ -378,4 +459,14 @@ export function secure<S extends CompatSocket>(sock: S, curve: CurveConfig = cur
   return sock
 }
 
-export default {clientHint, config, generateKeyPair, publicKeyOf, secure, stopZapHandler, z85}
+export default {
+  clientHint
+, config
+, generateKeyPair
+, isAllowedKey
+, publicKeyOf
+, secure
+, setNodeKeys
+, stopZapHandler
+, z85
+}
