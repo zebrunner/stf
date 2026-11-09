@@ -10,6 +10,7 @@ import Promise from 'bluebird'
 import type {DeviceDocument, DeviceGroup, GroupDocument} from '../types/stf.js'
 import type {
   BatteryIosEventFields
+, DevicePortsMessageFields
 , InitializeIosDeviceStateFields
 , IosDeviceInfoMessageFields
 , IosDeviceScreenMessageFields
@@ -53,6 +54,7 @@ export interface ZebrunnerDbApi {
   setIosNetwork(message: IosNetworkEventFields): Promise<r.WriteResult>
   setDeviceIosVersion(message: SdkIosVersionFields): Promise<void>
   setIosDeviceScreen(message: IosDeviceScreenMessageFields): Promise<r.WriteResult>
+  setDevicePorts(message: DevicePortsMessageFields): Promise<r.WriteResult>
   getDeviceSize(serial: string): Promise<DeviceDocument['display'] | null>
   getDeviceGroupOwner(serial: string): Promise<DeviceGroup['owner'] | null>
   setDeviceGroupOwner(message: {serial: string}): Promise<r.WriteResult>
@@ -187,6 +189,14 @@ export default function extendDbApi(dbapi: DbApi, db: Db) {
       , width: message.width
       , scale: message.scale
       }
+    }))
+  }
+
+  // The ports of an Android device worker, as initializeIosDeviceState keeps the ones of iOS
+  dbapi.setDevicePorts = function(message) {
+    return db.run(r.table('devices').get<DeviceDocument>(message.serial).update({
+      screenPort: message.screenPort
+    , connectPort: message.connectPort
     }))
   }
 

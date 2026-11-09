@@ -9,12 +9,12 @@ The image `public.ecr.aws/zebrunner/stf` runs the STF units of [mcloud](https://
 | Feature | Where |
 | --- | --- |
 | iOS/tvOS device unit: screen, touch, keys, install of `.ipa`, clipboard, Wi-Fi and Bluetooth through WebDriverAgent; device log, shell and files through go-ios, see [iOS devices](#ios-devices) | `lib/units/ios-device/`, `lib/cli/ios-device/` |
-| iOS messages of the wire protocol, codes 98-127 (the retired ones are reserved) | `lib/wire/wire.proto` (after the upstream messages) |
-| iOS device state in the database | `lib/db/zebrunner.ts`, `lib/units/processor/` |
+| iOS messages of the wire protocol and the ports of an Android device worker (`DevicePortsMessage`), codes 98-130 (the retired ones are reserved) | `lib/wire/wire.proto` (after the upstream messages) |
+| iOS device state in the database, the screen and connect ports of the Android devices | `lib/db/zebrunner.ts`, `lib/units/processor/` |
 | Sign-in through the Zebrunner IAM service | `lib/units/auth/zebrunner.ts`, `lib/cli/auth-zebrunner/`, `res/app/src/entries/auth-zebrunner.tsx` |
 | Device status, size, owner and type routes of the REST API | `lib/units/api/controllers/zebrunner.ts`, `lib/units/api/helpers/device-status.ts` |
 | Authentication of the storage routes and SSRF protection of downloads | `lib/util/storageauth.ts`, `lib/util/urlsafety.ts` |
-| One provider per device container: fixed VNC port, `UNHEALTHY` and exit when the device cannot be provided or the processor does not ack its registration, see [ZeroMQ](#zeromq) | `lib/cli/provider/`, `lib/units/provider/` |
+| One provider per device container: fixed VNC port, fixed connect port (`STF_PROVIDER_CONNECT_PORT`), `UNHEALTHY` and exit when the device cannot be provided or the processor does not ack its registration, see [ZeroMQ](#zeromq) | `lib/cli/provider/`, `lib/units/provider/` |
 | `.ipa` manifests (Info.plist) in the apk storage plugin | `lib/units/storage/plugins/apk/task/` |
 | The WebSocket sends the commands of a user (input, shell, install, remote ADB, files, ...) to the devices the user uses only (an admin: to any device), the invitations to the devices of the groups of the user, and subscribes the client to the channels of its transactions only: the channel of a device is `base64(sha1(serial))`, so any user controlled any device. A released device gets no command later than 2 s after it | `lib/units/websocket/zebrunner-channels.ts`, `lib/db/zebrunner.ts` |
 | A malformed ZeroMQ message or WebSocket event (or a listener failing on it) is logged once a minute and dropped instead of ending the unit: the listeners run in `process.nextTick`, so their exceptions were uncaught | `lib/util/zebrunner-guard.ts`, `lib/wire/router.ts`, `lib/units/websocket/index.ts` |
@@ -103,11 +103,22 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 | `STF_PROVIDER_DEVICE_NAME` | | Name of the device of the container, shown as its model |
 | `STF_PROVIDER_HOST` | `127.0.0.1` | Host of the device container; declared because the containers set it (the CLI is strict) |
 | `STF_PROVIDER_VNC_PORT` | `5900` | VNC port of the single device of a provider |
+| `STF_PROVIDER_CONNECT_PORT` | | Fixed remote debug port (`adb connect`, `--connect-url-pattern`) of the device of a provider, 1..65535, see [Ports of the Android devices](#ports-of-the-android-devices) |
 | `STF_PROCESSOR_PUBLIC_IP` | `localhost` | Host of the screen URLs of iOS devices without a URL pattern |
 | `STF_ZMQ_CURVE_SERVER_SECRET_KEY` | | Secret key of the triproxies: their tcp endpoints are CURVE servers that accept only the clients of `STF_ZMQ_CURVE_CLIENT_KEYS`, see [ZeroMQ](#zeromq) |
 | `STF_ZMQ_CURVE_CLIENT_KEYS` | | Public keys of the clients the triproxies accept (the device hosts), separated by commas or spaces; the key of `STF_ZMQ_CURVE_SECRET_KEY` of the triproxy is accepted too |
 | `STF_ZMQ_CURVE_SERVER_PUBLIC_KEY` | | Public key of the triproxies: the units and the device providers connect to them over CURVE |
 | `STF_ZMQ_CURVE_SECRET_KEY` | | Secret key of the client, with `STF_ZMQ_CURVE_SERVER_PUBLIC_KEY`; its public key is derived from it |
+
+### Ports of the Android devices
+
+`stf provider` gives every device worker a group of 4 ports of `--min-port`..`--max-port` (`STF_PROVIDER_MIN_PORT`, `STF_PROVIDER_MAX_PORT`): the first one is the screen WebSocket, the second one the remote debug port the users connect to (`adb connect`). With `--connect-port` (`STF_PROVIDER_CONNECT_PORT`, mcloud-device passes it) the remote debug port is fixed (`lib/util/zebrunner-connect-port.ts`):
+
+- the port is taken out of the pool, the screen and the other ports never get it; the range needs 4 ports besides it (`7404`..`7410` with `7405`: the screen port is `7404`);
+- one device worker holds it at a time, the first one started while it is free. mcloud runs one device per provider; another device started meanwhile gets the second port of its group, with a warning. The port is free again when its worker exits;
+- an invalid port (not 1..65535) or a range without the 4 ports stops the provider at start.
+
+Every Android device worker sends its ports to the processor (`DevicePortsMessage`) before it is ready, which stores them in the device document as `screenPort` and `connectPort`, as for the iOS devices. The REST API returns them, e.g. for the adb relay of mcloud: `GET /api/v1/devices?fields=serial,platform,present,display,screenPort,connectPort,provider`.
 
 `stf ios-device` takes the options of a device unit plus `--wda-host`, `--wda-port`, `--mjpeg-port`, `--device-name` and `--host`, see `node lib/cli ios-device --help`.
 
@@ -120,7 +131,7 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 | `GET /api/v1/devices/{serial}/owner` | the owner of the group of the device |
 | `GET /api/v1/devices/{serial}/type` | the device type of an iOS device (`iOS`, `tvOS`) |
 
-The device lists and `GET /api/v1/devices/{serial}` also return `name`, the model of the device. The operations tagged `admin` need an admin with the session cookie of the app as with an access token (`lib/units/api/helpers/securityHandlers.ts`; upstream checked the token only).
+The device lists and `GET /api/v1/devices/{serial}` also return `name`, the model of the device, and `screenPort` and `connectPort`, the ports of its worker (Android and iOS, see [Ports of the Android devices](#ports-of-the-android-devices)). The operations tagged `admin` need an admin with the session cookie of the app as with an access token (`lib/units/api/helpers/securityHandlers.ts`; upstream checked the token only).
 
 ## Sessions
 

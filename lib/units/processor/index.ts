@@ -412,6 +412,12 @@ export default db.ensureConnectivity(function(options: ProcessorOptions) {
           log.info(err)
         })
     })
+    .on(wire.DevicePortsMessage, function(channel, message) {
+      dbapi.setDevicePorts(message)
+        .catch(function(err) {
+          log.error('Unable to save the ports of device "%s"', message.serial, err.stack)
+        })
+    })
     .on(wire.IosDeviceInfoMessage, function(channel, message) {
       dbapi.setIosDeviceInfo(message)
         .catch(function(err) {
