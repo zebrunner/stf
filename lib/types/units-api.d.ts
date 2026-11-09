@@ -124,8 +124,6 @@ export interface NodesOptions {
   }
   // STF_ZMQ_CURVE_SERVER_PUBLIC_KEY
   serverPublicKey?: string | undefined
-  // AGENT_HOSTS: the legacy device hosts of the screens of unbound devices, lower case
-  agentHosts?: string[]
   // STF_STORAGE_TOKEN: the token of the server units for the internal node routes
   internalToken?: string | undefined
 }

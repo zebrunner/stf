@@ -242,13 +242,13 @@ function key() {
         })
       , Object.assign({serial: 'absent', connectPort: 7413}, android, {present: false})
       , Object.assign({serial: 'gone', connectPort: 7433}, android, {present: null})
-      , Object.assign({serial: 'screen', screenPort: 7436}, android)
+      , Object.assign({serial: 'noconnect', screenPort: 7436}, android)
       , Object.assign({serial: 'both', screenPort: 7440, connectPort: 7999}, android)
       , Object.assign({serial: 'badport', screenPort: 65535, connectPort: 0}, android)
       , Object.assign({serial: 'ios', connectPort: 7417}, android, {platform: 'iOS'})
       , Object.assign({serial: 'old', connectPort: 7421}, android, {nodeGeneration: 0})
       , Object.assign({serial: 'revoked', connectPort: 7425}, android, {node: 'node-2'})
-      , Object.assign({serial: 'legacy', connectPort: 7429}, android, {node: null})
+      , Object.assign({serial: 'unbound', connectPort: 7429}, android, {node: null})
       , Object.assign({serial: 'noport'}, android)
       ]))
       var relay = {label: 'node-1', address: 'node-1.lan'}
@@ -258,7 +258,6 @@ function key() {
       , Object.assign({serial: 'b'}, relay, {connectPort: 7405})
       , Object.assign({serial: 'both'}, relay, {connectPort: 7999})
       , Object.assign({serial: 'gone'}, relay, {connectPort: 7433})
-      , Object.assign({serial: 'screen'}, relay, {connectPort: 7437})
       ])
     })
 
@@ -271,10 +270,28 @@ function key() {
       expect(await run(r.table('devices').get('s'))).to.include({
         screenPort: 7404, connectPort: 7405, node: 'node-1', nodeGeneration: 3
       })
-      await dbapi.rejectDeviceRegistration('s')
+      await dbapi.rejectDeviceRegistration('s', 'node-2')
       expect(await run(r.table('devices').get('s'))).to.include({
-        screenPort: null, connectPort: null, node: null, nodeGeneration: null
+        screenPort: null, connectPort: null, node: null, nodeGeneration: null, nodeClaim: 'node-2'
+      , ready: false
       })
+    })
+
+    it('should list the devices bound to a node or claiming it', async function() {
+      await run(r.table('devices').insert([
+        {serial: 'b', platform: 'iOS', present: false, node: 'node-1', nodeGeneration: 1
+        , nodeClaim: 'node-1', screenPort: 7408, connectPort: 8101}
+      , {serial: 'a', platform: 'Android', present: true, node: null, nodeGeneration: null
+        , nodeClaim: 'node-1', screenPort: null, connectPort: null, owner: {email: USER}}
+      , {serial: 'c', platform: 'Android', present: true, node: 'node-2', nodeClaim: 'node-2'}
+      , {serial: 'd', platform: 'Android', present: true}
+      ]))
+      expect(await dbapi.loadNodeDevices('node-1')).to.eql([
+        {serial: 'a', platform: 'Android', present: true, node: null, nodeGeneration: null
+        , screenPort: null, connectPort: null}
+      , {serial: 'b', platform: 'iOS', present: false, node: 'node-1', nodeGeneration: 1
+        , screenPort: 7408, connectPort: 8101}
+      ])
     })
   })
 
@@ -292,7 +309,7 @@ function key() {
       var port = await freePort()
       var env: Record<string, string> = {}
       Object.entries(process.env).forEach(function([name, value]) {
-        if (!/^(STF_|RETHINKDB_|SECRET$|AGENT_HOSTS$)/.test(name) && typeof value === 'string') {
+        if (!/^(STF_|RETHINKDB_|SECRET$)/.test(name) && typeof value === 'string') {
           env[name] = value
         }
       })
@@ -301,7 +318,6 @@ function key() {
       , RETHINKDB_ENV_DATABASE: database
       , SECRET: SECRET
       , STF_STORAGE_TOKEN: INTERNAL
-      , AGENT_HOSTS: 'legacy.lan'
       , STF_URL: 'https://mcloud.example.com'
       , STF_ZMQ_CURVE_SERVER_PUBLIC_KEY: 'f'.repeat(64)
       , STF_ZMQ_CURVE_SECRET_KEY: zmqcurve.generateKeyPair().secretKey
@@ -507,6 +523,20 @@ function key() {
       , body: {token: enrolled.nodeToken, host: '10.0.0.6'}
       })).status).to.equal(403)
 
+      var self = await call('GET', '/nodes/self', {
+        headers: {authorization: 'Bearer ' + enrolled.nodeToken}
+      })
+      expect(self.status).to.equal(200)
+      var selfBody = await self.json() as {lastSeenAt: string, devices: object[]}
+      expect(selfBody).to.include({label: 'node-1', address: '10.0.0.5', status: 'active'})
+      expect(selfBody.lastSeenAt).to.be.a('string')
+      expect(selfBody.devices).to.eql([{
+        serial: 'emulator-5554', platform: 'Android', present: true, bound: true, screenPort: 7404
+      , connectPort: 7405
+      }])
+      expect((await call('GET', '/nodes/self')).status).to.equal(401)
+      expect((await call('GET', '/nodes/self', {as: ADMIN})).status).to.equal(401)
+
       var list = await (await call('GET', '/nodes', {as: ADMIN})).json() as {nodes: object[]}
       expect(list.nodes).to.have.length(1)
       expect(list.nodes[0]).to.include({
@@ -558,6 +588,9 @@ function key() {
 
       expect((await call('DELETE', '/nodes/node-1', {as: ADMIN})).status).to.equal(400)
       expect((await call('POST', '/nodes/node-1/revoke', {as: ADMIN})).status).to.equal(200)
+      expect((await call('GET', '/nodes/self', {
+        headers: {authorization: 'Bearer ' + enrolled.nodeToken}
+      })).status).to.equal(403)
       expect((await call('POST', '/nodes/verify', {
         as: ADMIN
       , body: {token: enrolled.nodeToken, host: '10.0.0.5'}

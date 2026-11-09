@@ -203,10 +203,15 @@ export default function extendDbApi(dbapi: DbApi, db: Db) {
   // The ports of an Android device worker, as initializeIosDeviceState keeps the ones of iOS, and
   // the node the processor bound the device to (lib/units/processor/zebrunner-nodes.ts)
   dbapi.setDevicePorts = function(message, binding) {
+    var node = binding ? {
+      node: binding.node
+    , nodeGeneration: binding.nodeGeneration
+    , nodeClaim: binding.node
+    } : {}
     return db.run(r.table('devices').get<DeviceDocument>(message.serial).update(Object.assign({
       screenPort: message.screenPort
     , connectPort: message.connectPort
-    }, binding || {})))
+    }, node)))
   }
 
   dbapi.getDeviceSize = function(serial) {
@@ -286,6 +291,7 @@ export default function extendDbApi(dbapi: DbApi, db: Db) {
       // the node of lib/units/processor/zebrunner-nodes.ts
     , node: binding ? binding.node : null
     , nodeGeneration: binding ? binding.nodeGeneration : null
+    , nodeClaim: binding ? binding.node : null
     }
 
     return db.run(r.table('devices').get<DeviceDocument>(message.serial).update(data))

@@ -260,7 +260,7 @@ export default db.ensureConnectivity(function(options: ProcessorOptions) {
       appDealer.send([channel, data])
     })
     // Worker initialized
-    // Fork (Zebrunner): a device whose registration was rejected is not made ready
+    // Fork (Zebrunner): only a device bound to an active node is made ready
     .on(wire.DeviceReadyMessage, nodeBinder.whenAccepted(function(channel, message, data) {
       dbapi.setDeviceReady(message.serial, message.channel)
         .then(function(stats) {
@@ -413,7 +413,7 @@ export default db.ensureConnectivity(function(options: ProcessorOptions) {
       })
         .then(function(decision) {
           return decision.result === 'rejected' ?
-            null :
+            dbapi.rejectDeviceRegistration(message.serial, zebrunnerNodes.claimOf(message)) :
             dbapi.initializeIosDeviceState(options.publicIp, message, decision.binding)
         })
         .catch(function(err) {
@@ -433,7 +433,7 @@ export default db.ensureConnectivity(function(options: ProcessorOptions) {
       nodeBinder.bind(message)
         .then(function(decision) {
           return decision.result === 'rejected' ?
-            dbapi.rejectDeviceRegistration(message.serial) :
+            dbapi.rejectDeviceRegistration(message.serial, zebrunnerNodes.claimOf(message)) :
             dbapi.setDevicePorts(message, decision.binding)
         })
         .catch(function(err) {

@@ -1,12 +1,12 @@
 /**
 * Fork (Zebrunner): authentication of the storage routes (/s/upload, /s/download, /s/blob).
 *
-* Two kinds of callers are let in:
-* - the units of STF (device workers, storage plugins) with the shared token of the deployment
-*   (STF_STORAGE_TOKEN) in the `x-stf-internal-token` header, or the device units of an enrolled
-*   node with the token of the node there (`mcn1.<label>.<secret>`, ZEBRUNNER.md#nodes-enrollment),
+* The callers let in:
+* - the device units of an active enrolled node with the token of the node (STF_NODE_TOKEN,
+*   `mcn1.<label>.<secret>`, ZEBRUNNER.md#nodes-enrollment) in the `x-stf-internal-token` header,
 *   checked with the API unit (STF_NODES_API_URL, lib/util/zebrunner-nodes-client.ts) and trusted
 *   for 30 s;
+* - the server units with their token (STF_STORAGE_TOKEN) in that header;
 * - signed-in users with the session cookie of the app unit, signed with the auth secret.
 *
 * The storage plugins proxy /s/blob, they forward the credentials of their caller instead of having
@@ -39,11 +39,12 @@ export interface StorageAuthOptions {
 // The options the storage units take for the fork: auth and the networks of urlsafety.download()
 export type StorageSecurityOptions = StorageAuthOptions & {downloadAllow?: string[]}
 
+// The token of the device units: the token of their node
 function internalToken() {
-  return process.env.STF_STORAGE_TOKEN || ''
+  return process.env.STF_NODE_TOKEN || ''
 }
 
-// The headers of a request of an STF unit to the storage, empty when no token is configured
+// The headers of a request of a device unit to the storage, empty without a node token
 function internalHeaders(): Record<string, string> {
   const token = internalToken()
   return token ? {[TOKEN_HEADER]: token} : {}

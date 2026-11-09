@@ -2,16 +2,15 @@
 * Fork (Zebrunner): the node binding of the devices (ZEBRUNNER.md#nodes-enrollment). A device unit
 * of an enrolled node proves its registration (DevicePortsMessage of Android,
 * InitializeIosDeviceState of iOS) with the token of the node: the processor binds the device to the
-* node when the proof is valid with the token of the active node and the host of the provider is the
-* address of the node. A registration from the address of a registered node that is not proved by it
-* is rejected: the device gets no ports and no binding and is not made ready. The other devices are
-* unbound (legacy device hosts).
+* node when the node is active, the proof is valid with its token and the host of the provider is
+* the address of the node. Any other registration is rejected: the device gets no ports and no
+* binding and is not made ready.
 **/
 
 import Promise from 'bluebird'
 
 import zebrunnerNodes from '../../util/zebrunner-nodes.js'
-import {UNBOUND, type NodeBinding, type NodeDocument} from '../../db/zebrunner-nodes.js'
+import {isBoundTo, type NodeBinding, type NodeDocument} from '../../db/zebrunner-nodes.js'
 
 export interface Registration {
   serial: string
@@ -24,12 +23,14 @@ export interface Registration {
 
 export type Decision =
   {result: 'bound', binding: NodeBinding} |
-  {result: 'unbound', binding: NodeBinding, reason: string} |
   {result: 'rejected', reason: string}
 
 export interface NodeBinderDb {
   loadNode(label: string): PromiseLike<NodeDocument | null>
-  loadNodeByAddress(address: string): PromiseLike<NodeDocument | null>
+  loadDeviceBySerial(serial: string): PromiseLike<{
+    node?: string | null
+    nodeGeneration?: number | null
+  } | null>
 }
 
 interface Log {
@@ -37,16 +38,12 @@ interface Log {
   error(...args: unknown[]): void
 }
 
-// decide <registration> <node of its label> <node of its host>: the binding of the device
-export function decide(
-  registration: Registration
-, node: NodeDocument | null
-, hostNode: NodeDocument | null
-): Decision {
+// decide <registration> <node of its label>: the binding of the device, or why it is rejected
+export function decide(registration: Registration, node: NodeDocument | null): Decision {
   var providerHost = registration.providerHost || ''
   var reason: string
   if (!registration.node) {
-    reason = 'no node proof'
+    reason = 'no node proof (STF_NODE_TOKEN of the device container)'
   }
   else if (!node || node.label !== registration.node) {
     reason = 'unknown node'
@@ -55,7 +52,7 @@ export function decide(
     reason = 'revoked node'
   }
   else if (!zebrunnerNodes.sameAddress(providerHost, node.address)) {
-    reason = 'the host of the provider is not the address of the node'
+    reason = 'the host of the provider (STF_PROVIDER_HOST) is not the address of the node'
   }
   else if (!zebrunnerNodes.verifyNodeProof(node.tokenHash, registration.nodeProof, {
     serial: registration.serial
@@ -63,15 +60,17 @@ export function decide(
   , screenPort: registration.screenPort
   , connectPort: registration.connectPort
   })) {
-    reason = 'invalid node proof'
+    reason = 'invalid node proof (not the current token of the node)'
   }
   else {
     return {result: 'bound', binding: {node: node.label, nodeGeneration: node.generation}}
   }
-  if (hostNode) {
-    return {result: 'rejected', reason: reason}
-  }
-  return {result: 'unbound', binding: UNBOUND, reason: reason}
+  return {result: 'rejected', reason: reason}
+}
+
+// The node a registration claims, for the diagnostics of that node: a label, else null
+export function claimOf(registration: {node?: string | null}): string | null {
+  return zebrunnerNodes.isLabel(registration.node) ? registration.node : null
 }
 
 type Handler<M extends {serial: string}> =
@@ -79,45 +78,31 @@ type Handler<M extends {serial: string}> =
 
 export function createNodeBinder(db: NodeBinderDb, log: Log) {
   var pending = new Map<string, Promise<Decision>>()
-  var rejected = new Set<string>()
+  // the last decision of every device registered with this processor
+  var bound = new Map<string, boolean>()
 
-  // bind <registration>: the decision for the registration of a device, never fails (unbound on an
-  // error)
+  // bind <registration>: the decision for the registration of a device, never fails (rejected on
+  // an error)
   function bind(registration: Registration): Promise<Decision> {
     var serial = registration.serial
-    var decision = Promise.all([
-      registration.node ? db.loadNode(registration.node) : null
-    , registration.providerHost ? db.loadNodeByAddress(registration.providerHost) : null
-    ])
-      .then(function([node, hostNode]) {
-        return decide(registration, node, hostNode)
+    var decision = Promise.resolve(registration.node ? db.loadNode(registration.node) : null)
+      .then(function(node) {
+        return decide(registration, node)
       })
       .catch(function(err: Error): Decision {
         log.error('Unable to check the node of device "%s"', serial, err.stack)
-        return {result: 'unbound', binding: UNBOUND, reason: 'error'}
+        return {result: 'rejected', reason: 'the node could not be checked'}
       })
       .then(function(result) {
+        bound.set(serial, result.result === 'bound')
         if (result.result === 'rejected') {
-          rejected.add(serial)
           log.warn(
-            'Rejected the registration of device "%s" from "%s", the address of an enrolled ' +
-            'node: %s'
+            'Rejected the registration of device "%s" from "%s" (node "%s"): %s'
           , serial
-          , registration.providerHost
+          , registration.providerHost || ''
+          , claimOf(registration) || ''
           , result.reason
           )
-        }
-        else {
-          rejected.delete(serial)
-          if (result.result === 'unbound' && registration.node) {
-            log.warn(
-              'Device "%s" from "%s" is not bound to node "%s": %s'
-            , serial
-            , registration.providerHost
-            , registration.node
-            , result.reason
-            )
-          }
         }
         if (pending.get(serial) === decision) {
           pending.delete(serial)
@@ -128,15 +113,31 @@ export function createNodeBinder(db: NodeBinderDb, log: Log) {
     return decision
   }
 
-  // accepted <serial>: false when the last registration of the device was rejected, after its check
+  // accepted <serial>: whether the device is bound to an active node, after the check of its last
+  // registration; a device this processor did not check (it restarted) is checked in the database
   function accepted(serial: string): Promise<boolean> {
     return Promise.resolve(pending.get(serial)).then(function() {
-      return !rejected.has(serial)
+      if (bound.has(serial)) {
+        return bound.get(serial)!
+      }
+      return Promise.resolve(db.loadDeviceBySerial(serial))
+        .then(function(device) {
+          if (!device || !device.node) {
+            return false
+          }
+          return Promise.resolve(db.loadNode(device.node)).then(function(node) {
+            return isBoundTo(device, node)
+          })
+        })
+        .catch(function(err: Error) {
+          log.error('Unable to check the node of device "%s"', serial, err.stack)
+          return false
+        })
     })
   }
 
-  // whenAccepted <handler>: the handler of a message of a device, not called for a device whose
-  // registration was rejected
+  // whenAccepted <handler>: the handler of a message of a device, not called for a device that is
+  // not bound to an active node
   function whenAccepted<M extends {serial: string}>(handler: Handler<M>): Handler<M> {
     return function(channel, message, data) {
       accepted(message.serial).then(function(ok) {
@@ -144,7 +145,7 @@ export function createNodeBinder(db: NodeBinderDb, log: Log) {
           handler(channel, message, data)
           return
         }
-        log.warn('Device "%s" is not made ready: its registration was rejected', message.serial)
+        log.warn('Device "%s" is not made ready: it is not bound to an active node', message.serial)
       })
     }
   }
@@ -152,4 +153,4 @@ export function createNodeBinder(db: NodeBinderDb, log: Log) {
   return {accepted, bind, whenAccepted}
 }
 
-export default {createNodeBinder, decide}
+export default {claimOf, createNodeBinder, decide}

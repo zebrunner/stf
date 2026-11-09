@@ -119,7 +119,7 @@ describe('zebrunner: node proof of the device units', function() {
     })
 
     it('should not prove anything with a token that is not a node token', async function() {
-      var message = await ports('shared-legacy-secret', '10.0.0.5')
+      var message = await ports('some-shared-secret', '10.0.0.5')
       expect([message.node, message.nodeProof]).to.eql([null, null])
     })
   })

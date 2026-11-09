@@ -5,7 +5,7 @@ import {expect} from 'chai'
 
 import zebrunnerNodes from '../../../lib/util/zebrunner-nodes.js'
 import processorNodes, {type Registration} from '../../../lib/units/processor/zebrunner-nodes.js'
-import {relayPort, type NodeDocument} from '../../../lib/db/zebrunner-nodes.js'
+import type {NodeDocument} from '../../../lib/db/zebrunner-nodes.js'
 
 var TOKEN = zebrunnerNodes.generateNodeToken('node-1')
 
@@ -163,29 +163,17 @@ describe('zebrunner: nodes', function() {
       , nodeProof: zebrunnerNodes.nodeProof(TOKEN, fields)
       , providerHost: '10.0.0.5'
       })
-      expect(zebrunnerNodes.deviceBinding(null, fields))
-        .to.eql({node: null, nodeProof: null, providerHost: '10.0.0.5'})
-      var legacy = zebrunnerNodes.deviceBinding('shared', fields)
-      expect([legacy.node, legacy.nodeProof]).to.eql([null, null])
-      expect(legacy.warning).to.match(/not a node token/)
-      expect(legacy.warning).to.not.include('shared')
+      var none = zebrunnerNodes.deviceBinding(null, fields)
+      expect([none.node, none.nodeProof, none.providerHost]).to.eql([null, null, '10.0.0.5'])
+      expect(none.warning).to.match(/STF_NODE_TOKEN is not set/)
+      var other = zebrunnerNodes.deviceBinding('shared-secret', fields)
+      expect([other.node, other.nodeProof]).to.eql([null, null])
+      expect(other.warning).to.match(/not a node token/)
+      expect(other.warning).to.not.include('shared-secret')
       var hostless = zebrunnerNodes.deviceBinding(TOKEN, Object.assign({}, fields, {
         providerHost: ''
       }))
       expect([hostless.node, hostless.nodeProof]).to.eql([null, null])
-    })
-  })
-
-  describe('relay port', function() {
-    it('should be the connect port of the device, else the port after its screen port', function() {
-      expect(relayPort({connectPort: 7405, screenPort: 7404})).to.equal(7405)
-      expect(relayPort({connectPort: 5555, screenPort: 7404})).to.equal(5555)
-      expect(relayPort({connectPort: null, screenPort: 7404})).to.equal(7405)
-      expect(relayPort({screenPort: 7404})).to.equal(7405)
-      expect(relayPort({connectPort: 0, screenPort: 7404})).to.equal(7405)
-      expect(relayPort({})).to.equal(null)
-      expect(relayPort({screenPort: 65535})).to.equal(null)
-      expect(relayPort({connectPort: 70000})).to.equal(null)
     })
   })
 
@@ -210,52 +198,55 @@ describe('zebrunner: nodes', function() {
 
   describe('processor binding', function() {
     it('should bind a device proved by the active node at its address', function() {
-      expect(processorNodes.decide(registration(), node(), node())).to.eql({
+      expect(processorNodes.decide(registration(), node())).to.eql({
         result: 'bound', binding: {node: 'node-1', nodeGeneration: 2}
       })
-      expect(processorNodes.decide(registration({providerHost: '10.0.0.5'}), node({
-        address: '10.0.0.5'
-      }), null).result).to.equal('bound')
+      expect(processorNodes.decide(registration({providerHost: 'NODE-1.lan'}), node({
+        address: 'node-1.lan'
+      })).result).to.equal('rejected')
     })
 
-    var refusals: Array<[string, Registration, NodeDocument | null, string]> = [
-      ['no proof', registration({node: null, nodeProof: null}), null, 'no node proof']
-    , ['an unknown node', registration(), null, 'unknown node']
-    , ['a revoked node', registration(), node({status: 'revoked'}), 'revoked node']
+    var refusals: Array<[string, Registration, NodeDocument | null, RegExp]> = [
+      ['no proof', registration({node: null, nodeProof: null}), null, /^no node proof/]
+    , ['an unknown node', registration(), null, /^unknown node$/]
+    , ['a revoked node', registration(), node({status: 'revoked'}), /^revoked node$/]
     , ['another host', registration({providerHost: '10.0.0.6'}), node()
-      , 'the host of the provider is not the address of the node']
+      , /^the host of the provider/]
     , ['another token', registration({}, zebrunnerNodes.generateNodeToken('node-1')), node()
-      , 'invalid node proof']
-    , ['other ports', registration({screenPort: 7408}), node(), 'invalid node proof']
-    , ['another label', registration({node: 'node-2'}), node(), 'unknown node']
+      , /^invalid node proof/]
+    , ['other ports', registration({screenPort: 7408}), node(), /^invalid node proof/]
+    , ['another label', registration({node: 'node-2'}), node(), /^unknown node$/]
     ]
 
     refusals.forEach(function([what, reg, labelNode, reason]) {
-      it(`should reject ${what} from the address of a registered node`, function() {
-        expect(processorNodes.decide(reg, labelNode, node()))
-          .to.eql({result: 'rejected', reason: reason})
+      it(`should reject ${what}, from any host`, function() {
+        var decision = processorNodes.decide(reg, labelNode)
+        expect(decision.result).to.equal('rejected')
+        expect((decision as {reason: string}).reason).to.match(reason)
       })
+    })
 
-      it(`should leave ${what} from another host unbound`, function() {
-        expect(processorNodes.decide(reg, labelNode, null)).to.eql({
-          result: 'unbound', binding: {node: null, nodeGeneration: null}, reason: reason
-        })
-      })
+    it('should keep the node a registration claims, a label only', function() {
+      expect(processorNodes.claimOf({node: 'node-1'})).to.equal('node-1')
+      expect(processorNodes.claimOf({node: 'Not A Label'})).to.equal(null)
+      expect(processorNodes.claimOf({node: null})).to.equal(null)
+      expect(processorNodes.claimOf({})).to.equal(null)
     })
 
     describe('binder', function() {
       var warnings: string[]
        , nodes: Record<string, NodeDocument>
-       , byAddress: Record<string, NodeDocument>
+       , devices: Record<string, {node?: string | null, nodeGeneration?: number | null}>
+       , broken: boolean
       var db = {
         loadNode: function(label: string) {
-          return Promise.resolve(nodes[label] || null)
-        }
-      , loadNodeByAddress: function(address: string) {
-          if (address === 'broken') {
+          if (broken) {
             return Promise.reject(new Error('database down'))
           }
-          return Promise.resolve(byAddress[address] || null)
+          return Promise.resolve(nodes[label] || null)
+        }
+      , loadDeviceBySerial: function(serial: string) {
+          return Promise.resolve(devices[serial] || null)
         }
       }
       var log = {
@@ -269,11 +260,12 @@ describe('zebrunner: nodes', function() {
 
       beforeEach(function() {
         warnings = []
+        broken = false
         nodes = {'node-1': node()}
-        byAddress = {'10.0.0.5': node()}
+        devices = {}
       })
 
-      it('should make ready only a device whose registration was not rejected', async function() {
+      it('should make ready only a device bound to an active node', async function() {
         var binder = processorNodes.createNodeBinder(db, log)
         var ready: string[] = []
         var handler = binder.whenAccepted(function(channel, message: {serial: string}) {
@@ -285,20 +277,19 @@ describe('zebrunner: nodes', function() {
         handler('channel', {serial: 'forged'}, Buffer.alloc(0))
         var good = binder.bind(registration())
         handler('channel', {serial: 'serial1'}, Buffer.alloc(0))
-        handler('channel', {serial: 'legacy'}, Buffer.alloc(0))
+        // a device without a registration of its node
+        handler('channel', {serial: 'unknown'}, Buffer.alloc(0))
         expect((await forged).result).to.equal('rejected')
         expect((await good).result).to.equal('bound')
         await new Promise(function(resolve) {
           setTimeout(resolve, 10)
         })
-        expect(ready.sort()).to.eql(['legacy', 'serial1'])
+        expect(ready.sort()).to.eql(['serial1'])
         expect(warnings[0])
-          .to.match(/^Rejected the registration of device "%s".* forged 10\.0\.0\.5 /)
+          .to.match(/^Rejected the registration of device "%s".* forged 10\.0\.0\.5 node-1 /)
         expect(warnings.join('\n')).to.not.include(TOKEN)
 
-        // a later valid registration of the device makes it ready again
-        await binder.bind(registration({serial: 'forged'}, TOKEN))
-        expect(await binder.accepted('forged')).to.equal(false)
+        // a later valid registration of the device makes it ready
         var proved = Object.assign(registration(), {serial: 'forged'})
         proved.nodeProof = zebrunnerNodes.nodeProof(TOKEN, {
           serial: 'forged', providerHost: '10.0.0.5', screenPort: 7404, connectPort: 7405
@@ -307,21 +298,27 @@ describe('zebrunner: nodes', function() {
         expect(await binder.accepted('forged')).to.equal(true)
       })
 
-      it('should leave a device unbound when the database fails', async function() {
+      it('should check in the database a device it did not register', async function() {
         var binder = processorNodes.createNodeBinder(db, log)
-        var decision = await binder.bind(registration({providerHost: 'broken'}))
-        expect(decision).to.eql({
-          result: 'unbound', binding: {node: null, nodeGeneration: null}, reason: 'error'
-        })
-        expect(await binder.accepted('serial1')).to.equal(true)
+        devices = {
+          bound: {node: 'node-1', nodeGeneration: 2}
+        , rotated: {node: 'node-1', nodeGeneration: 1}
+        , unbound: {node: null}
+        }
+        expect(await binder.accepted('bound')).to.equal(true)
+        expect(await binder.accepted('rotated')).to.equal(false)
+        expect(await binder.accepted('unbound')).to.equal(false)
+        expect(await binder.accepted('missing')).to.equal(false)
+        nodes = {'node-1': node({status: 'revoked'})}
+        expect(await binder.accepted('bound')).to.equal(false)
       })
 
-      it('should log an unbound device of a node token', async function() {
+      it('should reject a registration when the database fails', async function() {
         var binder = processorNodes.createNodeBinder(db, log)
-        byAddress = {}
-        await binder.bind(registration({providerHost: '10.0.0.9'}))
-        expect(warnings).to.have.length(1)
-        expect(warnings[0]).to.include('is not bound to node')
+        broken = true
+        var decision = await binder.bind(registration())
+        expect(decision.result).to.equal('rejected')
+        expect(await binder.accepted('serial1')).to.equal(false)
       })
     })
   })

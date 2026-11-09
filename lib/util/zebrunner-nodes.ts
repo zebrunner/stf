@@ -27,7 +27,7 @@ export const INVITE_MAX_TTL_MINUTES = 1440
 
 // The static paths of /api/v1/nodes/...: DELETE /nodes/{label} could not reach a node of these
 // labels
-export const RESERVED_LABELS = ['enroll', 'invites', 'relay', 'verify']
+export const RESERVED_LABELS = ['enroll', 'invites', 'relay', 'self', 'verify']
 
 // The host names that are this host or the metadata service of a cloud, by name
 const FORBIDDEN_HOSTS = new RegExp('^(' + [
@@ -189,7 +189,13 @@ export function deviceBinding(
 ): DeviceBinding & {warning?: string} {
   const providerHost = fields.providerHost || null
   if (!token) {
-    return {node: null, nodeProof: null, providerHost: providerHost}
+    return {
+      node: null
+    , nodeProof: null
+    , providerHost: providerHost
+    , warning: 'STF_NODE_TOKEN is not set: STF rejects the devices of a host that is not an ' +
+        'enrolled node'
+    }
   }
   const label = tokenLabel(token)
   if (!label) {
@@ -197,8 +203,8 @@ export function deviceBinding(
       node: null
     , nodeProof: null
     , providerHost: providerHost
-    , warning: 'STF_NODE_TOKEN is not a node token (mcn1.<label>.<secret>), the device is not ' +
-        'bound to a node'
+    , warning: 'STF_NODE_TOKEN is not a node token (mcn1.<label>.<secret>): STF rejects the ' +
+        'devices of this host'
     }
   }
   if (!providerHost) {
@@ -206,7 +212,8 @@ export function deviceBinding(
       node: null
     , nodeProof: null
     , providerHost: null
-    , warning: 'The host of the provider is not known, the device is not bound to a node'
+    , warning: 'The host of the provider is not known (STF_PROVIDER_HOST): STF rejects the ' +
+        'devices of this host'
     }
   }
   return {

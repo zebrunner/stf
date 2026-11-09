@@ -204,25 +204,22 @@ describe('zebrunner: CLI', function() {
           options = unitOptions
         }
       })
-      var saved = [process.env.AGENT_HOSTS, process.env.STF_STORAGE_TOKEN]
-      process.env.AGENT_HOSTS = 'Build-UA, 10.0.0.7 mac-mini'
+      var saved = process.env.STF_STORAGE_TOKEN
       process.env.STF_STORAGE_TOKEN = 'internal'
       try {
         api.handler(argv as Parameters<typeof api.handler>[0])
       }
       finally {
         restore()
-        ;['AGENT_HOSTS', 'STF_STORAGE_TOKEN'].forEach(function(name, index) {
-          if (typeof saved[index] === 'undefined') {
-            delete process.env[name]
-          }
-          else {
-            process.env[name] = saved[index]
-          }
-        })
+        if (typeof saved === 'undefined') {
+          delete process.env.STF_STORAGE_TOKEN
+        }
+        else {
+          process.env.STF_STORAGE_TOKEN = saved
+        }
       }
       expect(options.nodes.stfUrl).to.equal('https://stf')
-      expect(options.nodes.agentHosts).to.eql(['build-ua', '10.0.0.7', 'mac-mini'])
+      expect(options.nodes).to.not.have.property('agentHosts')
       expect(options.nodes.internalToken).to.equal('internal')
     })
   })

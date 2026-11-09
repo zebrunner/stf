@@ -90,7 +90,8 @@ async function fakeApi(): Promise<FakeApi> {
 
 describe('zebrunner: node keys and tokens of the server units', function() {
   var server = zmqcurve.generateKeyPair()
-  var legacy = zmqcurve.generateKeyPair()
+  // the key of the server units, STF_ZMQ_CURVE_SECRET_KEY
+  var units = zmqcurve.generateKeyPair()
   var enrolled = zmqcurve.generateKeyPair()
   var revoked = zmqcurve.generateKeyPair()
   var api: FakeApi
@@ -104,29 +105,29 @@ describe('zebrunner: node keys and tokens of the server units', function() {
   })
 
   describe('allowed keys', function() {
-    var clients = new Set([legacy.publicKey, revoked.publicKey])
+    var clients = new Set([units.publicKey])
 
-    it('should allow the keys of the variables and of the active nodes', function() {
+    it('should allow the key of the server units and the keys of the active nodes', function() {
       var nodes = {allowed: new Set([enrolled.publicKey]), denied: new Set<string>()}
-      expect(zmqcurve.isAllowedKey(legacy.publicKey, clients, nodes)).to.equal(true)
+      expect(zmqcurve.isAllowedKey(units.publicKey, clients, nodes)).to.equal(true)
       expect(zmqcurve.isAllowedKey(enrolled.publicKey, clients, nodes)).to.equal(true)
       expect(zmqcurve.isAllowedKey(server.publicKey, clients, nodes)).to.equal(false)
+      expect(zmqcurve.isAllowedKey(revoked.publicKey, clients, nodes)).to.equal(false)
     })
 
-    it('should refuse the keys of the revoked nodes, even in a variable: deny wins', function() {
+    it('should refuse the keys of the revoked nodes and the retired ones: deny wins', function() {
       var nodes = {
         allowed: new Set([enrolled.publicKey, revoked.publicKey])
       , denied: new Set([revoked.publicKey])
       }
       expect(zmqcurve.isAllowedKey(revoked.publicKey, clients, nodes)).to.equal(false)
       expect(zmqcurve.isAllowedKey(enrolled.publicKey, clients, nodes)).to.equal(true)
-      expect(zmqcurve.isAllowedKey(legacy.publicKey, clients, nodes)).to.equal(true)
     })
 
     it('should read the API unit of STF_NODES_API_URL with STF_STORAGE_TOKEN', function() {
       var env = {
         STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey
-      , STF_ZMQ_CURVE_CLIENT_KEYS: legacy.publicKey
+      , STF_ZMQ_CURVE_SECRET_KEY: units.secretKey
       }
       expect(zmqcurve.config(env).server!.nodes).to.equal(null)
       expect(zmqcurve.config(Object.assign({}, env, {
@@ -137,7 +138,7 @@ describe('zebrunner: node keys and tokens of the server units', function() {
       expect(zmqcurve.config(Object.assign({}, env, {
         STF_NODES_API_URL: 'http://stf-api:3000'
       })).server!.nodes).to.equal(null)
-      // the enrolled nodes only, without the legacy variables
+      // the enrolled nodes only, without the key of the server units
       expect(zmqcurve.config({
         STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey
       , STF_NODES_API_URL: 'http://stf-api:3000'
@@ -225,7 +226,7 @@ describe('zebrunner: node keys and tokens of the server units', function() {
       var received: string[] = []
       var pull = socket('pull', zmqcurve.config({
         STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey
-      , STF_ZMQ_CURVE_CLIENT_KEYS: [legacy.publicKey, revoked.publicKey].join(',')
+      , STF_ZMQ_CURVE_SECRET_KEY: units.secretKey
       , STF_NODES_API_URL: api.origin
       , STF_STORAGE_TOKEN: INTERNAL
       }))
@@ -236,17 +237,17 @@ describe('zebrunner: node keys and tokens of the server units', function() {
       // the first read of the keys
       await delay(300)
 
-      socket('push', client(legacy)).connect(endpoint).send('legacy')
+      socket('push', client(units)).connect(endpoint).send('units')
       socket('push', client(enrolled)).connect(endpoint).send('enrolled')
       socket('push', client(revoked)).connect(endpoint).send('revoked')
       await delay(1000)
-      expect(received.sort()).to.deep.equal(['enrolled', 'legacy'])
+      expect(received.sort()).to.deep.equal(['enrolled', 'units'])
 
       // revoked meanwhile: a new connection of its key is refused
       zmqcurve.setNodeKeys({allowed: [], denied: [enrolled.publicKey]})
       socket('push', client(enrolled)).connect(endpoint).send('enrolled again')
       await delay(1000)
-      expect(received.sort()).to.deep.equal(['enrolled', 'legacy'])
+      expect(received.sort()).to.deep.equal(['enrolled', 'units'])
     })
   })
 
@@ -268,7 +269,7 @@ describe('zebrunner: node keys and tokens of the server units', function() {
         expect(await verify(other)).to.equal(false)
         expect(await verify(other)).to.equal(false)
         expect(api.requests).to.have.length(1)
-        expect(await verify('legacy-token')).to.equal(false)
+        expect(await verify('not-a-node-token')).to.equal(false)
         expect(await verify(null)).to.equal(false)
         expect(api.requests).to.have.length(1)
       })
@@ -330,7 +331,7 @@ describe('zebrunner: node keys and tokens of the server units', function() {
         expect(await get(zebrunnerNodes.generateNodeToken('node-2'))).to.equal(401)
       })
 
-      it('should still let in the server units with STF_STORAGE_TOKEN', async function() {
+      it('should let in the server units with STF_STORAGE_TOKEN', async function() {
         expect(await get(STORAGE)).to.equal(200)
         expect(await get('wrong')).to.equal(401)
         expect(await get()).to.equal(401)

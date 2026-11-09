@@ -145,6 +145,8 @@ export interface DeviceDocument {
   // the enrolled node the device is bound to (lib/units/processor/zebrunner-nodes.ts), the generation of its token
   node?: string | null
   nodeGeneration?: number | null
+  // the node the last registration of the device claimed, valid or not (diagnostics)
+  nodeClaim?: string | null
 }
 
 export interface InstalledAppEntry {

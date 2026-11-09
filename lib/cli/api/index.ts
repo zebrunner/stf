@@ -110,10 +110,6 @@ var handler = function(argv: CommandArgv<typeof builder>) {
       , devDealer: argv.nodesConnectDevDealer
       }
     , serverPublicKey: process.env.STF_ZMQ_CURVE_SERVER_PUBLIC_KEY
-    , agentHosts: (process.env.AGENT_HOSTS || '').split(/[\s,]+/).filter(Boolean)
-        .map(function(host) {
-          return host.toLowerCase()
-        })
     , internalToken: process.env.STF_STORAGE_TOKEN
     }
   })

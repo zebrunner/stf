@@ -26,8 +26,7 @@ export interface NodeDocument {
   lastSeenAt: Date | null
   // +1 on every re-enrollment (rotation); the devices bound with an older token are unbound
   generation: number
-  // the keys of the previous enrollments of the node, refused by the triproxies even if a legacy
-  // variable has them
+  // the keys of the previous enrollments of the node, refused by the triproxies
   retiredKeys?: string[]
 }
 
@@ -44,6 +43,16 @@ export interface NodeInviteDocument {
 export interface NodeKeys {
   allowed: string[]
   denied: string[]
+}
+
+export interface NodeDevice {
+  serial: string
+  platform?: string | null
+  present?: boolean
+  node?: string | null
+  nodeGeneration?: number | null
+  screenPort?: number | null
+  connectPort?: number | null
 }
 
 export interface RelayDevice {
@@ -72,23 +81,10 @@ interface BoundDevice {
   node: string
   nodeGeneration: number
   connectPort?: number | null
-  screenPort?: number | null
 }
 
-function isPort(port: unknown): port is number {
+export function isPort(port: unknown): port is number {
   return Number.isInteger(port) && (port as number) > 0 && (port as number) <= 65535
-}
-
-// relayPort <device>: the remote debug port of a device, its connect port or else the port after its
-// screen port (the second port of the group of a worker), null without either
-export function relayPort(device: {connectPort?: number | null, screenPort?: number | null}) {
-  if (isPort(device.connectPort)) {
-    return device.connectPort
-  }
-  if (isPort(device.screenPort) && isPort(device.screenPort + 1)) {
-    return device.screenPort + 1
-  }
-  return null
 }
 
 export interface NodesDbApi {
@@ -107,7 +103,8 @@ export interface NodesDbApi {
   touchNode(label: string, intervalMs: number): Promise<void>
   loadNodeKeys(): Promise<NodeKeys>
   loadRelayDevices(): Promise<RelayDevice[]>
-  rejectDeviceRegistration(serial: string): Promise<r.WriteResult>
+  loadNodeDevices(label: string): Promise<NodeDevice[]>
+  rejectDeviceRegistration(serial: string, claim: string | null): Promise<r.WriteResult>
 }
 
 // isBoundTo <device> <node>: whether the binding of a device is valid with the node: active, same
@@ -324,7 +321,7 @@ export default function extendNodesDbApi(dbapi: DbApi, db: Db) {
 
   // Every Android device bound to an active node, present or not (the relay stays static: the node
   // refuses the connections of an absent device), with the address of the node (never the display
-  // URL) and its connect port, or else the port after its screen port
+  // URL) and its connect port
   dbapi.loadRelayDevices = function() {
     return Promise.all([
       dbapi.loadNodes()
@@ -333,7 +330,7 @@ export default function extendNodesDbApi(dbapi: DbApi, db: Db) {
           return device('node').default(null).ne(null)
             .and(device('platform').default('').eq('Android'))
         })
-        .pluck('serial', 'node', 'nodeGeneration', 'connectPort', 'screenPort'))
+        .pluck('serial', 'node', 'nodeGeneration', 'connectPort'))
         .then(function(cursor) {
           return toArray<BoundDevice>(cursor)
         })
@@ -344,14 +341,14 @@ export default function extendNodesDbApi(dbapi: DbApi, db: Db) {
         }))
         return devices
           .filter(function(device) {
-            return isBoundTo(device, byLabel.get(device.node) || null) && relayPort(device) !== null
+            return isBoundTo(device, byLabel.get(device.node) || null) && isPort(device.connectPort)
           })
           .map(function(device) {
             return {
               serial: device.serial
             , label: device.node
             , address: byLabel.get(device.node)!.address
-            , connectPort: relayPort(device)!
+            , connectPort: device.connectPort!
             }
           })
           .sort(function(a, b) {
@@ -360,14 +357,37 @@ export default function extendNodesDbApi(dbapi: DbApi, db: Db) {
       })
   }
 
-  // A registration whose host is a registered node but that is not proved by it: no binding, no
-  // ports
-  dbapi.rejectDeviceRegistration = function(serial) {
+  // The devices of a node for its diagnostics: bound to it (any generation) or whose last
+  // registration claimed it (nodeClaim, also kept for a rejected one)
+  dbapi.loadNodeDevices = function(label) {
+    return db.run(r.table('devices')
+      .filter(function(device) {
+        return device('node').default(null).eq(label)
+          .or(device('nodeClaim').default(null).eq(label))
+      })
+      .pluck(
+        'serial', 'platform', 'present', 'node', 'nodeGeneration', 'screenPort', 'connectPort'
+      ))
+      .then(function(cursor) {
+        return toArray<NodeDevice>(cursor)
+      })
+      .then(function(devices) {
+        return devices.sort(function(a, b) {
+          return a.serial.localeCompare(b.serial)
+        })
+      })
+  }
+
+  // A registration without a valid node proof: no binding, no ports, not ready; the node it
+  // claimed is kept for the diagnostics of that node
+  dbapi.rejectDeviceRegistration = function(serial, claim) {
     return db.run(r.table('devices').get(serial).update({
       node: null
     , nodeGeneration: null
+    , nodeClaim: claim
     , screenPort: null
     , connectPort: null
+    , ready: false
     }))
   }
 }

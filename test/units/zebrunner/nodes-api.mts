@@ -31,6 +31,7 @@ var dbapi = {
 , touchNode: sinon.stub()
 , loadNodeKeys: sinon.stub()
 , loadRelayDevices: sinon.stub()
+, loadNodeDevices: sinon.stub()
 , loadDeviceBySerial: sinon.stub()
 }
 
@@ -56,7 +57,6 @@ var OPTIONS = {
   , devDealer: 'tcp://10.0.0.1:7260'
   }
 , serverPublicKey: 'f'.repeat(64)
-, agentHosts: ['legacy.lan']
 , internalToken: INTERNAL
 }
 
@@ -169,12 +169,17 @@ describe('zebrunner: node API', function() {
     , 'GET /nodes/relay': ['nodes', 'admin']
     , 'DELETE /nodes/{label}': ['nodes', 'admin']
     , 'POST /nodes/{label}/revoke': ['nodes', 'admin']
+    , 'GET /nodes/self': ['nodes']
     , 'GET /zebrunner/screen-auth': ['user']
     , 'GET /zebrunner/nodes/keys': ['nodes']
     , 'POST /zebrunner/nodes/token': ['nodes']
     })
-    // authenticated by the API unit except the enrollment (an invite) and the internal routes
-    ;['/nodes/enroll', '/zebrunner/nodes/keys', '/zebrunner/nodes/token'].forEach(function(path) {
+    // authenticated by the API unit except the enrollment (an invite), the diagnostics of a node (its
+    // token) and the internal routes
+    var unauthenticated = [
+      '/nodes/enroll', '/nodes/self', '/zebrunner/nodes/keys', '/zebrunner/nodes/token'
+    ]
+    unauthenticated.forEach(function(path) {
       Object.values(swagger.paths[path]!).forEach(function(operation) {
         if (operation && typeof operation === 'object') {
           expect(operation, path).to.not.have.property('security')
@@ -471,7 +476,7 @@ describe('zebrunner: node API', function() {
     , ['no host', {token: TOKEN}]
     , ['another secret', {token: zebrunnerNodes.generateNodeToken('node-1'), host: '10.0.0.5'}]
     , ['an unknown node', {token: zebrunnerNodes.generateNodeToken('node-2'), host: '10.0.0.5'}]
-    , ['the shared legacy token', {token: 'legacy-secret', host: '10.0.0.5'}]
+    , ['not a node token', {token: 'some-secret', host: '10.0.0.5'}]
     , ['a revoked node', {token: TOKEN, host: '10.0.0.5'}, function() {
         dbapi.loadNode.withArgs('node-1').resolves(node({status: 'revoked'}))
       }]
@@ -553,7 +558,6 @@ describe('zebrunner: node API', function() {
     , options: {
         user?: {email: string, privilege: string}
         node?: NodeDocument | null
-        hostNode?: NodeDocument | null
         target?: typeof target
       } = {}
     ) {
@@ -562,8 +566,6 @@ describe('zebrunner: node API', function() {
       , options.target || target
       , fields ? device(fields) : null
       , typeof options.node === 'undefined' ? node() : options.node
-      , typeof options.hostNode === 'undefined' ? node() : options.hostNode
-      , ['legacy.lan', '10.0.0.7']
       ).allowed
     }
 
@@ -586,62 +588,19 @@ describe('zebrunner: node API', function() {
       expect(decide({}, {target: Object.assign({}, target, {port: 7405})})).to.equal(false)
       expect(decide({screenPort: null})).to.equal(false)
       expect(decide(null)).to.equal(false)
-      expect(controller.screenDecision(USER, null, device(), node(), node(), []).allowed)
-        .to.equal(false)
+      expect(controller.screenDecision(USER, null, device(), node()).allowed).to.equal(false)
     })
 
-    it('should refuse a device whose node was revoked or rotated', function() {
-      expect(decide({}, {node: node({status: 'revoked'}), hostNode: node({status: 'revoked'})}))
-        .to.equal(false)
+    it('should refuse a device whose node was revoked or rotated, or an unbound one', function() {
+      expect(decide({}, {node: node({status: 'revoked'})})).to.equal(false)
       expect(decide({nodeGeneration: 0})).to.equal(false)
-      expect(decide({node: null, nodeGeneration: null})).to.equal(false)
-    })
-
-    describe('legacy devices', function() {
-      var legacy = {host: 'legacy.lan', serial: 'serial1', port: 7404}
-
-      function decideLegacy(fields: Partial<DeviceDocument>, hostNode: NodeDocument | null = null) {
-        return decide(Object.assign({
-          node: null
-        , nodeGeneration: null
-        , display: {url: 'wss://mcloud/d/legacy.lan/serial1/7404/'}
-        }, fields), {node: null, hostNode: hostNode, target: legacy})
-      }
-
-      it('should let the user see the screen of an unbound device of AGENT_HOSTS', function() {
-        expect(decideLegacy({})).to.equal(true)
-        // an old device unit without the ports: its screen URL tells them
-        expect(decideLegacy({screenPort: null})).to.equal(true)
-      })
-
-      it('should refuse a host that is not in AGENT_HOSTS', function() {
-        expect(decide({node: null}, {
-          node: null
-        , hostNode: null
-        , target: {host: 'other.lan', serial: 'serial1', port: 7404}
-        })).to.equal(false)
-      })
-
-      it('should refuse a host of AGENT_HOSTS that is the address of a node', function() {
-        expect(decideLegacy({}, node({address: 'legacy.lan'}))).to.equal(false)
-        expect(decideLegacy({}, node({address: 'legacy.lan', status: 'revoked'}))).to.equal(false)
-      })
-
-      it('should refuse the screen of another device or port', function() {
-        expect(decideLegacy({screenPort: 7408})).to.equal(false)
-        expect(decideLegacy({display: {url: 'wss://mcloud/d/10.0.0.7/serial1/7404/'}}))
-          .to.equal(false)
-        expect(decideLegacy({display: {url: 'wss://mcloud/d/legacy.lan/serial2/7404/'}}))
-          .to.equal(false)
-        expect(decideLegacy({screenPort: null, display: {}})).to.equal(false)
-        expect(decideLegacy({display: {url: 'not a URL'}})).to.equal(false)
-      })
+      expect(decide({node: null, nodeGeneration: null}, {node: null})).to.equal(false)
+      expect(decide({node: null, nodeGeneration: null}, {user: ADMIN, node: null})).to.equal(false)
     })
 
     it('should answer nginx 204 or 403, without a body', async function() {
       dbapi.loadDeviceBySerial.withArgs('serial1').resolves(device())
       dbapi.loadNode.withArgs('node-1').resolves(node())
-      dbapi.loadNodeByAddress.withArgs('10.0.0.5').resolves(node())
       expect(await call('getScreenAuth', {user: USER, headers: {'x-original-uri': URI}}))
         .to.eql({code: 204, body: null})
       expect(await call('getScreenAuth', {
@@ -654,6 +613,78 @@ describe('zebrunner: node API', function() {
       expect(await call('getScreenAuth', {user: null, headers: {'x-original-uri': URI}}))
         .to.eql({code: 401, body: null})
       expect(logged.join('\n')).to.include('Refused the screen /d/10.0.0.5/serial1/7404/ to other@')
+    })
+  })
+
+  describe('GET /nodes/self', function() {
+    function self(token?: string | null, header?: string) {
+      var headers: Record<string, string> = {}
+      if (typeof header === 'string') {
+        headers.authorization = header
+      }
+      else if (token) {
+        headers.authorization = 'Bearer ' + token
+      }
+      return call('getNodeSelf', {user: null, headers: headers})
+    }
+
+    beforeEach(function() {
+      var lastSeenAt = new Date('2026-02-01T00:00:00Z')
+      dbapi.loadNode.withArgs('node-1').resolves(node({lastSeenAt: lastSeenAt}))
+      dbapi.loadNodeDevices.resolves([
+        {serial: 'a', platform: 'Android', present: true, node: 'node-1', nodeGeneration: 1
+        , screenPort: 7404, connectPort: 7405}
+      , {serial: 'b', platform: 'iOS', present: false, node: 'node-1', nodeGeneration: 0
+        , screenPort: 7408, connectPort: 8101}
+      , {serial: 'c', present: true, node: null, nodeGeneration: null}
+      ])
+    })
+
+    it('should answer the node and its devices to an active node', async function() {
+      expect(await self(TOKEN)).to.eql({code: 200, body: {
+        label: 'node-1'
+      , address: '10.0.0.5'
+      , status: 'active'
+      , lastSeenAt: '2026-02-01T00:00:00.000Z'
+      , devices: [
+          {serial: 'a', platform: 'Android', present: true, bound: true, screenPort: 7404
+          , connectPort: 7405}
+        , {serial: 'b', platform: 'iOS', present: false, bound: false, screenPort: 7408
+          , connectPort: 8101}
+        , {serial: 'c', platform: null, present: true, bound: false, screenPort: null
+          , connectPort: null}
+        ]
+      }})
+      expect(dbapi.loadNodeDevices.calledOnceWith('node-1')).to.equal(true)
+    })
+
+    it('should answer 401 without a valid node token', async function() {
+      var invalid: Array<[string | null, string?]> = [
+        [null]
+      , [null, 'Basic ' + TOKEN]
+      , [null, TOKEN]
+      , ['not-a-node-token']
+      , [zebrunnerNodes.generateNodeToken('node-1')]
+      , [zebrunnerNodes.generateNodeToken('node-2')]
+      ]
+      for (var [token, header] of invalid) {
+        expect(await self(token, header), String(token || header))
+          .to.eql({code: 401, body: {success: false}})
+      }
+    })
+
+    it('should answer 403 to a revoked node', async function() {
+      dbapi.loadNode.withArgs('node-1').resolves(node({status: 'revoked'}))
+      expect(await self(TOKEN)).to.eql({code: 403, body: {success: false}})
+    })
+
+    it('should never log the token', async function() {
+      await self(TOKEN)
+      await self(zebrunnerNodes.generateNodeToken('node-1'))
+      dbapi.loadNode.withArgs('node-1').resolves(node({status: 'revoked'}))
+      await self(TOKEN)
+      expect(logged.join('\n')).to.not.include(TOKEN.split('.')[2])
+      expect(logged.join('\n')).to.include('Refused the diagnostics of the revoked node "node-1"')
     })
   })
 })

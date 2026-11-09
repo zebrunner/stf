@@ -4,6 +4,7 @@
 * - admin: POST /nodes/invites, GET /nodes, POST /nodes/{label}/revoke, DELETE /nodes/{label},
 *   POST /nodes/verify (mcloud-grid), GET /nodes/relay (adb-relay of mcloud);
 * - no authentication: POST /nodes/enroll, with an invite (stf-proxy rate limits it);
+* - the node token (Authorization: Bearer): GET /nodes/self, the diagnostics of the node;
 * - a signed-in user: GET /zebrunner/screen-auth, the auth_request of the screens of stf-proxy;
 * - the server units (STF_STORAGE_TOKEN): GET /zebrunner/nodes/keys (triproxies),
 *   POST /zebrunner/nodes/token (storage).
@@ -379,40 +380,19 @@ function checkNodeToken(req: Request, res: Response) {
     .catch(internalError(res, 'check a node token'))
 }
 
-// legacyScreenMatches <device> <target>: the screen of a device of a legacy host is its own: the
-// port is its screen port and its screen URL has the host, serial and port of the target
-function legacyScreenMatches(device: DeviceDocument, target: ScreenTarget): boolean {
-  var hasPort = typeof device.screenPort === 'number'
-  if (hasPort && device.screenPort !== target.port) {
-    return false
-  }
-  var url = device.display && device.display.url
-  if (!url) {
-    return hasPort
-  }
-  try {
-    var own = zebrunnerNodes.parseScreenUri(new URL(url).pathname)
-    return Boolean(own && own.host === target.host && own.serial === target.serial &&
-      own.port === target.port)
-  }
-  catch (err) {
-    return false
-  }
-}
-
 export interface ScreenDecision {
   allowed: boolean
   reason: string
 }
 
-// screenDecision <user> <target> <lookups>: whether the user may open the screen of the target
+// screenDecision <user> <target> <device> <its node>: whether the user may open the screen of the
+// target: the user uses the device (or is an admin), the device is bound to an active node, the
+// host is the address of the node and the port the screen port of the device
 export function screenDecision(
   user: {email: string, privilege: string}
 , target: ScreenTarget | null
 , device: DeviceDocument | null
 , node: NodeDocument | null
-, hostNode: NodeDocument | null
-, agentHosts: string[]
 ): ScreenDecision {
   if (!target) {
     return {allowed: false, reason: 'not a screen URI'}
@@ -423,28 +403,16 @@ export function screenDecision(
   if (user.privilege !== apiutil.ADMIN && !(device.owner && device.owner.email === user.email)) {
     return {allowed: false, reason: 'the device is not used by the user'}
   }
-  if (isBoundTo(device, node)) {
-    if (!zebrunnerNodes.sameAddress(node.address, target.host)) {
-      return {allowed: false, reason: `the host is not the address of node "${node.label}"`}
-    }
-    if (device.screenPort !== target.port) {
-      return {allowed: false, reason: 'not the screen port of the device'}
-    }
-    return {allowed: true, reason: `bound to node "${node.label}"`}
+  if (!isBoundTo(device, node)) {
+    return {allowed: false, reason: 'the device is not bound to an active node'}
   }
-  if (agentHosts.indexOf(target.host) === -1) {
-    return {allowed: false, reason: 'unbound device, the host is not in AGENT_HOSTS'}
+  if (!zebrunnerNodes.sameAddress(node.address, target.host)) {
+    return {allowed: false, reason: `the host is not the address of node "${node.label}"`}
   }
-  if (hostNode) {
-    return {
-      allowed: false
-    , reason: `unbound device, the host is the address of node "${hostNode.label}"`
-    }
+  if (device.screenPort !== target.port) {
+    return {allowed: false, reason: 'not the screen port of the device'}
   }
-  if (!legacyScreenMatches(device, target)) {
-    return {allowed: false, reason: 'unbound device, not its screen'}
-  }
-  return {allowed: true, reason: 'legacy host'}
+  return {allowed: true, reason: `bound to node "${node.label}"`}
 }
 
 function getScreenAuth(req: Request, res: Response) {
@@ -455,14 +423,8 @@ function getScreenAuth(req: Request, res: Response) {
   var uri = req.headers['x-original-uri']
   var target = zebrunnerNodes.parseScreenUri(uri)
 
-  var agentHosts = nodesOptions(req).agentHosts || []
-
-  function decide(
-    device: DeviceDocument | null
-  , node: NodeDocument | null
-  , hostNode: NodeDocument | null
-  ) {
-    var decision = screenDecision(user, target, device, node, hostNode, agentHosts)
+  function decide(device: DeviceDocument | null, node: NodeDocument | null) {
+    var decision = screenDecision(user, target, device, node)
     if (!decision.allowed) {
       log.warn(
         'Refused the screen %s to %s: %s'
@@ -476,19 +438,67 @@ function getScreenAuth(req: Request, res: Response) {
   }
 
   if (!target) {
-    return decide(null, null, null)
+    return decide(null, null)
   }
   return dbapi.loadDeviceBySerial(target.serial)
     .then(function(device) {
-      return Promise.all([
-        device && device.node ? dbapi.loadNode(device.node) : null
-      , dbapi.loadNodeByAddress(target!.host)
-      ])
-        .then(function([node, hostNode]) {
-          return decide(device, node, hostNode)
+      return Promise.resolve(device && device.node ? dbapi.loadNode(device.node) : null)
+        .then(function(node) {
+          return decide(device, node)
         })
     })
     .catch(internalError(res, 'check a screen'))
+}
+
+// The node token of an Authorization: Bearer header
+function bearerToken(req: Request): string | null {
+  var header = req.headers.authorization
+  if (typeof header !== 'string') {
+    return null
+  }
+  var match = /^Bearer (\S+)$/.exec(header)
+  return match ? match[1]! : null
+}
+
+// GET /nodes/self: what STF knows of the node of the token, for the diagnostics of the node: 401
+// for a missing or invalid token, 403 for a revoked node
+function getNodeSelf(req: Request, res: Response) {
+  var token = bearerToken(req)
+  var label = zebrunnerNodes.tokenLabel(token)
+  if (!label) {
+    log.warn('Refused the diagnostics of a node to %s: no node token', req.ip)
+    return fail(res, 401)
+  }
+  return dbapi.loadNode(label)
+    .then(function(node) {
+      if (!node || !zebrunnerNodes.sameHash(zebrunnerNodes.sha256(token!), node.tokenHash)) {
+        log.warn('Refused the diagnostics of node "%s" to %s: invalid token', label, req.ip)
+        return fail(res, 401)
+      }
+      if (node.status !== 'active') {
+        log.warn('Refused the diagnostics of the revoked node "%s" to %s', label, req.ip)
+        return fail(res, 403)
+      }
+      return dbapi.loadNodeDevices(node.label).then(function(devices) {
+        return res.status(200).json({
+          label: node.label
+        , address: node.address
+        , status: node.status
+        , lastSeenAt: iso(node.lastSeenAt)
+        , devices: devices.map(function(device) {
+            return {
+              serial: device.serial
+            , platform: device.platform || null
+            , present: Boolean(device.present)
+            , bound: isBoundTo(device, node)
+            , screenPort: typeof device.screenPort === 'number' ? device.screenPort : null
+            , connectPort: typeof device.connectPort === 'number' ? device.connectPort : null
+            }
+          })
+        })
+      })
+    })
+    .catch(internalError(res, 'answer the diagnostics of a node'))
 }
 
 export {
@@ -498,6 +508,7 @@ export {
 , enrollNode
 , getNodeKeys
 , getNodeRelay
+, getNodeSelf
 , getNodes
 , getScreenAuth
 , revokeNode

@@ -2483,7 +2483,7 @@ paths:
       summary: Gets the devices of the adb relay
       description: >
         Returns every Android device bound to an active node, present or not, with the registered address of the
-        node and the connect port of the device (else its screen port + 1), for the adb relay of mcloud
+        node and the connect port of the device, for the adb relay of mcloud
       operationId: getNodeRelay
       tags:
         - nodes
@@ -2503,6 +2503,36 @@ paths:
             $ref: "#/definitions/NodeErrorResponse"
       security:
         - accessTokenAuth: []
+  /nodes/self:
+    x-swagger-router-controller: zebrunner-nodes
+    get:
+      summary: Gets what STF knows of the node of the token
+      description: >
+        The diagnostics of an enrolled node, with its node token (Authorization: Bearer mcn1.<label>.<secret>): the
+        node and the devices bound to it or whose last registration claimed it (bound: bound to the node with its
+        current token)
+      operationId: getNodeSelf
+      tags:
+        - nodes
+      parameters:
+        - name: Authorization
+          in: header
+          description: "Bearer <node token>"
+          required: false
+          type: string
+      responses:
+        "200":
+          description: The node and its devices
+          schema:
+            $ref: "#/definitions/NodeSelfResponse"
+        default:
+          description: >
+            Unexpected Error:
+              * 401: Unauthorized => no or invalid node token
+              * 403: Forbidden => revoked node
+              * 500: Internal Server Error
+          schema:
+            $ref: "#/definitions/NodeErrorResponse"
   /nodes/{label}:
     x-swagger-router-controller: zebrunner-nodes
     delete:
@@ -2574,8 +2604,7 @@ paths:
       description: >
         The auth_request of the screens of stf-proxy: 204 only if the user (session cookie or access token) uses the
         device of X-Original-URI (/d/<host>/<serial>/<port>/), or is an admin, and the host and port are the address
-        of the active node of the device and its screen port (a legacy unbound device: the host in AGENT_HOSTS and not
-        the address of a node)
+        of the active node the device is bound to and its screen port
       operationId: getScreenAuth
       tags:
         - user
@@ -3136,6 +3165,37 @@ definitions:
               type: string
             address:
               type: string
+            connectPort:
+              type: integer
+  NodeSelfResponse:
+    required:
+      - label
+      - address
+      - status
+      - devices
+    properties:
+      label:
+        type: string
+      address:
+        type: string
+      status:
+        type: string
+      lastSeenAt:
+        type: string
+      devices:
+        type: array
+        items:
+          properties:
+            serial:
+              type: string
+            platform:
+              type: string
+            present:
+              type: boolean
+            bound:
+              type: boolean
+            screenPort:
+              type: integer
             connectPort:
               type: integer
   NodeKeysResponse:
