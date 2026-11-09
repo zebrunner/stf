@@ -826,6 +826,10 @@ message InitializeIosDeviceState {
   required ProviderIosMessage provider = 3;
   required IosDevicePorts ports = 4;
   required UpdateIosDevice options = 5;
+  // the enrolled node of the unit (STF_NODE_TOKEN), the proof of lib/util/zebrunner-nodes.ts and --host
+  optional string node = 6;
+  optional string nodeProof = 7;
+  optional string providerHost = 8;
 }
 
 message TouchDownIosMessage {
@@ -890,6 +894,10 @@ message DevicePortsMessage {
   required string serial = 1;
   required int32 screenPort = 2;
   required int32 connectPort = 3;
+  // the enrolled node of the provider (STF_NODE_TOKEN), the proof of lib/util/zebrunner-nodes.ts and --host
+  optional string node = 4;
+  optional string nodeProof = 5;
+  optional string providerHost = 6;
 }
 
 // The network of an iOS device from its system log (plugins/info of the ios-device unit): the

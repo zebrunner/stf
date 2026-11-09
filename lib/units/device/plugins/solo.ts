@@ -7,6 +7,7 @@ import crypto from 'crypto'
 import syrup from '@devicefarmer/stf-syrup'
 
 import logger from '../../../util/logger.js'
+import zebrunnerNodes from '../../../util/zebrunner-nodes.js'
 import wire from '../../../wire/index.js'
 import wireutil from '../../../wire/util.js'
 import type {
@@ -70,16 +71,32 @@ export default syrup.serial()
       ])
     })
 
+    // Fork (Zebrunner): the enrolled node of the container proves the registration of the device
+    // with its token (STF_NODE_TOKEN), lib/util/zebrunner-nodes.ts
+    var binding = zebrunnerNodes.deviceBinding(process.env.STF_NODE_TOKEN, {
+      serial: options.serial
+    , providerHost: options.providerHost
+    , screenPort: options.screenPort
+    , connectPort: options.connectPort
+    })
+    if (binding.warning) {
+      log.warn(binding.warning)
+    }
+
     return {
       channel: channel
     , poke: function() {
-        // Fork (Zebrunner): the ports of the worker for the device document, before it is ready
+        // Fork (Zebrunner): the ports of the worker and its node for the device document, before it
+        // is ready
         push.send([
           wireutil.global
         , wireutil.envelope(new wire.DevicePortsMessage(
             options.serial
           , options.screenPort
           , options.connectPort
+          , binding.node
+          , binding.nodeProof
+          , binding.providerHost
           ))
         ])
         push.send([

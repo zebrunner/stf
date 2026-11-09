@@ -88,6 +88,35 @@ describe('zebrunner: wire', function() {
     expect(state.message.options.name).to.equal('iPhone 15')
   })
 
+  it('should carry the node proof of the registration of a device', function() {
+    type Proved = {node: string | null, nodeProof: string | null, providerHost: string | null}
+    type Ports = Proved & {serial: string, screenPort: number}
+    var ports = roundTrip<Ports>(new wire.DevicePortsMessage(
+      'serial', 7404, 7405, 'node-1', 'ab'.repeat(32), '10.0.0.5'
+    ))
+    expect(ports.message).to.include({
+      serial: 'serial', screenPort: 7404, node: 'node-1', nodeProof: 'ab'.repeat(32)
+    , providerHost: '10.0.0.5'
+    })
+    // an older device unit sends the ports only
+    var legacy = roundTrip<Proved>(new wire.DevicePortsMessage('serial', 7404, 7405))
+    expect([legacy.message.node, legacy.message.nodeProof, legacy.message.providerHost])
+      .to.eql([null, null, null])
+    var ios = roundTrip<Proved>(new wire.InitializeIosDeviceState(
+      'udid'
+    , wire.DeviceStatus.ONLINE
+    , new wire.ProviderIosMessage('channel', 'provider', '')
+    , new wire.IosDevicePorts(7404, 7405)
+    , new wire.UpdateIosDevice('udid', 'iPhone 15', 'iOS', '')
+    , 'node-1'
+    , 'cd'.repeat(32)
+    , '10.0.0.5'
+    ))
+    expect(ios.message).to.include({
+      node: 'node-1', nodeProof: 'cd'.repeat(32), providerHost: '10.0.0.5'
+    })
+  })
+
   it('should carry the battery and the version of an iOS device', function() {
     var battery = roundTrip<{id: string, level: number, status: string}>(
       new wire.BatteryIosEvent('udid', 'good', 'usb', 'charging', 80, '30', 100)

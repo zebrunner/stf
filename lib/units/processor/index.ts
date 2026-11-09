@@ -17,6 +17,7 @@ import zmqutil from '../../util/zmqutil.js'
 import type {DeviceDocument, UserIdentity} from '../../types/stf.js'
 import type {WriteResult} from 'rethinkdb'
 import adbutil from '../../util/adbutil.js'
+import zebrunnerNodes from './zebrunner-nodes.js'
 
 var adb = adbutil()
 
@@ -42,6 +43,9 @@ export default db.ensureConnectivity(function(options: ProcessorOptions) {
   // Said out loud because it is fleet-wide policy set per process: a fleet whose processors
   // disagree restores an arbitrary subset of departures, with nothing else to show for it.
   log.info('Automatic owner restore is %s', options.autoRestoreOwner ? 'on' : 'off')
+
+  // Fork (Zebrunner): the node binding of the devices, lib/units/processor/zebrunner-nodes.ts
+  var nodeBinder = zebrunnerNodes.createNodeBinder(dbapi, log)
 
   // App side
   var appDealer = zmqutil.socket('dealer')
@@ -256,7 +260,8 @@ export default db.ensureConnectivity(function(options: ProcessorOptions) {
       appDealer.send([channel, data])
     })
     // Worker initialized
-    .on(wire.DeviceReadyMessage, function(channel, message, data) {
+    // Fork (Zebrunner): a device whose registration was rejected is not made ready
+    .on(wire.DeviceReadyMessage, nodeBinder.whenAccepted(function(channel, message, data) {
       dbapi.setDeviceReady(message.serial, message.channel)
         .then(function(stats) {
           // Fork (Zebrunner): the registration ack of the worker, the ios-device unit exits without it
@@ -278,7 +283,7 @@ export default db.ensureConnectivity(function(options: ProcessorOptions) {
         .then(function() {
           appDealer.send([channel, data])
         })
-    })
+    }))
     // Worker messages
     .on(wire.JoinGroupByAdbFingerprintMessage, function(channel, message) {
       dbapi.lookupUserByAdbFingerprint(message.fingerprint)
@@ -398,7 +403,19 @@ export default db.ensureConnectivity(function(options: ProcessorOptions) {
     })
     // Fork (Zebrunner) messages, mostly from iOS/tvOS device units
     .on(wire.InitializeIosDeviceState, function(channel, message) {
-      dbapi.initializeIosDeviceState(options.publicIp, message)
+      nodeBinder.bind({
+        serial: message.serial
+      , screenPort: message.ports.screenPort
+      , connectPort: message.ports.connectPort
+      , node: message.node
+      , nodeProof: message.nodeProof
+      , providerHost: message.providerHost
+      })
+        .then(function(decision) {
+          return decision.result === 'rejected' ?
+            null :
+            dbapi.initializeIosDeviceState(options.publicIp, message, decision.binding)
+        })
         .catch(function(err) {
           log.error('Unable to initialize iOS device "%s"', message.serial, err.stack)
         })
@@ -413,7 +430,12 @@ export default db.ensureConnectivity(function(options: ProcessorOptions) {
         })
     })
     .on(wire.DevicePortsMessage, function(channel, message) {
-      dbapi.setDevicePorts(message)
+      nodeBinder.bind(message)
+        .then(function(decision) {
+          return decision.result === 'rejected' ?
+            dbapi.rejectDeviceRegistration(message.serial) :
+            dbapi.setDevicePorts(message, decision.binding)
+        })
         .catch(function(err) {
           log.error('Unable to save the ports of device "%s"', message.serial, err.stack)
         })
