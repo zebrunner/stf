@@ -18,6 +18,8 @@ import type {
 , SdkIosVersionFields
 } from '../types/wire.js'
 
+import extendNodesDbApi, {type NodeBinding, type NodesDbApi} from './zebrunner-nodes.js'
+
 type DbApi = typeof import('./api.js')['default']
 type Db = typeof import('./index.js')['default']
 
@@ -42,7 +44,7 @@ export interface SessionDocument {
   expiresAt: number
 }
 
-export interface ZebrunnerDbApi {
+export interface ZebrunnerDbApi extends NodesDbApi {
   saveSession(session: SessionDocument): Promise<void>
   loadSession(id: string): Promise<SessionDocument | null>
   deleteSession(id: string): Promise<r.WriteResult>
@@ -54,7 +56,10 @@ export interface ZebrunnerDbApi {
   setIosNetwork(message: IosNetworkEventFields): Promise<r.WriteResult>
   setDeviceIosVersion(message: SdkIosVersionFields): Promise<void>
   setIosDeviceScreen(message: IosDeviceScreenMessageFields): Promise<r.WriteResult>
-  setDevicePorts(message: DevicePortsMessageFields): Promise<r.WriteResult>
+  setDevicePorts(
+    message: Pick<DevicePortsMessageFields, 'serial' | 'screenPort' | 'connectPort'>
+  , binding?: NodeBinding
+  ): Promise<r.WriteResult>
   getDeviceSize(serial: string): Promise<DeviceDocument['display'] | null>
   getDeviceGroupOwner(serial: string): Promise<DeviceGroup['owner'] | null>
   setDeviceGroupOwner(message: {serial: string}): Promise<r.WriteResult>
@@ -64,11 +69,14 @@ export interface ZebrunnerDbApi {
   initializeIosDeviceState(
     publicIp: string
   , message: InitializeIosDeviceStateFields
+  , binding?: NodeBinding
   ): Promise<r.WriteResult | GroupDocument | null>
 }
 
 // db is passed in rather than imported, so the module follows the db of lib/db/api.ts
 export default function extendDbApi(dbapi: DbApi, db: Db) {
+  extendNodesDbApi(dbapi, db)
+
   // The sessions of lib/util/authsession.ts; a new session also drops the expired ones of the user
   dbapi.saveSession = function(session) {
     return db.run(r.table('sessions').insert(session))
@@ -192,12 +200,13 @@ export default function extendDbApi(dbapi: DbApi, db: Db) {
     }))
   }
 
-  // The ports of an Android device worker, as initializeIosDeviceState keeps the ones of iOS
-  dbapi.setDevicePorts = function(message) {
-    return db.run(r.table('devices').get<DeviceDocument>(message.serial).update({
+  // The ports of an Android device worker, as initializeIosDeviceState keeps the ones of iOS, and
+  // the node the processor bound the device to (lib/units/processor/zebrunner-nodes.ts)
+  dbapi.setDevicePorts = function(message, binding) {
+    return db.run(r.table('devices').get<DeviceDocument>(message.serial).update(Object.assign({
       screenPort: message.screenPort
     , connectPort: message.connectPort
-    }))
+    }, binding || {})))
   }
 
   dbapi.getDeviceSize = function(serial) {
@@ -229,7 +238,7 @@ export default function extendDbApi(dbapi: DbApi, db: Db) {
     })
   }
 
-  dbapi.initializeIosDeviceState = function(publicIp, message) {
+  dbapi.initializeIosDeviceState = function(publicIp, message, binding) {
     var screenWsUrlPattern =
       message.provider.screenWsUrlPattern || `ws://${publicIp}:${message.ports.screenPort}/`
 
@@ -274,6 +283,9 @@ export default function extendDbApi(dbapi: DbApi, db: Db) {
     , model: message.options.name
     , platform: message.options.platform
     , sdk: message.options.architect
+      // the node of lib/units/processor/zebrunner-nodes.ts
+    , node: binding ? binding.node : null
+    , nodeGeneration: binding ? binding.nodeGeneration : null
     }
 
     return db.run(r.table('devices').get<DeviceDocument>(message.serial).update(data))

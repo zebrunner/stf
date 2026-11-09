@@ -140,8 +140,11 @@ export interface DeviceDocument {
   deviceType?: string | null
   using?: boolean
   installedApps?: InstalledAppEntry[]
-  screenPort?: number
-  connectPort?: number
+  screenPort?: number | null
+  connectPort?: number | null
+  // the enrolled node the device is bound to (lib/units/processor/zebrunner-nodes.ts), the generation of its token
+  node?: string | null
+  nodeGeneration?: number | null
 }
 
 export interface InstalledAppEntry {

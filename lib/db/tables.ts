@@ -67,6 +67,8 @@ export default {
           return device('group')('id')
         }
       }
+      // Fork (Zebrunner): the enrolled node of a device, lib/db/zebrunner-nodes.ts
+    , node: null
     }
   }
 , logs: {
@@ -86,6 +88,19 @@ export default {
             return group('dates').nth(0)('start')
           }
         }
+    }
+  }
+  // Fork (Zebrunner): the enrolled device hosts and their invites, lib/db/zebrunner-nodes.ts
+, nodes: {
+    primaryKey: 'label'
+  , indexes: {
+      address: null
+    }
+  }
+, node_invites: {
+    primaryKey: 'hash'
+  , indexes: {
+      label: null
     }
   }
 } as Record<string, DbTableSpec>
