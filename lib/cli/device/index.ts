@@ -113,6 +113,11 @@ var builder = function(yargs: Argv) {
     , type: 'string'
     , demand: true
     })
+    // Fork (Zebrunner): the host of the provider (STF_PROVIDER_HOST), part of the node proof of the device
+    .option('provider-host', {
+      describe: 'The host of the provider, the address of its enrolled node.'
+    , type: 'string'
+    })
     .option('public-ip', {
       describe: 'The IP or hostname to use in URLs.'
     , type: 'string'
@@ -221,6 +226,7 @@ var handler = function(argv: CommandArgv<typeof builder>) {
   , cleanupBluetoothBonds: argv.cleanupBluetoothBonds
   , cleanupFolder: argv.cleanupFolder
   , screenReset: argv.screenReset
+  , providerHost: argv.providerHost
   })
 }
 

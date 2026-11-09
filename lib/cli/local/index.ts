@@ -12,6 +12,10 @@ var command = 'local [serial..]'
 
 var describe = 'Start a complete local development environment.'
 
+// Fork (Zebrunner): the node of the local provider
+var LOCAL_NODE_LABEL = 'local'
+var LOCAL_NODE_ADDRESS = '127.0.0.1'
+
 var builder = function(yargs: Argv) {
   var os = require('os')
 
@@ -460,6 +464,8 @@ var handler = function(argv: CommandArgv<typeof builder>) {
         , '--vnc-initial-size', argv.vncInitialSize.join('x')
         , '--mute-master', argv.muteMaster
         , '--screen-ws-url-pattern', argv.screenWsUrlPattern
+          // Fork (Zebrunner): the address of the local node (node-add below)
+        , '--host', LOCAL_NODE_ADDRESS
         ]
         .concat(argv.allowRemote ? ['--allow-remote'] : [])
         .concat(argv.lockRotation ? ['--lock-rotation'] : [])
@@ -499,7 +505,22 @@ var handler = function(argv: CommandArgv<typeof builder>) {
       })
   }
 
+  // Fork (Zebrunner): the provider is an enrolled node (ZEBRUNNER.md#nodes-enrollment): a node of
+  // this machine, its token given to the provider (STF_NODE_TOKEN of the environment it inherits)
+  function enrollLocalNode() {
+    if ((argv.provider as string | false) === false) {
+      return Promise.resolve()
+    }
+    var zebrunnerNodes: typeof import('../../util/zebrunner-nodes.js') =
+      require('../../util/zebrunner-nodes.js')
+    process.env.STF_NODE_TOKEN = zebrunnerNodes.default.generateNodeToken(LOCAL_NODE_LABEL)
+    return procutil.fork(path.resolve(import.meta.dirname, '..'), [
+      'node-add', '--label', LOCAL_NODE_LABEL, '--address', LOCAL_NODE_ADDRESS
+    ])
+  }
+
   return procutil.fork(path.resolve(import.meta.dirname, '..'), ['migrate'])
+    .then(enrollLocalNode)
     .done(run)
 }
 

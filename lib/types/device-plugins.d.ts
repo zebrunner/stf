@@ -41,6 +41,8 @@ export interface DevicePluginOptions {
   lockRotation?: boolean
   screenPort: number
   connectPort: number
+  // Fork (Zebrunner): the host of the provider, part of the node proof of the device
+  providerHost?: string
   connectUrlPattern: string
   cleanup: boolean
   cleanupFolder: string[]

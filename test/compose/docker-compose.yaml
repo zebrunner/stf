@@ -12,8 +12,24 @@ services:
     extra_hosts:
       - host.docker.internal:host-gateway
 
+  # Fork (Zebrunner): the provider is an enrolled node, its token from compose-leg.sh
+  node:
+    image: ${STF_IMAGE:-devicefarmer/stf:latest}
+    restart: "no"
+    environment:
+      RETHINKDB_PORT_28015_TCP: tcp://rethinkdb:28015
+      STF_NODE_TOKEN: ${STF_NODE_TOKEN:-}
+    command: stf node-add --label compose --address 127.0.0.1
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
   provider:
     environment:
       STF_PROVIDER_ALLOW_REMOTE: "true"
       STF_PROVIDER_CLEANUP: "false"
       SCREEN_GRABBER: minicap-apk
+      STF_NODE_TOKEN: ${STF_NODE_TOKEN:-}
+    depends_on:
+      node:
+        condition: service_completed_successfully

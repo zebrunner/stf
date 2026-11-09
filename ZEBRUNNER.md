@@ -9,11 +9,12 @@ The image `public.ecr.aws/zebrunner/stf` runs the STF units of [mcloud](https://
 | Feature | Where |
 | --- | --- |
 | iOS/tvOS device unit: screen, touch, keys, install of `.ipa`, clipboard, Wi-Fi and Bluetooth through WebDriverAgent; device log, shell and files through go-ios, see [iOS devices](#ios-devices) | `lib/units/ios-device/`, `lib/cli/ios-device/` |
-| iOS messages of the wire protocol and the ports of an Android device worker (`DevicePortsMessage`), codes 98-130 (the retired ones are reserved) | `lib/wire/wire.proto` (after the upstream messages) |
+| iOS messages of the wire protocol and the ports of an Android device worker (`DevicePortsMessage`), codes 98-130 (the retired ones are reserved); the node proof of a device registration in `DevicePortsMessage` and `InitializeIosDeviceState` | `lib/wire/wire.proto` (after the upstream messages) |
 | iOS device state in the database, the screen and connect ports of the Android devices | `lib/db/zebrunner.ts`, `lib/units/processor/` |
 | Sign-in through the Zebrunner IAM service | `lib/units/auth/zebrunner.ts`, `lib/cli/auth-zebrunner/`, `res/app/src/entries/auth-zebrunner.tsx` |
 | Device status, size, owner and type routes of the REST API | `lib/units/api/controllers/zebrunner.ts`, `lib/units/api/helpers/device-status.ts` |
 | Authentication of the storage routes and SSRF protection of downloads | `lib/util/storageauth.ts`, `lib/util/urlsafety.ts` |
+| Enrolled device hosts ("nodes"): one-time invites, per-node tokens, revocation, the CURVE keys of the nodes in the ZAP handler of the triproxies, node tokens in the storage, the node binding of the devices, the screen authorization of stf-proxy and the devices of the adb relay, see [Nodes (enrollment)](#nodes-enrollment) | `lib/util/zebrunner-nodes*.ts`, `lib/db/zebrunner-nodes.ts`, `lib/units/api/controllers/zebrunner-nodes.ts`, `lib/units/processor/zebrunner-nodes.ts` |
 | One provider per device container: fixed VNC port, fixed connect port (`STF_PROVIDER_CONNECT_PORT`), `UNHEALTHY` and exit when the device cannot be provided or the processor does not ack its registration, see [ZeroMQ](#zeromq) | `lib/cli/provider/`, `lib/units/provider/` |
 | `.ipa` manifests (Info.plist) in the apk storage plugin | `lib/units/storage/plugins/apk/task/` |
 | The WebSocket sends the commands of a user (input, shell, install, remote ADB, files, ...) to the devices the user uses only (an admin: to any device), the invitations to the devices of the groups of the user, and subscribes the client to the channels of its transactions only: the channel of a device is `base64(sha1(serial))`, so any user controlled any device. A released device gets no command later than 2 s after it | `lib/units/websocket/zebrunner-channels.ts`, `lib/db/zebrunner.ts` |
@@ -83,7 +84,7 @@ node build.mts build
 
 ## Run
 
-The units are started by the `docker-compose.yml` of mcloud (`stf app`, `stf auth-zebrunner`, `stf processor`, `stf storage-temp`, ...) and by `start_all.sh` of mcloud-device (`stf provider` for Android, `node /app/lib/cli ios-device` for iOS). For development, `stf local` starts all the server units on one machine, `--auth-type zebrunner` uses the Zebrunner sign-in.
+The units are started by the `docker-compose.yml` of mcloud (`stf app`, `stf auth-zebrunner`, `stf processor`, `stf storage-temp`, ...) and by `start_all.sh` of mcloud-device (`stf provider` for Android, `node /app/lib/cli ios-device` for iOS). For development, `stf local` starts all the server units on one machine, `--auth-type zebrunner` uses the Zebrunner sign-in; its provider is the enrolled node `local` at `127.0.0.1`, which it enrolls with `stf node-add` after the migration (only enrolled nodes provide devices, see [Nodes (enrollment)](#nodes-enrollment)).
 
 ## Configuration
 
@@ -93,7 +94,10 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 | --- | --- | --- |
 | `SECRET` | | Secret of the session cookies and tokens: `--secret` of `app`, `auth-*`, `websocket` and, in the fork, of `storage-temp`/`storage-s3` |
 | `RETHINKDB_ENV_AUTHKEY` | | Password of the `admin` of RethinkDB the units connect with (`./zebrunner.sh setup` of mcloud generates it); a new RethinkDB has no password, `stf migrate` sets it when the database has none yet (`lib/db/zebrunner-password.ts`) and stops when the database has another one. A change of the password is made in RethinkDB itself (`r.db('rethinkdb').table('users').get('admin').update({password: ...})`) |
-| `STF_STORAGE_TOKEN` | | Token the STF units send to the storage (`x-stf-internal-token`); set for `storage-temp`/`storage-s3` (`variables.env` of mcloud, `./zebrunner.sh setup` generates it) and, the same value, for the device containers (mcloud-agent). It turns the protection of the storage on, the Zebrunner deployments must set it, see [Storage](#storage) |
+| `STF_STORAGE_TOKEN` | | The token of the server units (`variables.env` of mcloud, `./zebrunner.sh setup` generates it): the triproxies and the storage units authenticate with it to the internal node routes of the API unit, the storage units accept it in `x-stf-internal-token`. It turns the protection of the storage on, the Zebrunner deployments must set it, see [Storage](#storage). Never given to a device host |
+| `STF_NODES_API_URL` | | Base URL of the API unit (`http://stf-api:3000` in mcloud) for the triproxies and the storage units: the triproxies read the CURVE keys of the enrolled nodes from it, the storage units check node tokens with it. Needs `STF_STORAGE_TOKEN` |
+| `STF_NODE_TOKEN` | | The node token of the enrolled node (`mcn1.<label>.<secret>`) for its device containers, required: the provider and the `ios-device` unit prove the registration of their devices with it and send it to the storage (`x-stf-internal-token`) |
+| `STF_API_NODES_STF_URL`, `STF_API_NODES_CONNECT_SUB`, `STF_API_NODES_CONNECT_PUSH`, `STF_API_NODES_CONNECT_APP_DEALER`, `STF_API_NODES_CONNECT_DEV_DEALER` | `STF_URL` (the URL) | `--nodes-stf-url`, `--nodes-connect-*` of the API unit: what `POST /api/v1/nodes/enroll` gives a node, the public URL of STF and the triproxy endpoints the nodes reach (`tcp://<AGENTS_ADDRESS>:7250`, `:7270`, `:7160`, `:7260` in mcloud). Without them the invites and enrollments fail (logged) |
 | `STF_STORAGE_TEMP_DOWNLOAD_ALLOW` | | Private network (CIDR or address) users may install apps from by URL, e.g. an artifact server; `--download-allow` can be repeated |
 | `SSID` | `ssid` | Name of the session cookie of the app unit |
 | `STF_SESSION_TTL_SECONDS` | `86400` | Lifetime of a session after the sign-in, see [Sessions](#sessions) |
@@ -101,14 +105,13 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 | `ZEBRUNNER_USERINFO_URL` | | User endpoint of Zebrunner IAM (`.../api/iam/v1/users`), for `auth-zebrunner` |
 | `STF_ADMIN_EMAIL`, `STF_ADMIN_NAME` | `administrator@fakedomain.com`, `administrator` | Owner of the root group and of the iOS devices |
 | `STF_PROVIDER_DEVICE_NAME` | | Name of the device of the container, shown as its model |
-| `STF_PROVIDER_HOST` | `127.0.0.1` | Host of the device container; declared because the containers set it (the CLI is strict) |
+| `STF_PROVIDER_HOST` | `127.0.0.1` | Host of the device container: the address of its enrolled node (the address of the invite), part of the node proof of its devices and the host of their screen URLs |
 | `STF_PROVIDER_VNC_PORT` | `5900` | VNC port of the single device of a provider |
 | `STF_PROVIDER_CONNECT_PORT` | | Fixed remote debug port (`adb connect`, `--connect-url-pattern`) of the device of a provider, 1..65535, see [Ports of the Android devices](#ports-of-the-android-devices) |
 | `STF_PROCESSOR_PUBLIC_IP` | `localhost` | Host of the screen URLs of iOS devices without a URL pattern |
-| `STF_ZMQ_CURVE_SERVER_SECRET_KEY` | | Secret key of the triproxies: their tcp endpoints are CURVE servers that accept only the clients of `STF_ZMQ_CURVE_CLIENT_KEYS`, see [ZeroMQ](#zeromq) |
-| `STF_ZMQ_CURVE_CLIENT_KEYS` | | Public keys of the clients the triproxies accept (the device hosts), separated by commas or spaces; the key of `STF_ZMQ_CURVE_SECRET_KEY` of the triproxy is accepted too |
+| `STF_ZMQ_CURVE_SERVER_SECRET_KEY` | | Secret key of the triproxies: their tcp endpoints are CURVE servers that accept only the key of the server units (`STF_ZMQ_CURVE_SECRET_KEY`) and the keys of the active enrolled nodes (`STF_NODES_API_URL`), see [ZeroMQ](#zeromq) |
 | `STF_ZMQ_CURVE_SERVER_PUBLIC_KEY` | | Public key of the triproxies: the units and the device providers connect to them over CURVE |
-| `STF_ZMQ_CURVE_SECRET_KEY` | | Secret key of the client, with `STF_ZMQ_CURVE_SERVER_PUBLIC_KEY`; its public key is derived from it |
+| `STF_ZMQ_CURVE_SECRET_KEY` | | Secret key of the client, with `STF_ZMQ_CURVE_SERVER_PUBLIC_KEY`; its public key is derived from it. The server units share one key (the triproxies accept it); a device host has its own one, registered by its enrollment |
 
 ### Ports of the Android devices
 
@@ -118,7 +121,7 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 - one device worker holds it at a time, the first one started while it is free. mcloud runs one device per provider; another device started meanwhile gets the second port of its group, with a warning. The port is free again when its worker exits;
 - an invalid port (not 1..65535) or a range without the 4 ports stops the provider at start.
 
-Every Android device worker sends its ports to the processor (`DevicePortsMessage`) before it is ready, which stores them in the device document as `screenPort` and `connectPort`, as for the iOS devices. The REST API returns them, e.g. for the adb relay of mcloud: `GET /api/v1/devices?fields=serial,platform,present,display,screenPort,connectPort,provider`.
+Every Android device worker sends its ports to the processor (`DevicePortsMessage`) before it is ready, which stores them in the device document as `screenPort` and `connectPort`, as for the iOS devices. The REST API returns them (`GET /api/v1/devices?fields=serial,platform,present,display,screenPort,connectPort,provider`); the adb relay of mcloud reads `GET /api/v1/nodes/relay`, see [Nodes (enrollment)](#nodes-enrollment).
 
 `stf ios-device` takes the options of a device unit plus `--wda-host`, `--wda-port`, `--mjpeg-port`, `--device-name` and `--host`, see `node lib/cli ios-device --help`.
 
@@ -131,6 +134,8 @@ Every Android device worker sends its ports to the processor (`DevicePortsMessag
 | `GET /api/v1/devices/{serial}/owner` | the owner of the group of the device |
 | `GET /api/v1/devices/{serial}/type` | the device type of an iOS device (`iOS`, `tvOS`) |
 
+The routes of the enrolled device hosts (`/api/v1/nodes/...`, `/api/v1/zebrunner/screen-auth`, `/api/v1/zebrunner/nodes/...`) are described in [Nodes (enrollment)](#nodes-enrollment).
+
 The device lists and `GET /api/v1/devices/{serial}` also return `name`, the model of the device, and `screenPort` and `connectPort`, the ports of its worker (Android and iOS, see [Ports of the Android devices](#ports-of-the-android-devices)). The operations tagged `admin` need an admin with the session cookie of the app as with an access token (`lib/units/api/helpers/securityHandlers.ts`; upstream checked the token only).
 
 ## Sessions
@@ -141,7 +146,8 @@ A sign-in starts a session in the database (`sessions` table, created by `stf mi
 
 With `STF_STORAGE_TOKEN` set, `/s/upload`, `/s/download` and `/s/blob` of the storage units answer only:
 
-- the STF units, with `x-stf-internal-token: <STF_STORAGE_TOKEN>`;
+- the device units of an active enrolled node, with `x-stf-internal-token: <node token>` (`STF_NODE_TOKEN` of the device container), checked with the API unit (`STF_NODES_API_URL`) and trusted for 30 s, see [Nodes (enrollment)](#nodes-enrollment);
+- the server units, with `x-stf-internal-token: <STF_STORAGE_TOKEN>`;
 - signed-in users, with the session cookie of the app unit.
 
 The apk and image plugins forward the credentials of their caller, so `/s/apk/...` and `/s/image/...` are protected the same way. The device units download an app to install only from the storage (`storageauth.storageUrl`: `/s/...` of the origin of `--storage-url`), the href of the user cannot send the token elsewhere; the iOS unit runs go-ios and `xcrun` without a shell, launches only a valid bundle identifier and checks the answer of the storage. Scripts that use the storage without a session (e.g. with an access token of the API) are refused. `/s/download` (install from URL) downloads only from public addresses over http(s), checked after the DNS lookup, when connecting and on every redirect; `STF_STORAGE_TEMP_DOWNLOAD_ALLOW` lets private networks in.
@@ -152,12 +158,173 @@ Without the token the storage is open as in upstream (open routes, any download 
 
 The units and the device providers talk over ZeroMQ through the triproxies, which have no authentication in upstream: anyone who reaches their ports reads the events of all the devices and sends commands to them. With the `STF_ZMQ_CURVE_*` variables every tcp endpoint uses [CURVE](http://curvezmq.org) (`lib/util/zmqcurve.ts`, applied by `lib/util/zmqutil.ts` to every socket):
 
-- the triproxies (the only units that bind) are CURVE servers with `STF_ZMQ_CURVE_SERVER_SECRET_KEY`; their ZAP handler accepts the public keys of `STF_ZMQ_CURVE_CLIENT_KEYS` and refuses the others, logging the address and the key once a minute. Without a running ZAP handler libzmq refuses every client (`ZMQ_ZAP_ENFORCE_DOMAIN`);
-- the other units and the providers connect as CURVE clients of `STF_ZMQ_CURVE_SERVER_PUBLIC_KEY` with `STF_ZMQ_CURVE_SECRET_KEY`. A client whose key is refused logs `The ZeroMQ server <endpoint> refused the CURVE key <public key> of this host: add it to STF_ZMQ_CURVE_CLIENT_KEYS of the server and restart it` once a minute per endpoint (the monitor of the socket). libzmq does not connect a refused socket again, not even after the server is restarted with the key: the unit has to restart.
+- the triproxies (the only units that bind) are CURVE servers with `STF_ZMQ_CURVE_SERVER_SECRET_KEY`; their ZAP handler accepts the key of the server units (the public key of `STF_ZMQ_CURVE_SECRET_KEY` of the triproxy) and the keys of the active enrolled nodes, which it reads from the API unit (`STF_NODES_API_URL`, with `STF_STORAGE_TOKEN`) every 5 s, keeping the last ones while the API unit does not answer; the keys of the revoked nodes and the retired keys of the nodes are refused (deny wins). It refuses the other keys, logging the address and the key once a minute. Without a running ZAP handler libzmq refuses every client (`ZMQ_ZAP_ENFORCE_DOMAIN`). A process runs one ZAP handler whatever the number of its CURVE sockets; a new set of keys never restarts it, and a start right after a stop waits until libzmq freed the endpoint of the old handler;
+- the other units and the providers connect as CURVE clients of `STF_ZMQ_CURVE_SERVER_PUBLIC_KEY` with `STF_ZMQ_CURVE_SECRET_KEY`. A client whose key is refused logs `The ZeroMQ server <endpoint> refused the CURVE key <public key> of this host: it is not the key of an active enrolled node (enroll the node with this key, or it was revoked)` once a minute per endpoint (the monitor of the socket). libzmq does not connect a refused socket again, not even after the node is enrolled: the unit has to restart.
 
-The keys are 64 hex characters: `stf curve-keygen` prints a new pair (`public=...`, `secret=...`), `stf curve-keygen --secret-key <key>` the pair of a secret key. A deployment has one server pair and a client pair for the server units (their public key is accepted by the triproxies as the one of `STF_ZMQ_CURVE_SECRET_KEY`); every device host has its own client pair, its public key goes to `STF_ZMQ_CURVE_CLIENT_KEYS` and its removal from there disconnects the host. `./zebrunner.sh setup` of mcloud generates the keys of the server and of the server units. A unit with an incomplete or invalid configuration does not start. Without the variables the sockets have no security, as in upstream (`stf local`, the tests); CURVE is all or nothing for a triproxy, the clients without it cannot connect.
+The keys are 64 hex characters: `stf curve-keygen` prints a new pair (`public=...`, `secret=...`), `stf curve-keygen --secret-key <key>` the pair of a secret key. A deployment has one server pair and a client pair for the server units; every device host has its own client pair, registered by its enrollment, see [Nodes (enrollment)](#nodes-enrollment): adding or revoking a node needs no restart. `./zebrunner.sh setup` of mcloud generates the keys of the server and of the server units. A unit with an incomplete or invalid configuration does not start. Without the variables the sockets have no security, as in upstream (`stf local`, the tests); CURVE is all or nothing for a triproxy, the clients without it cannot connect.
 
-The device units find out that their messages do not reach the server from the registration: the processor acks the `DeviceIntroductionMessage` of the provider and the `DeviceReadyMessage` of the `ios-device` unit with a `DeviceRegisteredMessage`. Without the ack in 15 s the unit logs `No registration ack for "<serial>" in 15000 ms: the STF processor does not get the messages of this provider (unit). Check that the ZeroMQ server lets this host in: its CURVE public key <public key> in STF_ZMQ_CURVE_CLIENT_KEYS of the server (restart the server after a change), STF_ZMQ_CURVE_SERVER_PUBLIC_KEY the one of the server, the triproxy endpoints reachable.` (without CURVE: that the triproxy endpoints are reachable) and exits; the restart of its container is the retry. The provider counts a device as waiting from its discovery, so it no longer gives it up (`Providing all 0 of 1 device(s); ignoring ...`) while the registration is pending; a device that cannot be provided after its registration still makes it exit.
+The device units find out that their messages do not reach the server from the registration: the processor acks the `DeviceIntroductionMessage` of the provider and the `DeviceReadyMessage` of the `ios-device` unit with a `DeviceRegisteredMessage`. Without the ack in 15 s the unit logs `No registration ack for "<serial>" in 15000 ms: the STF processor does not get the messages of this provider (unit). Check that the ZeroMQ server lets this host in: this node enrolled with the CURVE public key <public key> and active (not revoked), STF_ZMQ_CURVE_SERVER_PUBLIC_KEY the one of the server, the triproxy endpoints reachable.` (without CURVE: that the triproxy endpoints are reachable) and exits; the restart of its container is the retry. The provider counts a device as waiting from its discovery, so it no longer gives it up (`Providing all 0 of 1 device(s); ignoring ...`) while the registration is pending; a device that cannot be provided after its registration still makes it exit.
+
+## Nodes (enrollment)
+
+A device host ("node", [mcloud-agent](https://github.com/zebrunner/mcloud-agent)) joins with a one-time invite of an
+admin and gets credentials of its own: a node token and its CURVE key, which the admin can revoke. Only enrolled nodes
+provide devices. mcloud wraps the routes in `./zebrunner.sh node-invite` and `./zebrunner.sh nodes`, mcloud-agent in
+`./zebrunner.sh join` and `./zebrunner.sh doctor`.
+
+### Flow
+
+1. An admin creates an invite for a label and the address of the node (`POST /api/v1/nodes/invites`). The address is
+   the one the server connects to (`STF_PROVIDER_HOST` of the node): chosen by the admin, never by the node.
+2. The node enrolls with the invite and its CURVE public key (`POST /api/v1/nodes/enroll`, no authentication, rate
+   limited by stf-proxy) and gets its node token, the public key of the triproxies, the public URL of STF and the
+   triproxy endpoints. The invite is used once.
+3. The node gives its token to its containers: `STF_NODE_TOKEN` of the stf container (the node proof of the devices and
+   the storage), the registration token of Appium in mcloud-grid.
+4. The triproxies let the key of the node in within 5 s, the storage accepts its token, mcloud-grid verifies it
+   (`POST /api/v1/nodes/verify`), its devices are bound to it (below).
+5. Revocation (`POST /api/v1/nodes/{label}/revoke`) stops all of it; a new invite of the label re-enrolls the node with
+   a new token and key (rotation).
+
+`stf node-add --label <label> --address <host> [--public-key <key>]` enrolls a node directly in the database, without an
+invite, for development and tests: `stf local` and the Compose test of CI use it for their provider (a loopback address
+is accepted there). It takes the token from `STF_NODE_TOKEN`, or prints a new one as `token=<token>`.
+
+### Identifiers and secrets
+
+| What | Format | Kept by the server |
+| --- | --- | --- |
+| label | `^[a-z0-9][a-z0-9-]{0,39}$`, unique; `enroll`, `invites`, `relay`, `self` and `verify` are reserved (static paths of `/api/v1/nodes`) | `nodes.label` (primary key) |
+| node token | `mcn1.<label>.<secret>`, 32 random bytes in base64url, shown once | `sha256(token)` hex only (`nodes.tokenHash`) |
+| invite | `mci1.<secret>`, 32 random bytes in base64url, shown once; 60 minutes by default, at most 1440; single use; bound to the label and the address; a new invite of a label invalidates the unused ones of the label | `sha256(invite)` hex only (`node_invites.hash`) |
+| address | an IPv4 address or a host name, lower case; no scheme, port, path or IPv6; not loopback (`127/8`, `localhost`), `0/8`, link-local or metadata (`169.254/16`, `metadata.google.internal`, ...), multicast or reserved (`224/3`); unique among the nodes | `nodes.address` |
+
+The tables are `nodes` {label, address, publicKey, tokenHash, status (`active`, `revoked`), createdAt, revokedAt,
+lastSeenAt, generation (+1 on every re-enrollment), retiredKeys (the keys of the previous enrollments)} and
+`node_invites` {hash, label, address, expiresAt, usedAt, createdBy, createdAt}, created by `stf migrate`
+(`lib/db/tables.ts`); a device document gets `node`, `nodeGeneration` and `nodeClaim` (the node its last registration
+claimed, valid or not, for the diagnostics).
+
+### Routes
+
+Every error is a generic `{"success": false}` (400: malformed or refused input, 401/403: refused credentials, 500: the
+server), the reason is in the log of the API unit; no token or invite is ever logged. The admin routes take an
+admin, with an access token (`Authorization: Bearer <token>`, the `STF_TOKEN` of mcloud) or the session cookie; the
+security handler answers 401 without credentials and 403 to a user.
+
+| Route | Who | Request | Answer |
+| --- | --- | --- | --- |
+| `POST /api/v1/nodes/invites` | admin | `{"label": "mac-mini-1", "address": "10.0.0.5", "ttlMinutes": 60}` | 201 `{"invite": "mci1....", "label": "mac-mini-1", "address": "10.0.0.5", "expiresAt": "2026-11-09T18:00:00.000Z"}` |
+| `POST /api/v1/nodes/enroll` | anyone with an invite | `{"invite": "mci1....", "label": "mac-mini-1", "publicKey": "<64 hex>"}` | 200 `{"nodeToken": "mcn1.mac-mini-1....", "label": "mac-mini-1", "address": "10.0.0.5", "serverPublicKey": "<64 hex>", "stfUrl": "https://mcloud.example.com", "endpoints": {"sub": "tcp://10.0.0.1:7250", "push": "tcp://10.0.0.1:7270", "appDealer": "tcp://10.0.0.1:7160", "devDealer": "tcp://10.0.0.1:7260"}}` |
+| `GET /api/v1/nodes` | admin | | 200 `{"nodes": [{"label", "address", "publicKey", "status", "createdAt", "revokedAt", "lastSeenAt"}]}` |
+| `POST /api/v1/nodes/{label}/revoke` | admin | | 200 `{"success": true}`; 400 for an unknown node |
+| `DELETE /api/v1/nodes/{label}` | admin | | 200 `{"success": true}`; 400 for an unknown or active node |
+| `GET /api/v1/nodes/self` | the node (`Authorization: Bearer <node token>`) | | 200 `{"label": "mac-mini-1", "address": "10.0.0.5", "status": "active", "lastSeenAt": "...", "devices": [{"serial": "R58M...", "platform": "Android", "present": true, "bound": true, "screenPort": 7404, "connectPort": 7405}]}`; 401 without a valid node token, 403 for a revoked node (below) |
+| `POST /api/v1/nodes/verify` | admin (mcloud-grid) | `{"token": "mcn1....", "host": "10.0.0.5"}` | 200 `{"label": "mac-mini-1", "address": "10.0.0.5"}` only for the token of an active node whose address is the host (case-insensitive), else 403; updates lastSeenAt at most once a minute |
+| `GET /api/v1/nodes/relay` | admin (adb relay) | | 200 `{"devices": [{"serial": "R58M...", "label": "mac-mini-1", "address": "10.0.0.5", "connectPort": 7405}]}`: every Android device bound to an active node, present or not (the relay stays static, the node refuses the connections of an absent device); the address is the registered one of the node, never the display URL; the port is the connect port of the device |
+| `GET /api/v1/zebrunner/screen-auth` | the user (session cookie or access token) | header `X-Original-URI: /d/<host>/<serial>/<port>/` | 204, or 401 without credentials, 403 otherwise (below) |
+| `GET /api/v1/zebrunner/nodes/keys` | server units (`x-stf-internal-token: <STF_STORAGE_TOKEN>`) | | 200 `{"allowed": [<keys of the active nodes>], "denied": [<keys of the revoked nodes and the retired keys>]}` |
+| `POST /api/v1/zebrunner/nodes/token` | server units (`x-stf-internal-token: <STF_STORAGE_TOKEN>`) | `{"token": "mcn1...."}` | 200 `{"label": "mac-mini-1"}` for the token of an active node, else 403 |
+
+The enrollment checks the shape of the request first (no database), then looks the invite up by its hash; only the
+holder of a valid invite gets further. The invite is used by one atomic conditional update of RethinkDB (unused,
+unexpired, of the label), so of concurrent enrollments with one invite exactly one succeeds. The key of another node
+(current or retired) and the address of another node are refused before the invite is used. A re-enrollment of a label
+replaces the address, the key and the token hash and increments the generation: the old token and key stop working at
+once (the old key is kept in `retiredKeys`, refused by the triproxies). The invites and the enrollments of an API unit
+run one at a time, which keeps the address and the key unique: mcloud runs one API unit.
+
+### Device binding
+
+The provider and the `ios-device` unit read `STF_NODE_TOKEN` and send with the registration of a device (Android:
+`DevicePortsMessage`, iOS: `InitializeIosDeviceState`) the label, the host of the provider (`--host`,
+`STF_PROVIDER_HOST`) and `nodeProof` = hex HMAC-SHA256(key = the raw sha256 of the token,
+`v1|<serial>|<providerHost>|<screenPort>|<connectPort>`) (`lib/util/zebrunner-nodes.ts`). The processor
+(`lib/units/processor/zebrunner-nodes.ts`) binds the device (`node`, `nodeGeneration`) when the node is active, the
+proof is valid with its token hash and the host is its address. Any other registration is rejected and logged (`Rejected
+the registration of device "<serial>" from "<host>" (node "<label>"): <reason>`): the device gets no ports and no
+binding and is not made ready (an `ios-device` unit gets no registration ack and exits). A device unit without
+`STF_NODE_TOKEN` logs that its devices are rejected. A device is bound only while its node is active and has the
+generation of the binding: revocation and rotation unbind the devices (screens and relay refused) until they register
+again with the new token.
+
+### Screens
+
+stf-proxy sends every connection to `/d/<host>/<serial>/<port>/` through `auth_request` to the API unit, e.g.:
+
+```
+location = /_screen_auth {
+  internal;
+  proxy_pass http://stf-api:3000/api/v1/zebrunner/screen-auth;
+  proxy_pass_request_body off;
+  proxy_set_header Content-Length "";
+  proxy_set_header X-Original-URI $request_uri;
+}
+```
+
+`GET /api/v1/zebrunner/screen-auth` answers 204 only if the user is signed in, the device of the serial exists and the
+user uses it (or is an admin), the device is bound to an active node, the host is the address of that node and the
+port is the screen port of the device.
+
+### Diagnostics
+
+`GET /api/v1/nodes/self` answers a node, with its own token, what STF knows of it: the node (label, address, status,
+the last time mcloud-grid verified it) and its devices, the ones bound to it and the ones whose last registration
+claimed it, each with `present`, `bound` (bound to the node with its current token) and its ports. A device that
+`bound: false` names was rejected: the log of the processor tells why (`Rejected the registration of device ...`). A
+deployed device missing from the list never registered: its container does not reach the triproxies (the CURVE key of
+the node, `STF_ZMQ_CURVE_SERVER_PUBLIC_KEY`, the endpoints). `./zebrunner.sh doctor` of mcloud-agent calls it,
+`./zebrunner.sh nodes check <label>` of mcloud shows the same from the server side.
+
+| What is wrong | What STF tells |
+| --- | --- |
+| The token is not the current one (rotated, mistyped) | `GET /nodes/self` 401; the devices rejected (`invalid node proof`) |
+| The node was revoked | `GET /nodes/self` 403; the triproxies refuse its key, the devices are rejected (`revoked node`) |
+| `STF_PROVIDER_HOST` is not the address of the invite | the devices rejected (`the host of the provider (STF_PROVIDER_HOST) is not the address of the node`) |
+| The containers have no `STF_NODE_TOKEN` | the device units log it; the devices rejected (`no node proof`) |
+| The key of the node is not the enrolled one | the device units log `The ZeroMQ server ... refused the CURVE key ...`; no device registers |
+| The server does not reach `<address>:<screenPort>` | the screens fail although the devices are bound; check the address of the invite and the firewall of the node |
+
+### Node and server on one machine
+
+A node may run on the machine of the server. The address of its invite is then the LAN address of the machine (a
+loopback address, `0.0.0.0` or `localhost` is refused), mcloud joins and serves on that address too (its
+`AGENTS_ADDRESS`), and the device containers reach the published ports of the triproxies (7160, 7250, 7260, 7270), the
+grid (4446) and stf-proxy (`STF_PORT`) on it. The ports of the devices must not be ports of the server (`STF_PORT`,
+4446, 7160, 7250, 7260, 7270, the adb relay); `./zebrunner.sh doctor` of mcloud-agent checks it.
+
+### Security properties
+
+- Only hashes of tokens and invites are stored; they are compared through their sha256 in constant time and never
+  logged. The node token is shown once.
+- An invite is single use, short lived, bound to a label and an address the admin chose; the node cannot choose where
+  the server connects to.
+- Errors are generic, so the enrollment is no oracle; a malformed enrollment costs no database access, an unknown
+  invite one primary key lookup (stf-proxy rate limits the route).
+- Every node has its own token and CURVE key, revoked on its own without a restart: the triproxies refuse the key of a
+  revoked node within 5 s, the storage refuses its token within 30 s, mcloud-grid within its verification interval,
+  its devices lose their binding at once.
+- No device without a node: a registration without a valid node proof is rejected, the screens and the relay only
+  serve devices bound to an active node.
+- The triproxies and the storage units get no database access: they ask the API unit, authenticated with the token of
+  the server units, which only answers public keys and yes/no; the token hashes never leave the API unit (they are the
+  keys of the node proofs).
+- The relay and the screens use the registered address of a node, never what a device reports.
+
+### Residual risks
+
+- Existing ZeroMQ sessions of a revoked node survive until the triproxies restart: ZAP checks new connections only.
+  `./zebrunner.sh nodes revoke` of mcloud restarts them.
+- A compromised active node can still lie about its own devices (their state, screens and ports on its own address);
+  it cannot bind devices to another node or address.
+- The LAN traffic to the grid (Appium of the nodes) is plain HTTP: a node token can be sniffed there, but it is bound
+  to the address of its node for the grid, the device binding and the relay.
+- The uniqueness of the address and key is kept by the API unit serializing the enrollments: several API units could
+  race on two different invites with the same address (one invite is still used once).
+- A processor makes ready only the devices whose last registration it bound, or whose binding the database has: with
+  several processors (`stf local` runs two) the registration and the ready message of a device can reach different
+  ones, the second one waits up to 10 s for the binding the first one writes.
+- A host name address can resolve to a forbidden address; only the literal is checked.
 
 ## Development
 

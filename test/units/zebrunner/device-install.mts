@@ -28,10 +28,10 @@ interface Download {
 describe('zebrunner: device installs', function() {
   var storage: Running, downloads: Download[], answer: number
   var app = Buffer.from('PK\u0003\u0004 an app')
-  var token = process.env.STF_STORAGE_TOKEN
+  var token = process.env.STF_NODE_TOKEN
 
   before(async function() {
-    process.env.STF_STORAGE_TOKEN = 'storage-token'
+    process.env.STF_NODE_TOKEN = 'storage-token'
     storage = await listen(function(req, res) {
       var internal = req.headers['x-stf-internal-token'] as string | undefined
       downloads.push({path: req.url!, token: internal})
@@ -42,9 +42,9 @@ describe('zebrunner: device installs', function() {
   })
 
   after(async function() {
-    process.env.STF_STORAGE_TOKEN = token
+    process.env.STF_NODE_TOKEN = token
     if (typeof token === 'undefined') {
-      delete process.env.STF_STORAGE_TOKEN
+      delete process.env.STF_NODE_TOKEN
     }
     await storage.close()
   })

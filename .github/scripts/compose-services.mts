@@ -17,6 +17,8 @@ interface Container {
 
 var units: Record<string, string> = {
   migrate: 'migrate'
+  // Fork (Zebrunner): the enrolled node of the provider
+, node: 'node-add'
 , 'triproxy-app': 'triproxy'
 , 'triproxy-dev': 'triproxy'
 , processor: 'processor'
@@ -48,9 +50,9 @@ containers.forEach(function(container) {
     assert.equal(container.Config.Image, process.env.STF_IMAGE,
       name + ' must use the image built from this checkout')
   }
-  if (name === 'migrate') {
-    assert.equal(container.State.Status, 'exited', 'migration must finish')
-    assert.equal(container.State.ExitCode, 0, 'migration must succeed')
+  if (name === 'migrate' || name === 'node') {
+    assert.equal(container.State.Status, 'exited', name + ' must finish')
+    assert.equal(container.State.ExitCode, 0, name + ' must succeed')
   }
   else {
     assert.equal(container.State.Status, 'running', name + ' must remain running')
@@ -60,4 +62,5 @@ containers.forEach(function(container) {
   }
 })
 
-console.log('16 services running without restarts; database migration completed')
+console.log(containers.length - 2 + ' services running without restarts; database migration ' +
+  'and node enrollment completed')

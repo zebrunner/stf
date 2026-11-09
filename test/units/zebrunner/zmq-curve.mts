@@ -6,6 +6,7 @@ import sinon from 'sinon'
 import zmq from 'zeromq/v5-compat.js'
 
 import * as curveKeygen from '../../../lib/cli/curve-keygen/index.js'
+import lifecycle from '../../../lib/util/lifecycle.js'
 import logger from '../../../lib/util/logger.js'
 import zmqcurve, {type CurveConfig} from '../../../lib/util/zmqcurve.js'
 
@@ -64,17 +65,26 @@ describe('zebrunner: ZeroMQ CURVE', function() {
       expect(zmqcurve.config({})).to.deep.equal({})
     })
 
-    it('should allow the client keys and the key of the unit itself', function() {
+    it('should allow the key of the unit itself only, the nodes come from the API', function() {
       var curve = zmqcurve.config({
         STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey
       , STF_ZMQ_CURVE_SERVER_PUBLIC_KEY: server.publicKey
       , STF_ZMQ_CURVE_SECRET_KEY: unknown.secretKey
-      , STF_ZMQ_CURVE_CLIENT_KEYS: ` ${allowed.publicKey.toUpperCase()}, ${server.publicKey} `
       })
-      expect([...curve.server!.clients].sort()).to.deep.equal(
-        [allowed.publicKey, server.publicKey, unknown.publicKey].sort())
+      expect([...curve.server!.clients]).to.deep.equal([unknown.publicKey])
+      expect(curve.server!.nodes).to.equal(null)
       expect(curve.client!.publicKey.toString('hex')).to.equal(unknown.publicKey)
       expect(curve.client!.serverKey.toString('hex')).to.equal(server.publicKey)
+    })
+
+    it('should not read client keys from variables', function() {
+      var curve = zmqcurve.config({
+        STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey
+      , STF_ZMQ_CURVE_SECRET_KEY: unknown.secretKey
+      , STF_ZMQ_CURVE_CLIENT_KEYS: allowed.publicKey
+      , STF_ZMQ_CURVE_CLIENT_KEY_BUILD_UA: allowed.publicKey
+      })
+      expect([...curve.server!.clients]).to.deep.equal([unknown.publicKey])
     })
 
     it('should refuse an incomplete or invalid configuration', function() {
@@ -90,17 +100,16 @@ describe('zebrunner: ZeroMQ CURVE', function() {
       expect(function() {
         zmqcurve.config({
           STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey
-        , STF_ZMQ_CURVE_CLIENT_KEYS: `${allowed.publicKey},abc`
+        , STF_ZMQ_CURVE_SECRET_KEY: 'abc'
         })
-      }).to.throw(/STF_ZMQ_CURVE_CLIENT_KEYS must be a key/)
+      }).to.throw(/STF_ZMQ_CURVE_SECRET_KEY must be a key/)
     })
 
     it('should tell a client what to check when the server does not get its messages', function() {
       expect(zmqcurve.clientHint(clientConfig(server, allowed))).to.equal(
-        'Check that the ZeroMQ server lets this host in: its CURVE public key ' +
-        `${allowed.publicKey} in STF_ZMQ_CURVE_CLIENT_KEYS of the server (restart the server ` +
-        'after a change), STF_ZMQ_CURVE_SERVER_PUBLIC_KEY the one of the server, the triproxy ' +
-        'endpoints reachable.')
+        'Check that the ZeroMQ server lets this host in: this node enrolled with the CURVE ' +
+        `public key ${allowed.publicKey} and active (not revoked), ` +
+        'STF_ZMQ_CURVE_SERVER_PUBLIC_KEY the one of the server, the triproxy endpoints reachable.')
       expect(zmqcurve.clientHint({})).to.equal('Check that the triproxy endpoints are reachable.')
     })
   })
@@ -118,12 +127,12 @@ describe('zebrunner: ZeroMQ CURVE', function() {
       return sock
     }
 
-    afterEach(function() {
+    afterEach(async function() {
       sockets.forEach(function(sock) {
         sock.close()
       })
       sockets = []
-      zmqcurve.stopZapHandler()
+      await zmqcurve.stopZapHandler()
     })
 
     it('should let in only the clients with an allowed key', async function() {
@@ -131,7 +140,7 @@ describe('zebrunner: ZeroMQ CURVE', function() {
       var received: string[] = []
       var pull = socket('pull', zmqcurve.config({
         STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey
-      , STF_ZMQ_CURVE_CLIENT_KEYS: allowed.publicKey
+      , STF_ZMQ_CURVE_SECRET_KEY: allowed.secretKey
       }))
       pull.on('message', function(message: Buffer) {
         received.push(message.toString())
@@ -148,11 +157,31 @@ describe('zebrunner: ZeroMQ CURVE', function() {
       expect(received).to.deep.equal(['allowed'])
     })
 
+    it('should let in the keys of the active nodes', async function() {
+      var endpoint = `tcp://127.0.0.1:${await freePort()}`
+      var received: string[] = []
+      var pull = socket('pull', zmqcurve.config({
+        STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey
+      , STF_ZMQ_CURVE_SECRET_KEY: server.secretKey
+      }))
+      pull.on('message', function(message: Buffer) {
+        received.push(message.toString())
+      })
+      pull.bindSync(endpoint)
+      zmqcurve.setNodeKeys({allowed: [allowed.publicKey], denied: [unknown.publicKey]})
+
+      socket('push', clientConfig(server, allowed)).connect(endpoint).send('allowed')
+      socket('push', clientConfig(server, unknown)).connect(endpoint).send('unknown')
+
+      await delay(1500)
+      expect(received).to.deep.equal(['allowed'])
+    })
+
     it('should secure the endpoints bound asynchronously', async function() {
       var endpoint = `tcp://127.0.0.1:${await freePort()}`
       var pub = socket('pub', zmqcurve.config({
         STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey
-      , STF_ZMQ_CURVE_CLIENT_KEYS: allowed.publicKey
+      , STF_ZMQ_CURVE_SECRET_KEY: allowed.secretKey
       }))
       await new Promise<void>(function(resolve, reject) {
         pub.bind(endpoint, function(err?: Error) {
@@ -187,7 +216,7 @@ describe('zebrunner: ZeroMQ CURVE', function() {
       try {
         socket('pull', zmqcurve.config({
           STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey
-        , STF_ZMQ_CURVE_CLIENT_KEYS: allowed.publicKey
+        , STF_ZMQ_CURVE_SECRET_KEY: allowed.secretKey
         })).bindSync(endpoint)
         // the ZAP handler is up before the clients come
         await delay(200)
@@ -206,8 +235,68 @@ describe('zebrunner: ZeroMQ CURVE', function() {
         return message.startsWith('The ZeroMQ server')
       })).to.deep.equal([
         `The ZeroMQ server ${endpoint} refused the CURVE key ${unknown.publicKey} of this host: ` +
-        'add it to STF_ZMQ_CURVE_CLIENT_KEYS of the server and restart it'
+        'it is not the key of an active enrolled node (enroll the node with this key, or it was ' +
+        'revoked)'
       ])
+    })
+
+    // a stop is not awaited by the units: the next start waits until libzmq freed the endpoint
+    it('should start the handler again right after a stop', async function() {
+      var fatal = sinon.stub(lifecycle, 'fatal')
+      try {
+        var endpoint = ''
+        var pull: ReturnType<typeof zmq.socket> | null = null
+        for (var i = 0; i < 30; i++) {
+          endpoint = `tcp://127.0.0.1:${await freePort()}`
+          pull = socket('pull', zmqcurve.config({
+            STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey
+          , STF_ZMQ_CURVE_SECRET_KEY: allowed.secretKey
+          }))
+          pull!.bindSync(endpoint)
+          if (i < 29) {
+            pull!.close()
+            sockets.pop()
+            zmqcurve.stopZapHandler()
+          }
+        }
+        // a client refused before the handler is up does not connect again
+        await zmqcurve.zapHandlerReady()
+        var received: string[] = []
+        pull!.on('message', function(message: Buffer) {
+          received.push(message.toString())
+        })
+        socket('push', clientConfig(server, allowed)).connect(endpoint).send('allowed')
+        await delay(1000)
+        expect(received).to.deep.equal(['allowed'])
+        expect(fatal.called).to.equal(false)
+      }
+      finally {
+        fatal.restore()
+      }
+    })
+
+    it('should not start the handler again for a socket or new keys of nodes', async function() {
+      var config = zmqcurve.config({
+        STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey
+      , STF_ZMQ_CURVE_SECRET_KEY: allowed.secretKey
+      })
+      var starts = zmqcurve.zapHandlerStarts()
+      var endpoint = `tcp://127.0.0.1:${await freePort()}`
+      var pull = socket('pull', config)
+      pull.bindSync(endpoint)
+      socket('pub', config).bindSync(`tcp://127.0.0.1:${await freePort()}`)
+      for (var i = 0; i < 5; i++) {
+        zmqcurve.setNodeKeys({allowed: [unknown.publicKey], denied: []})
+        zmqcurve.setNodeKeys({allowed: [], denied: []})
+      }
+      expect(zmqcurve.zapHandlerStarts()).to.equal(starts + 1)
+      var received: string[] = []
+      pull.on('message', function(message: Buffer) {
+        received.push(message.toString())
+      })
+      socket('push', clientConfig(server, allowed)).connect(endpoint).send('allowed')
+      await delay(1000)
+      expect(received).to.deep.equal(['allowed'])
     })
 
     it('should leave the sockets as they are without the variables', async function() {

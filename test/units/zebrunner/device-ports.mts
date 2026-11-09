@@ -184,6 +184,27 @@ describe('zebrunner: device ports', function() {
       options.fork({id: 'serial1'}, [7404, 7406, 7407, 7408])
       expect(portArgs(procs[2]!)).to.eql([7404, 7405])
     })
+
+    // Fork (Zebrunner): the host of the node proof of the device, ZEBRUNNER.md#nodes-enrollment
+    it('should give the workers the host of the provider, never the node token', async function() {
+      var saved = process.env.STF_NODE_TOKEN
+      process.env.STF_NODE_TOKEN = 'mcn1.node-1.' + 'a'.repeat(43)
+      try {
+        await start(['--host', '10.0.0.5'])
+        options.fork({id: 'serial1'}, [7404, 7405, 7406, 7407])
+      }
+      finally {
+        if (typeof saved === 'undefined') {
+          delete process.env.STF_NODE_TOKEN
+        }
+        else {
+          process.env.STF_NODE_TOKEN = saved
+        }
+      }
+      var args = procs[0]!.args
+      expect(args[args.indexOf('--provider-host') + 1]).to.equal('10.0.0.5')
+      expect(args.join(' ')).to.not.include('mcn1.')
+    })
   })
 
   describe('Android device worker', function() {

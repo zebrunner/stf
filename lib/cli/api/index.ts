@@ -61,6 +61,28 @@ var builder = function(yargs: Argv) {
     , type: 'string'
     , default: process.env.SSID || 'ssid'
     })
+    // Fork (Zebrunner): what the enrollment of a node returns, lib/units/api/controllers/zebrunner-nodes.ts
+    .option('nodes-stf-url', {
+      describe: 'The public URL of STF the enrolled nodes use (STF_URL by default).'
+    , type: 'string'
+    , default: process.env.STF_URL
+    })
+    .option('nodes-connect-sub', {
+      describe: 'The ZeroMQ PUB endpoint of the device side the enrolled nodes connect to.'
+    , type: 'string'
+    })
+    .option('nodes-connect-push', {
+      describe: 'The ZeroMQ PULL endpoint of the device side the enrolled nodes connect to.'
+    , type: 'string'
+    })
+    .option('nodes-connect-app-dealer', {
+      describe: 'The ZeroMQ DEALER endpoint of the app side the enrolled nodes connect to.'
+    , type: 'string'
+    })
+    .option('nodes-connect-dev-dealer', {
+      describe: 'The ZeroMQ DEALER endpoint of the device side the enrolled nodes connect to.'
+    , type: 'string'
+    })
     .epilog('Each option can be be overwritten with an environment variable ' +
       'by converting the option to uppercase, replacing dashes with ' +
       'underscores and prefixing it with `STF_API_` (e.g. ' +
@@ -77,6 +99,18 @@ var handler = function(argv: CommandArgv<typeof builder>) {
     , sub: argv.connectSub
     , pushdev: argv.connectPushDev
     , subdev: argv.connectSubDev
+    }
+    // Fork (Zebrunner): the enrolled device hosts, lib/units/api/controllers/zebrunner-nodes.ts
+  , nodes: {
+      stfUrl: argv.nodesStfUrl
+    , endpoints: {
+        sub: argv.nodesConnectSub
+      , push: argv.nodesConnectPush
+      , appDealer: argv.nodesConnectAppDealer
+      , devDealer: argv.nodesConnectDevDealer
+      }
+    , serverPublicKey: process.env.STF_ZMQ_CURVE_SERVER_PUBLIC_KEY
+    , internalToken: process.env.STF_STORAGE_TOKEN
     }
   })
 }

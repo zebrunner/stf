@@ -6,6 +6,7 @@ import Promise from 'bluebird'
 import wireutil from '../../../../wire/util.js'
 import wire from '../../../../wire/index.js'
 import logger from '../../../../util/logger.js'
+import zebrunnerNodes from '../../../../util/zebrunner-nodes.js'
 import type {IosDeviceOptions, IosInfoPlugin, Push} from '../../../../types/ios-device.js'
 import type {
   BatteryIosEventFields
@@ -197,6 +198,17 @@ export default syrup.serial()
             osName = 'tvOS'
           }
 
+          // the enrolled node of the container proves the registration of the device with its token
+          var binding = zebrunnerNodes.deviceBinding(process.env.STF_NODE_TOKEN, {
+            serial: options.serial
+          , providerHost: options.host
+          , screenPort: options.screenPort
+          , connectPort: options.connectPort
+          })
+          if (binding.warning) {
+            log.warn(binding.warning)
+          }
+
           push.send([
             wireutil.global
           , wireutil.envelope(new wire.InitializeIosDeviceState(
@@ -218,6 +230,9 @@ export default syrup.serial()
                 // the build of iOS from sendLockdownInfo
               , ''
               )
+            , binding.node
+            , binding.nodeProof
+            , binding.providerHost
             ))
           ])
 

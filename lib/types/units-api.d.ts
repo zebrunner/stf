@@ -111,6 +111,23 @@ export type Responded = boolean | void
 
 export type MessageListener = ReturnType<ReturnType<typeof wirerouter>['handler']>
 
+// Fork (Zebrunner): the settings of the node routes, lib/units/api/controllers/zebrunner-nodes.ts
+export interface NodesOptions {
+  // the public URL of STF the enrolled nodes use
+  stfUrl?: string | undefined
+  // the ZeroMQ endpoints of the triproxies the nodes connect to
+  endpoints?: {
+    sub?: string | undefined
+    push?: string | undefined
+    appDealer?: string | undefined
+    devDealer?: string | undefined
+  }
+  // STF_ZMQ_CURVE_SERVER_PUBLIC_KEY
+  serverPublicKey?: string | undefined
+  // STF_STORAGE_TOKEN: the token of the server units for the internal node routes
+  internalToken?: string | undefined
+}
+
 export interface ApiUnitOptions {
   port: number
   ssid: string
@@ -121,4 +138,6 @@ export interface ApiUnitOptions {
     pushdev: string[]
     subdev: string[]
   }
+  // Fork (Zebrunner)
+  nodes?: NodesOptions
 }

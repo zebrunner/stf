@@ -192,6 +192,12 @@ jobs:
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    # the node registry tests (test/units/zebrunner/nodes-rethinkdb.mts) need a RethinkDB
+    services:
+      rethinkdb:
+        image: rethinkdb:2.4.2
+        ports:
+          - 28015:28015
     steps:
       - uses: actions/checkout@v7
 
@@ -207,8 +213,13 @@ jobs:
           key: ${{ needs.build.outputs.cache-key }}
           fail-on-cache-miss: true
 
+      - name: Wait for RethinkDB
+        run: bash .github/scripts/wait-for-port.sh 28015 60 rethinkdb
+
       - name: mocha unit specs
         id: unit
+        env:
+          STF_TEST_RETHINKDB: tcp://127.0.0.1:28015
         run: npm run test:unit
 
       - name: Record verdict

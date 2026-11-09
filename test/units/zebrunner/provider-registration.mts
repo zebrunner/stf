@@ -143,7 +143,7 @@ describe('zebrunner: provider registration', function() {
       observers.push(fn)
     })
     sinon.stub(zmqcurve, 'clientHint').returns('Check that the ZeroMQ server lets this host in: ' +
-      'its CURVE public key 0123 in STF_ZMQ_CURVE_CLIENT_KEYS of the server.')
+      'this node enrolled with the CURVE public key 0123 and active.')
     sinon.stub(console, 'error')
     logger.on('entry', onEntry)
   })
@@ -183,8 +183,8 @@ describe('zebrunner: provider registration', function() {
     expect(fatal.calledOnce).to.equal(true)
     expect(messages(logger.Level.FATAL)).to.deep.equal([
       'No registration ack for "serial1" in 15000 ms: the STF processor does not get the ' +
-      'messages of this provider. Check that the ZeroMQ server lets this host in: its CURVE ' +
-      'public key 0123 in STF_ZMQ_CURVE_CLIENT_KEYS of the server.'
+      'messages of this provider. Check that the ZeroMQ server lets this host in: this node ' +
+      'enrolled with the CURVE public key 0123 and active.'
     ])
     expect(messages(logger.Level.WARNING).join('\n')).not.to.contain('proceeding anyway')
     expect(messages(logger.Level.INFO)).not.to.include('Registered device "serial1"')

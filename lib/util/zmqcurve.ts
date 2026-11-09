@@ -5,14 +5,18 @@
 *
 * The keys are hex strings of 32 bytes (64 characters), `stf curve-keygen` prints them:
 * - STF_ZMQ_CURVE_SERVER_SECRET_KEY: the bound tcp sockets (the triproxies) are CURVE servers with
-*   this key. A ZAP handler (RFC 27) lets in only the public keys of STF_ZMQ_CURVE_CLIENT_KEYS
-*   (separated by commas or spaces) and the key of the unit itself; without the handler libzmq
+*   this key. A ZAP handler (RFC 27) lets in only the key of the unit itself (the server units,
+*   STF_ZMQ_CURVE_SECRET_KEY) and the keys of the active enrolled nodes; without the handler libzmq
 *   refuses every client (ZAP_ENFORCE_DOMAIN), it does not let them in.
 * - STF_ZMQ_CURVE_SERVER_PUBLIC_KEY and STF_ZMQ_CURVE_SECRET_KEY: the connecting tcp sockets are
 *   CURVE clients of that server with this secret key; its public key is derived from it. A client
 *   logs the refusal of its key: libzmq does not connect a refused socket again, the refusal is the
 *   only trace of it on this side.
 * Without these variables the sockets have no security, as in upstream.
+*
+* The keys of the enrolled nodes (ZEBRUNNER.md#nodes-enrollment) come from the API unit of
+* STF_NODES_API_URL (lib/util/zebrunner-nodes-client.ts): the keys of the active nodes are allowed,
+* the keys of the revoked nodes and the retired keys are refused (deny wins).
 **/
 
 import crypto from 'crypto'
@@ -21,6 +25,12 @@ import * as zmq from 'zeromq'
 
 import lifecycle from './lifecycle.js'
 import logger from './logger.js'
+import nodesClient, {
+  KEYS_INTERVAL
+, type ClientOptions
+, type NodeKeys
+, type Watcher
+} from './zebrunner-nodes-client.js'
 
 const log = logger.createLogger('util:zmqcurve')
 
@@ -41,8 +51,10 @@ export interface CurveKeyPair {
 export interface CurveConfig {
   server?: {
     secretKey: Buffer
-    // the hex public keys of the allowed clients
+    // the hex public key of the server units (STF_ZMQ_CURVE_SECRET_KEY), if any
     clients: Set<string>
+    // the API unit with the keys of the enrolled nodes (STF_NODES_API_URL)
+    nodes?: ClientOptions | null
   }
   client?: {
     serverKey: Buffer
@@ -115,22 +127,20 @@ export function config(env: NodeJS.ProcessEnv = process.env): CurveConfig {
     null
 
   if (env.STF_ZMQ_CURVE_SERVER_SECRET_KEY) {
-    const clients = new Set((env.STF_ZMQ_CURVE_CLIENT_KEYS || '')
-      .split(/[\s,]+/)
-      .filter(Boolean)
-      .map(function(key) {
-        return parseKey('STF_ZMQ_CURVE_CLIENT_KEYS', key).toString('hex')
-      }))
+    const clients = new Set<string>()
     if (own) {
       clients.add(publicKeyOf(own).toString('hex'))
     }
-    if (!clients.size) {
+    const nodes = nodesClient.clientOptions(env)
+    if (!clients.size && !nodes) {
       throw new Error('STF_ZMQ_CURVE_SERVER_SECRET_KEY needs the keys of the clients: ' +
-        'STF_ZMQ_CURVE_CLIENT_KEYS or STF_ZMQ_CURVE_SECRET_KEY')
+        'STF_ZMQ_CURVE_SECRET_KEY (the server units) or STF_NODES_API_URL with ' +
+        'STF_STORAGE_TOKEN (the enrolled nodes)')
     }
     result.server = {
       secretKey: parseKey('STF_ZMQ_CURVE_SERVER_SECRET_KEY', env.STF_ZMQ_CURVE_SERVER_SECRET_KEY)
     , clients: clients
+    , nodes: nodes
     }
   }
 
@@ -159,7 +169,11 @@ function currentConfig(): CurveConfig {
   if (!current) {
     current = config()
     if (current.server) {
-      log.info('CURVE server: %d client keys are allowed', current.server.clients.size)
+      log.info(
+        'CURVE server: the key of the server units is %s, the keys of the enrolled nodes %s'
+      , current.server.clients.size ? 'allowed' : 'not set'
+      , current.server.nodes ? `come from ${current.server.nodes.url}` : 'are not read'
+      )
     }
     if (current.client) {
       log.info('CURVE client with the public key %s', current.client.publicKey.toString('hex'))
@@ -172,10 +186,9 @@ function currentConfig(): CurveConfig {
 // the device units
 export function clientHint(curve: CurveConfig = currentConfig()): string {
   if (curve.client) {
-    return 'Check that the ZeroMQ server lets this host in: its CURVE public key ' +
-      `${curve.client.publicKey.toString('hex')} in STF_ZMQ_CURVE_CLIENT_KEYS of the server ` +
-      '(restart the server after a change), STF_ZMQ_CURVE_SERVER_PUBLIC_KEY the one of the ' +
-      'server, the triproxy endpoints reachable.'
+    return 'Check that the ZeroMQ server lets this host in: this node enrolled with the CURVE ' +
+      `public key ${curve.client.publicKey.toString('hex')} and active (not revoked), ` +
+      'STF_ZMQ_CURVE_SERVER_PUBLIC_KEY the one of the server, the triproxy endpoints reachable.'
   }
   return 'Check that the triproxy endpoints are reachable.'
 }
@@ -203,9 +216,61 @@ let zapHandler: zmq.Router | null = null
 let allowedClients = new Set<string>()
 const deniedLogged = new Map<string, number>()
 
+export interface NodeKeySets {
+  allowed: Set<string>
+  denied: Set<string>
+}
+
+const NO_NODE_KEYS: NodeKeySets = {allowed: new Set(), denied: new Set()}
+let nodeKeys = NO_NODE_KEYS
+let nodeWatcher: Watcher | null = null
+
+// isAllowedKey <key> <clients> <nodes>: the keys of the variables and of the active nodes, minus
+// the keys of the revoked nodes and the retired ones: deny wins
+export function isAllowedKey(
+  key: string
+, clients: Set<string>
+, nodes: NodeKeySets = nodeKeys
+): boolean {
+  return !nodes.denied.has(key) && (clients.has(key) || nodes.allowed.has(key))
+}
+
+function sameSet(a: Set<string>, b: Set<string>) {
+  return a.size === b.size && Array.from(a).every(function(key) {
+    return b.has(key)
+  })
+}
+
+// The keys of the enrolled nodes from the API unit
+export function setNodeKeys(keys: NodeKeys) {
+  const next = {allowed: new Set(keys.allowed), denied: new Set(keys.denied)}
+  if (!sameSet(next.allowed, nodeKeys.allowed) || !sameSet(next.denied, nodeKeys.denied)) {
+    log.info(
+      'CURVE server: %d keys of active nodes are allowed, %d keys of revoked nodes or retired ' +
+      'are refused'
+    , next.allowed.size
+    , next.denied.size
+    )
+  }
+  nodeKeys = next
+}
+
 function logDenied(address: string, key: string) {
   if (once(deniedLogged, address)) {
-    log.warn('Refused the ZeroMQ client %s with the unknown key "%s"', address, key)
+    if (nodeKeys.denied.has(key)) {
+      log.warn(
+        'Refused the ZeroMQ client %s with the key "%s" of a revoked node (or a retired key)'
+      , address
+      , key
+      )
+      return
+    }
+    log.warn(
+      'Refused the ZeroMQ client %s with the unknown key "%s" (not the key of an active enrolled ' +
+      'node)'
+    , address
+    , key
+    )
   }
 }
 
@@ -222,8 +287,8 @@ function monitorRefusal(native: zmq.Socket, publicKey: Buffer) {
   native.events.on('handshake:error:auth', function(event) {
     if (once(refusedLogged, event.address)) {
       log.warn(
-        'The ZeroMQ server %s refused the CURVE key %s of this host: add it to ' +
-        'STF_ZMQ_CURVE_CLIENT_KEYS of the server and restart it'
+        'The ZeroMQ server %s refused the CURVE key %s of this host: it is not the key of an ' +
+        'active enrolled node (enroll the node with this key, or it was revoked)'
       , event.address
       , publicKey.toString('hex')
       )
@@ -237,7 +302,7 @@ async function serveZap(router: zmq.Router) {
       // routing id, delimiter, version, request id, domain, address, identity, mechanism, key
       const [routingId, delimiter, , requestId, , address, , mechanism, credentials] = frames
       const key = credentials ? Buffer.from(credentials).toString('hex') : ''
-      const allowed = String(mechanism) === 'CURVE' && allowedClients.has(key)
+      const allowed = String(mechanism) === 'CURVE' && isAllowedKey(key, allowedClients)
       if (!allowed) {
         logDenied(String(address), key)
       }
@@ -261,31 +326,113 @@ async function serveZap(router: zmq.Router) {
   }
 }
 
-export function stopZapHandler() {
-  if (zapHandler) {
-    zapHandler.close()
-    zapHandler = null
+// The start and the stop of the ZAP handler run one after the other: libzmq releases the inproc
+// endpoint of a closed router later (its reaper thread), so a new router binds only once the old one
+// is unbound and closed
+let zapQueue: Promise<void> = Promise.resolve()
+let observing = false
+let zapStarts = 0
+const ZAP_BIND_RETRIES = 50
+const ZAP_BIND_RETRY_DELAY = 20
+
+function enqueue(task: () => Promise<void>): Promise<void> {
+  zapQueue = zapQueue.then(task, task)
+  return zapQueue
+}
+
+async function bindZap(router: zmq.Router) {
+  for (let attempt = 1; !router.closed; attempt++) {
+    try {
+      await router.bind(ZAP_ENDPOINT)
+      return
+    }
+    catch (err) {
+      // the endpoint of a router closed a moment ago, until the reaper of libzmq releases it
+      if ((err as {code?: string}).code !== 'EADDRINUSE' || attempt >= ZAP_BIND_RETRIES) {
+        throw err
+      }
+      await new Promise(function(resolve) {
+        setTimeout(resolve, ZAP_BIND_RETRY_DELAY)
+      })
+    }
   }
 }
 
-function startZapHandler(clients: Set<string>) {
-  allowedClients = clients
-  if (zapHandler) {
+// The number of the ZAP handlers the process started, for the tests
+export function zapHandlerStarts() {
+  return zapStarts
+}
+
+// Resolves once the pending starts and stops of the ZAP handler are done
+export function zapHandlerReady(): Promise<void> {
+  return zapQueue
+}
+
+// stopZapHandler: stops the handler and the reading of the keys of the nodes; resolves once the
+// endpoint is free again
+export function stopZapHandler(): Promise<void> {
+  if (nodeWatcher) {
+    nodeWatcher.stop()
+    nodeWatcher = null
+  }
+  nodeKeys = NO_NODE_KEYS
+  const router = zapHandler
+  zapHandler = null
+  if (!router) {
+    return zapQueue
+  }
+  return enqueue(async function() {
+    if (!router.closed) {
+      await router.unbind(ZAP_ENDPOINT).catch(function() {})
+      router.close()
+    }
+  })
+}
+
+function watchNodeKeys(nodes: ClientOptions | null | undefined) {
+  if (!nodes || nodeWatcher) {
     return
+  }
+  log.info(
+    'CURVE server: the keys of the enrolled nodes are read from %s every %d s'
+  , nodes.url
+  , KEYS_INTERVAL / 1000
+  )
+  // a new set of keys only replaces the sets the running handler checks, it never restarts it
+  nodeWatcher = nodesClient.watchNodeKeys(nodes, setNodeKeys)
+}
+
+// startZapHandler: starts the handler of the process once, whatever the number of the sockets that
+// bind; resolves once it is bound
+function startZapHandler(clients: Set<string>, nodes?: ClientOptions | null): Promise<void> {
+  allowedClients = clients
+  watchNodeKeys(nodes)
+  if (zapHandler) {
+    return zapQueue
   }
   const router = new zmq.Router()
   zapHandler = router
-  router.bind(ZAP_ENDPOINT).then(
-    function() {
+  zapStarts++
+  if (!observing) {
+    observing = true
+    lifecycle.observe(stopZapHandler)
+  }
+  return enqueue(async function() {
+    try {
+      await bindZap(router)
+    }
+    catch (err) {
+      if (!router.closed) {
+        log.fatal('Unable to start the ZAP handler', err)
+        lifecycle.fatal()
+      }
+      return
+    }
+    if (!router.closed) {
       // it ends when the router is closed, an error ends the process
-      return serveZap(router)
+      serveZap(router)
     }
-  , function(err: Error) {
-      log.fatal('Unable to start the ZAP handler', err)
-      lifecycle.fatal()
-    }
-  )
-  lifecycle.observe(stopZapHandler)
+  })
 }
 
 // The zeromq socket behind a compat one: the compat API has no ZAP_ENFORCE_DOMAIN
@@ -318,7 +465,7 @@ export function secure<S extends CompatSocket>(sock: S, curve: CurveConfig = cur
         native.curveSecretKey = z85(server.secretKey)
         native.zapDomain = ZAP_DOMAIN
         native.zapEnforceDomain = true
-        startZapHandler(server.clients)
+        startZapHandler(server.clients, server.nodes)
       }
     }
     const bind = sock.bind
@@ -352,4 +499,16 @@ export function secure<S extends CompatSocket>(sock: S, curve: CurveConfig = cur
   return sock
 }
 
-export default {clientHint, config, generateKeyPair, publicKeyOf, secure, stopZapHandler, z85}
+export default {
+  clientHint
+, config
+, generateKeyPair
+, isAllowedKey
+, publicKeyOf
+, secure
+, setNodeKeys
+, stopZapHandler
+, z85
+, zapHandlerReady
+, zapHandlerStarts
+}

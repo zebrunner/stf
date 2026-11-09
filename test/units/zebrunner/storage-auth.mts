@@ -28,28 +28,28 @@ describe('zebrunner: storage auth', function() {
   var savedToken: string | undefined
 
   beforeEach(function() {
-    savedToken = process.env.STF_STORAGE_TOKEN
+    savedToken = process.env.STF_NODE_TOKEN
   })
 
   afterEach(function() {
     if (typeof savedToken === 'undefined') {
-      delete process.env.STF_STORAGE_TOKEN
+      delete process.env.STF_NODE_TOKEN
     }
     else {
-      process.env.STF_STORAGE_TOKEN = savedToken
+      process.env.STF_NODE_TOKEN = savedToken
     }
   })
 
   describe('client helpers', function() {
     it('should leave the request options as they are without a token', function() {
-      delete process.env.STF_STORAGE_TOKEN
+      delete process.env.STF_NODE_TOKEN
       var options = {url: 'http://storage/s/upload/image'}
       expect(storageauth.sign(options)).to.equal(options)
       expect(storageauth.internalHeaders()).to.eql({})
     })
 
-    it('should add the token to the request options', function() {
-      process.env.STF_STORAGE_TOKEN = TOKEN
+    it('should add the node token to the request options of a device unit', function() {
+      process.env.STF_NODE_TOKEN = TOKEN
       expect(storageauth.sign({url: 'u', headers: {accept: 'x'}})).to.eql({
         url: 'u'
       , headers: {accept: 'x', 'x-stf-internal-token': TOKEN}

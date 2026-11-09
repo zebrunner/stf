@@ -12,9 +12,13 @@ Playwright's `adb` helpers use that same server through port 15037. The override
 replaces USB access with the runner's ADB keys and enables the APK screen grabber
 for Android 16. CI uses the locally built STF image and disables service restarts.
 
+The provider is an enrolled node: `compose-leg.sh` generates its node token
+(`STF_NODE_TOKEN`, unless set), the one-off `node` service enrolls it
+(`stf node-add`) after the migration, and the provider proves its devices with it.
+
 Before and after Playwright, the job verifies that all 16 long-running services
 are running without restarts, their health checks pass, and the one-off migration
-completed successfully. It also checks that each STF container runs its own unit
+and node enrollment completed successfully. It also checks that each STF container runs its own unit
 command from the checked-out image.
 
 All 14 Playwright tests run: the 11 existing UI/device tests plus authenticated

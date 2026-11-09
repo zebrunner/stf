@@ -287,6 +287,8 @@ var handler = function(argv: CommandArgv<typeof builder, {serial: (string | numb
       , '--boot-complete-timeout', argv.bootCompleteTimeout
       , '--vnc-initial-size', argv.vncInitialSize.join('x')
       , '--mute-master', argv.muteMaster
+        // Fork (Zebrunner): the host of the node proof of the device
+      , '--provider-host', argv.host
       ]
       .concat(argv.connectSub.reduce<CliArg[]>(function(all, val) {
         return all.concat(['--connect-sub', val])
