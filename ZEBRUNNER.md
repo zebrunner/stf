@@ -321,8 +321,9 @@ grid (4446) and stf-proxy (`STF_PORT`) on it. The ports of the devices must not 
   to the address of its node for the grid, the device binding and the relay.
 - The uniqueness of the address and key is kept by the API unit serializing the enrollments: several API units could
   race on two different invites with the same address (one invite is still used once).
-- The processor keeps the decision of the last registration of a device in memory and checks the database for a device
-  it did not register (after a restart); mcloud runs one processor.
+- A processor makes ready only the devices whose last registration it bound, or whose binding the database has: with
+  several processors (`stf local` runs two) the registration and the ready message of a device can reach different
+  ones, the second one waits up to 10 s for the binding the first one writes.
 - A host name address can resolve to a forbidden address; only the literal is checked.
 
 ## Development

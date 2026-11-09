@@ -275,7 +275,7 @@ describe('zebrunner: nodes', function() {
       })
 
       it('should make ready only a device bound to an active node', async function() {
-        var binder = processorNodes.createNodeBinder(db, log)
+        var binder = processorNodes.createNodeBinder(db, log, {bindingWait: 50, bindingPoll: 10})
         var ready: string[] = []
         var handler = binder.whenAccepted(function(channel, message: {serial: string}) {
           ready.push(message.serial)
@@ -308,7 +308,7 @@ describe('zebrunner: nodes', function() {
       })
 
       it('should check in the database a device it did not register', async function() {
-        var binder = processorNodes.createNodeBinder(db, log)
+        var binder = processorNodes.createNodeBinder(db, log, {bindingWait: 50, bindingPoll: 10})
         devices = {
           bound: {node: 'node-1', nodeGeneration: 2}
         , rotated: {node: 'node-1', nodeGeneration: 1}
@@ -322,8 +322,20 @@ describe('zebrunner: nodes', function() {
         expect(await binder.accepted('bound')).to.equal(false)
       })
 
+      // stf local runs two processors: the registration and the ready message of a device can go to
+      // different ones
+      it('should wait for the binding another processor writes', async function() {
+        var binder = processorNodes.createNodeBinder(db, log, {bindingWait: 1000, bindingPoll: 10})
+        setTimeout(function() {
+          devices.late = {node: 'node-1', nodeGeneration: 2}
+        }, 100)
+        var started = Date.now()
+        expect(await binder.accepted('late')).to.equal(true)
+        expect(Date.now() - started).to.be.within(80, 900)
+      })
+
       it('should reject a registration when the database fails', async function() {
-        var binder = processorNodes.createNodeBinder(db, log)
+        var binder = processorNodes.createNodeBinder(db, log, {bindingWait: 50, bindingPoll: 10})
         broken = true
         var decision = await binder.bind(registration())
         expect(decision.result).to.equal('rejected')

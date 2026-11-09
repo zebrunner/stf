@@ -76,7 +76,16 @@ export function claimOf(registration: {node?: string | null}): string | null {
 type Handler<M extends {serial: string}> =
   (channel: string | Buffer, message: M, data: Buffer) => void
 
-export function createNodeBinder(db: NodeBinderDb, log: Log) {
+export interface BinderOptions {
+  // how long a ready device this processor did not register waits for its binding in the database
+  // (another processor checks its registration), and how often it looks
+  bindingWait?: number
+  bindingPoll?: number
+}
+
+export function createNodeBinder(db: NodeBinderDb, log: Log, options: BinderOptions = {}) {
+  var bindingWait = typeof options.bindingWait === 'number' ? options.bindingWait : 10000
+  var bindingPoll = options.bindingPoll || 200
   var pending = new Map<string, Promise<Decision>>()
   // the last decision of every device registered with this processor
   var bound = new Map<string, boolean>()
@@ -113,22 +122,41 @@ export function createNodeBinder(db: NodeBinderDb, log: Log) {
     return decision
   }
 
+  function boundInDatabase(serial: string): Promise<boolean> {
+    return Promise.resolve(db.loadDeviceBySerial(serial))
+      .then(function(device) {
+        if (!device || !device.node) {
+          return false
+        }
+        return Promise.resolve(db.loadNode(device.node)).then(function(node) {
+          return isBoundTo(device, node)
+        })
+      })
+  }
+
+  // waitForBinding <serial> <deadline>: whether the database has a valid binding of the device
+  // before the deadline
+  function waitForBinding(serial: string, deadline: number): Promise<boolean> {
+    return boundInDatabase(serial).then(function(ok): Promise<boolean> | boolean {
+      if (ok || Date.now() + bindingPoll > deadline) {
+        return ok
+      }
+      return Promise.delay(bindingPoll).then(function() {
+        return waitForBinding(serial, deadline)
+      })
+    })
+  }
+
   // accepted <serial>: whether the device is bound to an active node, after the check of its last
-  // registration; a device this processor did not check (it restarted) is checked in the database
+  // registration. A device this processor did not register is checked in the database: another
+  // processor got its registration (the dealer of the triproxy shares the messages between the
+  // processors) and writes its binding a moment later, or this processor restarted
   function accepted(serial: string): Promise<boolean> {
     return Promise.resolve(pending.get(serial)).then(function() {
       if (bound.has(serial)) {
         return bound.get(serial)!
       }
-      return Promise.resolve(db.loadDeviceBySerial(serial))
-        .then(function(device) {
-          if (!device || !device.node) {
-            return false
-          }
-          return Promise.resolve(db.loadNode(device.node)).then(function(node) {
-            return isBoundTo(device, node)
-          })
-        })
+      return waitForBinding(serial, Date.now() + bindingWait)
         .catch(function(err: Error) {
           log.error('Unable to check the node of device "%s"', serial, err.stack)
           return false
