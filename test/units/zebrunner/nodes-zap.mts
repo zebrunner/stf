@@ -211,12 +211,12 @@ describe('zebrunner: node keys and tokens of the server units', function() {
       })
     }
 
-    afterEach(function() {
+    afterEach(async function() {
       sockets.forEach(function(sock) {
         sock.close()
       })
       sockets = []
-      zmqcurve.stopZapHandler()
+      await zmqcurve.stopZapHandler()
     })
 
     it('should let in the active nodes and keep the revoked ones out', async function() {

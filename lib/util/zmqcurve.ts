@@ -350,16 +350,67 @@ async function serveZap(router: zmq.Router) {
   }
 }
 
-export function stopZapHandler() {
-  if (zapHandler) {
-    zapHandler.close()
-    zapHandler = null
+// The start and the stop of the ZAP handler run one after the other: libzmq releases the inproc
+// endpoint of a closed router later (its reaper thread), so a new router binds only once the old one
+// is unbound and closed
+let zapQueue: Promise<void> = Promise.resolve()
+let observing = false
+let zapStarts = 0
+const ZAP_BIND_RETRIES = 50
+const ZAP_BIND_RETRY_DELAY = 20
+
+function enqueue(task: () => Promise<void>): Promise<void> {
+  zapQueue = zapQueue.then(task, task)
+  return zapQueue
+}
+
+async function bindZap(router: zmq.Router) {
+  for (let attempt = 1; !router.closed; attempt++) {
+    try {
+      await router.bind(ZAP_ENDPOINT)
+      return
+    }
+    catch (err) {
+      // the endpoint of a router closed a moment ago, until the reaper of libzmq releases it
+      if ((err as {code?: string}).code !== 'EADDRINUSE' || attempt >= ZAP_BIND_RETRIES) {
+        throw err
+      }
+      await new Promise(function(resolve) {
+        setTimeout(resolve, ZAP_BIND_RETRY_DELAY)
+      })
+    }
   }
+}
+
+// The number of the ZAP handlers the process started, for the tests
+export function zapHandlerStarts() {
+  return zapStarts
+}
+
+// Resolves once the pending starts and stops of the ZAP handler are done
+export function zapHandlerReady(): Promise<void> {
+  return zapQueue
+}
+
+// stopZapHandler: stops the handler and the reading of the keys of the nodes; resolves once the
+// endpoint is free again
+export function stopZapHandler(): Promise<void> {
   if (nodeWatcher) {
     nodeWatcher.stop()
     nodeWatcher = null
   }
   nodeKeys = NO_NODE_KEYS
+  const router = zapHandler
+  zapHandler = null
+  if (!router) {
+    return zapQueue
+  }
+  return enqueue(async function() {
+    if (!router.closed) {
+      await router.unbind(ZAP_ENDPOINT).catch(function() {})
+      router.close()
+    }
+  })
 }
 
 function watchNodeKeys(nodes: ClientOptions | null | undefined) {
@@ -371,28 +422,41 @@ function watchNodeKeys(nodes: ClientOptions | null | undefined) {
   , nodes.url
   , KEYS_INTERVAL / 1000
   )
+  // a new set of keys only replaces the sets the running handler checks, it never restarts it
   nodeWatcher = nodesClient.watchNodeKeys(nodes, setNodeKeys)
 }
 
-function startZapHandler(clients: Set<string>, nodes?: ClientOptions | null) {
+// startZapHandler: starts the handler of the process once, whatever the number of the sockets that
+// bind; resolves once it is bound
+function startZapHandler(clients: Set<string>, nodes?: ClientOptions | null): Promise<void> {
   allowedClients = clients
   watchNodeKeys(nodes)
   if (zapHandler) {
-    return
+    return zapQueue
   }
   const router = new zmq.Router()
   zapHandler = router
-  router.bind(ZAP_ENDPOINT).then(
-    function() {
+  zapStarts++
+  if (!observing) {
+    observing = true
+    lifecycle.observe(stopZapHandler)
+  }
+  return enqueue(async function() {
+    try {
+      await bindZap(router)
+    }
+    catch (err) {
+      if (!router.closed) {
+        log.fatal('Unable to start the ZAP handler', err)
+        lifecycle.fatal()
+      }
+      return
+    }
+    if (!router.closed) {
       // it ends when the router is closed, an error ends the process
-      return serveZap(router)
+      serveZap(router)
     }
-  , function(err: Error) {
-      log.fatal('Unable to start the ZAP handler', err)
-      lifecycle.fatal()
-    }
-  )
-  lifecycle.observe(stopZapHandler)
+  })
 }
 
 // The zeromq socket behind a compat one: the compat API has no ZAP_ENFORCE_DOMAIN
@@ -469,4 +533,6 @@ export default {
 , setNodeKeys
 , stopZapHandler
 , z85
+, zapHandlerReady
+, zapHandlerStarts
 }
