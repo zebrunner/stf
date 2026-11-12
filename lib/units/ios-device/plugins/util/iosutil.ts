@@ -80,6 +80,13 @@ function orientationToDegrees(orientation: IosOrientation | null): number | unde
   return degrees
 }
 
+// Fork (Zebrunner): isLandscape <orientation>: the screen of the device is landscape, either
+// side; the points of WDA are then the ones of the natural (portrait) size turned, x along its
+// height
+function isLandscape(orientation: IosOrientation | null): boolean {
+  return orientation === 'LANDSCAPE' || orientation === 'UIA_DEVICE_ORIENTATION_LANDSCAPERIGHT'
+}
+
 function pressButton(this: IosPressButtonContext, key: string): unknown {
   switch (key) {
     case 'settings':
@@ -166,24 +173,22 @@ function swipe(
     }
   }
 
-  switch (orientation) {
-    case 'LANDSCAPE':
-      return {
-        fromX: fromY * deviceSize.height
-      , fromY: fromX * deviceSize.width
-      , toX: toY * deviceSize.height
-      , toY: toX * deviceSize.width
-      , duration: params.duration || 0
-      }
-    case 'PORTRAIT':
-    default:
-      return {
-        fromX: fromX * deviceSize.width
-      , fromY: fromY * deviceSize.height
-      , toX: toX * deviceSize.width
-      , toY: toY * deviceSize.height
-      , duration: params.duration || 0
-      }
+  // Fork (Zebrunner): both landscape orientations, as the taps
+  if (isLandscape(orientation)) {
+    return {
+      fromX: fromY * deviceSize.height
+    , fromY: fromX * deviceSize.width
+    , toX: toY * deviceSize.height
+    , toY: toX * deviceSize.width
+    , duration: params.duration || 0
+    }
+  }
+  return {
+    fromX: fromX * deviceSize.width
+  , fromY: fromY * deviceSize.height
+  , toX: toX * deviceSize.width
+  , toY: toY * deviceSize.height
+  , duration: params.duration || 0
   }
 }
 
@@ -225,6 +230,7 @@ export default {
   asciiparser
 , degreesToOrientation
 , orientationToDegrees
+, isLandscape
 , pressButton
 , swipe
 , getUri
