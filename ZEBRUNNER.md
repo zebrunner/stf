@@ -72,6 +72,11 @@ once; the other platform is built emulated by QEMU (`docker run --privileged --r
 which takes long for the native modules: building every platform on its own machine and joining them with
 `docker buildx imagetools create` (as `.github/workflows/docker-build.yml`) is faster.
 
+The file `VERSION` is the release in work (bumped by hand after a release). The `Publish` job of CI pushes the image of
+every merge into `develop` after `Report` passed: `public.ecr.aws/zebrunner/stf:<VERSION>-develop-<sha>` (7 characters
+of the commit) and `<VERSION>-develop-latest`, by the reusable workflow `docker-publish.yml` of
+[mcloud-conventions](https://github.com/zebrunner/mcloud-conventions) over `make push`.
+
 Without docker (Node.js 22.18 or later):
 
 ```bash
