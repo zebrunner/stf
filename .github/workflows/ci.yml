@@ -979,3 +979,16 @@ jobs:
             echo "::error::${{ steps.render.outputs.failed }} CI tier(s) failed"
             exit 1
           fi
+
+  # Fork (Zebrunner): the image of a merge into develop to public.ecr.aws once
+  # Report passed (the file VERSION, ZEBRUNNER.md#build). arm64 is built with QEMU.
+  publish:
+    name: Publish
+    needs: report
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    permissions:
+      contents: read
+      id-token: write
+    uses: zebrunner/mcloud-conventions/.github/workflows/docker-publish.yml@v1
+    with:
+      timeout-minutes: 120
