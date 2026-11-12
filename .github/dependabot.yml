@@ -19,3 +19,7 @@ updates:
   - dependency-name: express-validator
     versions:
     - 6.9.2
+  groups:
+    mantine:
+      patterns:
+      - "@mantine/*"
