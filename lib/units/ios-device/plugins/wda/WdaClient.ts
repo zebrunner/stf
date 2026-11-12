@@ -28,6 +28,8 @@ import type {
 , TouchMoveIosMessageFields
 } from '../../../../types/wire.js'
 import notifierSyrup from '../devicenotifier.js'
+// Fork (Zebrunner)
+import {toDevice} from './gesture.js'
 import activeOrNewSession from './session.js'
 import pushSyrup from '../../support/push.js'
 // Fork (Zebrunner)
@@ -310,6 +312,9 @@ export default syrup.serial()
           return NO_RESULT
         }
 
+        // Fork (Zebrunner): the point of WDA by the orientation and within the screen, as the
+        // swipes and the gestures: the tap and the hold of a landscape screen (either side)
+        var point = toDevice(this.orientation, this.deviceSize, {x: x, y: y, t: 0})
         x *= this.deviceSize.width
         y *= this.deviceSize.height
 
@@ -324,8 +329,8 @@ export default syrup.serial()
                   {
                     type: 'pointerMove'
                   , duration: 0
-                  , x: this.orientation === 'PORTRAIT' ? x : y
-                  , y: this.orientation === 'PORTRAIT' ? y : x
+                  , x: point.x
+                  , y: point.y
                   }
                   // Fork (Zebrunner): a press instead of a second move, WDA takes a snapshot of
                   // the app for every move (a tap 1.4 s -> 0.9 s)
@@ -369,7 +374,7 @@ export default syrup.serial()
           return this.handleRequest({
             method: 'POST'
           , uri: `${this.baseUrl}/session/${this.sessionId}/wda/touchAndHold`
-          , body: {x: x, y: y, duration: 1}
+          , body: {x: point.x, y: point.y, duration: 1}
           , json: true
           })
         }
@@ -384,10 +389,9 @@ export default syrup.serial()
           if (typeof x !== 'number' || typeof y !== 'number') {
             return NO_RESULT
           }
-          var params = {
-            x: x * this.deviceSize.width
-          , y: y * this.deviceSize.height
-          }
+          // Fork (Zebrunner): turned by the orientation as the tap
+          var point = toDevice(this.orientation, this.deviceSize, {x: x, y: y, t: 0})
+          var params = {x: point.x, y: point.y}
 
           return this.handleRequest({
             method: 'POST'
@@ -405,18 +409,14 @@ export default syrup.serial()
         }
         log.info('getting device window size...')
 
-        // Fork (Zebrunner): the screen in pixels from WDA (plugins/devicestate), not from the database
+        // Fork (Zebrunner): the screen in pixels from WDA (plugins/devicestate), not from the
+        // database. The natural size in points: devicestate turns the screen of an iPhone or an
+        // iPad to portrait, the taps, the swipes and the gestures turn the points of a landscape
+        // screen themselves (gesture.ts toDevice).
         return devicestate.screen().then((screen) => {
-          var width = screen.width / screen.scale
-          var height = screen.height / screen.scale
-          if (this.orientation === 'PORTRAIT' || !this.orientation) {
-            this.deviceSize = {height: height, width: width}
-          }
-          else if (this.orientation === 'LANDSCAPE') {
-            this.deviceSize = {height: width, width: height}
-          }
-          else if (this.deviceType === 'Apple TV') {
-            this.deviceSize = {height: screen.height, width: screen.width}
+          this.deviceSize = {
+            height: screen.height / screen.scale
+          , width: screen.width / screen.scale
           }
           return this.deviceSize
         })

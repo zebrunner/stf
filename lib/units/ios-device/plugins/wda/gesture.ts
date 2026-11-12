@@ -4,6 +4,7 @@
 import Promise from 'bluebird'
 
 import logger from '../../../../util/logger.js'
+import iosutil from '../util/iosutil.js'
 import request from '../util/rp.js'
 import type {
   IosDeviceSize
@@ -58,13 +59,14 @@ function clamp(value: number, max: number): number {
 }
 
 // toDevice <orientation> <size> <point>: the point of the screen (from 0 to 1) in the points of
-// WDA, the same way as iosutil.swipe
+// WDA, the same way as iosutil.swipe; size is the natural (portrait) size of WdaClient.size, the
+// point is clamped to the screen
 export function toDevice(
   orientation: IosOrientation | null
 , size: IosDeviceSize
 , point: PathPoint
 ): PathPoint {
-  if (orientation === 'LANDSCAPE') {
+  if (iosutil.isLandscape(orientation)) {
     return {
       x: clamp(point.y * size.height, size.height)
     , y: clamp(point.x * size.width, size.width)
