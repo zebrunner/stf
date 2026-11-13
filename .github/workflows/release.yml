@@ -15,6 +15,9 @@ permissions:
 jobs:
   release:
     name: Release
+    # Fork (Zebrunner): the npm package and the Docker Hub image are the ones of upstream; the npm and docker jobs
+    # need this one, so they are skipped too. The fork publishes by the Publish job of ci.yml (ZEBRUNNER.md)
+    if: github.repository == 'DeviceFarmer/stf'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
