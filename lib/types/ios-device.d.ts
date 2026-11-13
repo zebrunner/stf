@@ -57,8 +57,14 @@ export type Push = ZmqSocket
 export type Sub = ZmqSocket
 export type Router = ReturnType<typeof wirerouter>
 export type Channels = ChannelManager
-export type DeviceData = NonNullable<ReturnType<typeof deviceData.find>>
-export type DeviceFlags = NonNullable<DeviceData['flags']>
+export type DeviceData = deviceData.DeviceRecord
+// The quirks of a few models, which stf-device-db 2 no longer has
+export interface DeviceFlags {
+  forceMaxPressure?: number
+  forceTouchMode?: string
+  forceMinScreenScale?: number
+  forceTouchOrigin?: string
+}
 
 export interface IosScreenOptions {
   devicePort: number

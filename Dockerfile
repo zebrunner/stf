@@ -161,15 +161,8 @@ ADD --checksum=sha256:a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91
     https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar /app/bundletool/bundletool.jar
 RUN chmod 644 /app/bundletool/bundletool.jar
 
-# Fork (Zebrunner): the platform icons replace the generic ones of
-# stf-device-db. The iOS tools (go-ios, socat) are in the mcloud-device image.
-RUN cd /app/node_modules/@devicefarmer/stf-device-db/dist/icon && \
-    cp /app/icon/x120/iOS.jpg x120/iOS && \
-    cp /app/icon/x24/iOS.jpg x24/iOS && \
-    cp /app/icon/x120/Android.jpg x120/Android && \
-    cp /app/icon/x24/Android.jpg x24/Android && \
-    cp /app/icon/x120/tvOS.png x120/tvOS && \
-    cp /app/icon/x24/tvOS.png x24/tvOS
+# Fork (Zebrunner): the iOS tools (go-ios, socat) are in the mcloud-device image; the
+# platform icons (/app/icon) are served by lib/units/app/middleware/device-icons.ts.
 
 # Fork (Zebrunner): /data of storage-temp (--save-dir /data) belongs to stf: a new
 # volume mounted there gets the owner of the directory of the image, the uploads

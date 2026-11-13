@@ -2,19 +2,15 @@
 * Copyright © 2019-2025 contains code contributed by Orange SA, authors: Denis Barbaron - Licensed under the Apache license 2.0
 **/
 
-import {createRequire} from 'module'
 import util from 'util'
 
 import * as uuid from 'uuid'
-import _ from 'lodash'
+import deviceData from '@devicefarmer/stf-device-db'
 
 import dbapi from '../db/api.js'
 import wire from '../wire/index.js'
 
 import timeutil from './timeutil.js'
-
-var require = createRequire(import.meta.url)
-var devices = require('@devicefarmer/stf-device-db/dist/devices-latest')
 
 var generate = function(wantedModel?: string) {
   // no base64 because some characters as '=' or '/' are not compatible through API (delete devices)
@@ -29,7 +25,7 @@ var generate = function(wantedModel?: string) {
     , statusTimeStamp: timeutil.now('nano')
     })
     .then(function() {
-      var model = (wantedModel || _.sample(Object.keys(devices))) as string
+      var model = wantedModel || deviceData.sample().model
       return dbapi.saveDeviceIdentity(serial, {
         platform: 'Android'
       , manufacturer: 'Foo Electronics'

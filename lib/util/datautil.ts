@@ -24,11 +24,15 @@ interface DeviceView extends deviceutil.Claimable {
   claimed?: boolean
   model?: string | null
   product?: string | null
+  manufacturer?: string | null
+  platform?: string | null
   name?: string
   releasedAt?: string
   image?: string
-  cpu?: deviceData.DeviceData['cpu']
-  memory?: deviceData.DeviceData['memory']
+  // GHz
+  cpu?: {name?: string, cores?: number, freq?: number}
+  // MB
+  memory?: {ram?: number, rom?: number}
   display?: DisplayView
   browser?: BrowserView | null
   remoteConnect?: boolean
@@ -45,25 +49,69 @@ interface DataUtil {
 
 var datautil: DataUtil = Object.create(null)
 
+function known<T>(value: T | null | undefined): value is T {
+  return value !== null && typeof value !== 'undefined'
+}
+
+// The diagonal of the screen from its size in pixels and its density, as stf-device-db 2 has no
+// display; a density far off (some emulators) gives no size rather than a wrong one
+function displayInches(display: DisplayView): number | null {
+  if (!(display.width! > 0 && display.height! > 0 && display.xdpi! > 0 && display.ydpi! > 0)) {
+    return null
+  }
+  var inches = Math.hypot(display.width! / display.xdpi!, display.height! / display.ydpi!)
+  return inches >= 1 && inches <= 30 ? Math.round(inches * 10) / 10 : null
+}
+
 datautil.applyData = function<D extends DeviceView>(device: D) {
+  // Only knows Android devices, null for the others
   var match = deviceData.find({
     model: device.model
   , name: device.product
+  , manufacturer: device.manufacturer
+  , platform: device.platform
   })
 
   if (match) {
     if (!device.name) {
       device.name = match.name.id
     }
-    device.releasedAt = match.date
+    if (match.date) {
+      device.releasedAt = new Date(match.date + 'T00:00:00Z').toISOString()
+    }
     device.image = match.image
-    device.cpu = match.cpu
+    if (match.cpu) {
+      var cpu: NonNullable<DeviceView['cpu']> = {}
+      if (known(match.cpu.name)) {
+        cpu.name = match.cpu.name
+      }
+      if (known(match.cpu.cores)) {
+        cpu.cores = match.cpu.cores
+      }
+      if (known(match.cpu.freq)) {
+        cpu.freq = match.cpu.freq
+      }
+      device.cpu = cpu
+    }
     // Fork (Zebrunner): the memory an iOS device tells (its capacity through go-ios) wins over the
     // one of its model, which comes in several capacities
-    device.memory = Object.assign({}, match.memory, device.memory)
-    if (match.display && match.display.s) {
-      device.display = device.display || {}
-      device.display.inches = match.display.s
+    if (match.memory) {
+      var memory: NonNullable<DeviceView['memory']> = {}
+      if (known(match.memory.ram)) {
+        memory.ram = match.memory.ram
+      }
+      // GB in the db, MB for stf (and go-ios)
+      if (known(match.memory.rom)) {
+        memory.rom = Math.round(match.memory.rom * 1024)
+      }
+      device.memory = Object.assign(memory, device.memory)
+    }
+  }
+
+  if (device.display && !device.display.inches) {
+    var inches = displayInches(device.display)
+    if (inches) {
+      device.display.inches = inches
     }
   }
 
