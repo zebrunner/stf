@@ -368,7 +368,8 @@ The fork merges [DeviceFarmer/stf](https://github.com/DeviceFarmer/stf) `master`
 - a new wire message takes a free code above the upstream ones and is pinned in `test/wire/protobuf.mts`; a retired code is added to `reserved`;
 - `res/common/lang/po/stf.pot`: add and remove the fork messages only, do not commit a fully regenerated file (the translation check compares the messages, not the source references);
 - `api_v1_generated.json` stays the upstream file, the API unit reads `api_v1.yaml`;
-- `package-lock.json` and `test/playwright/package-lock.json` are committed (upstream ignores them): the image and CI install them with `npm ci`. After a merge that changes `package.json`, `npm install` updates the lock file, commit it with the merge; `npm audit` should stay clean, `overrides` in `package.json` pins the fixed versions of nested dependencies;
+- `package-lock.json` and `test/playwright/package-lock.json` are committed (upstream ignores them): the image and CI install them with `npm ci`. After a merge that changes `package.json`, `npm install` updates the lock file, commit it with the merge; `npm audit` should stay clean, `overrides` in `package.json` pins the fixed versions of nested dependencies (`resolutions` is the same for yarn, kept as upstream has it; npm ignores it);
+- `@types/node` follows the major of the Node.js of `.nvmrc` and of the image (22), so the type check refuses APIs of newer versions: keep it at a merge (upstream may have a newer one); dependabot proposes no major update of it;
 - no editor settings, generated files or permission changes.
 
 A sync: `git fetch upstream && git merge upstream/master`, `npm install` when `package.json` changed, then `make check` and `npm run test:component`.
