@@ -15,6 +15,7 @@ import type {
 , IosNetworkEventFields
 } from '../../../../types/wire.js'
 import pushSyrup from '../../support/push.js'
+import devicestateSyrup, {platformOf, type IosDeviceStatePlugin} from '../devicestate.js'
 import {
   IosNetworkCollector
 , execGoIos
@@ -40,7 +41,12 @@ function compact<T>(values: {[K in keyof T]?: T[K] | null}): Partial<T> {
 
 export default syrup.serial()
   .dependency(pushSyrup)
-  .define(function(options: IosDeviceOptions, push: Push): IosInfoPlugin {
+  .dependency(devicestateSyrup)
+  .define(function(
+    options: IosDeviceOptions
+  , push: Push
+  , devicestate: IosDeviceStatePlugin
+  ): IosInfoPlugin {
     var log = logger.createLogger('device:info')
     var batteryTimer: NodeJS.Timeout | null = null
 
@@ -186,17 +192,23 @@ export default syrup.serial()
       return sendBattery().then(sendNetwork)
     }
 
+    // Fork (Zebrunner): the platform from the type of the device WDA tells (plugins/devicestate), not
+    // from its name; iOS when WDA fails, the processor corrects it with the type reported later
+    function readPlatform() {
+      return devicestate.type()
+        .then(platformOf)
+        .catch(function(err) {
+          log.warn('WDA cannot tell the type of the device, iOS is assumed: %s', err.message)
+          return 'iOS'
+        })
+    }
+
     function manageDeviceInfo() {
-      return new Promise<void>(function(resolve) {
+      return readPlatform().then(function(osName) {
+        return new Promise<void>(function(resolve) {
           log.info('device.name: ' + options.deviceName)
 
           var solo = wireutil.makePrivateChannel()
-          var osName = 'iOS'
-          var deviceName = options.deviceName.toLowerCase()
-
-          if (deviceName.includes('tv')) {
-            osName = 'tvOS'
-          }
 
           // the enrolled node of the container proves the registration of the device with its token
           var binding = zebrunnerNodes.deviceBinding(process.env.STF_NODE_TOKEN, {
@@ -244,6 +256,7 @@ export default syrup.serial()
 
           resolve()
         })
+      })
         .catch(function(err) {
           log.error(err, 'Failed to manage device info')
         })

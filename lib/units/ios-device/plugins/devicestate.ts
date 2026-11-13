@@ -25,6 +25,9 @@ import type {
 
 export const APPLE_TV = 'Apple TV'
 
+// UIUserInterfaceIdiomTV of UIKit
+const IDIOM_TV = 2
+
 const REQUEST_TIMEOUT = 10000
 
 // The screen in pixels: portrait for a phone or a tablet, as the WDA client expects
@@ -44,6 +47,7 @@ export interface IosDeviceStatePlugin {
 interface WdaDeviceInfo {
   model?: string
   name?: string
+  userInterfaceIdiom?: number
 }
 
 interface WdaStatus {
@@ -53,10 +57,18 @@ interface WdaStatus {
   }
 }
 
+// The idiom of the device, else its model (UIDevice.model, "Apple TV" on tvOS); never its name, which
+// the user chooses
 export function deviceTypeOf(info: WdaDeviceInfo): string {
-  var model = String(info.model || '').toLowerCase()
-  var name = String(info.name || '').toLowerCase()
-  return model.includes('tv') || name.includes('tv') ? APPLE_TV : 'iPhone'
+  if (typeof info.userInterfaceIdiom === 'number') {
+    return info.userInterfaceIdiom === IDIOM_TV ? APPLE_TV : 'iPhone'
+  }
+  var model = String(info.model || '').replace(/\s+/g, '').toLowerCase()
+  return model === 'appletv' ? APPLE_TV : 'iPhone'
+}
+
+export function platformOf(deviceType: string): string {
+  return deviceType === APPLE_TV ? 'tvOS' : 'iOS'
 }
 
 export function screenOf(deviceType: string, size: WdaWindowSize, info: WdaScreenInfo): IosScreen {

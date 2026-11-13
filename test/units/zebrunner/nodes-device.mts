@@ -141,6 +141,18 @@ describe('zebrunner: node proof of the device units', function() {
         , parseDiskSpace: function() {}
         , spawnGoIos: function() {}
         })
+      , mockModule(module('units/ios-device/plugins/devicestate.js'), {
+          platformOf: function() {
+            return 'iOS'
+          }
+        , default: syrup.serial().define(function() {
+            return {
+              type: function() {
+                return Promise.resolve('iPhone')
+              }
+            }
+          })
+        })
       ]
       var info: {manageDeviceInfo(): Promise<void>} | null = null
       try {

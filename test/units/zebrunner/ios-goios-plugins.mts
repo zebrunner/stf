@@ -13,6 +13,7 @@ import {expect} from 'chai'
 import wire from '../../../lib/wire/index.js'
 import wirerouter from '../../../lib/wire/router.js'
 import wireutil from '../../../lib/wire/util.js'
+import {APPLE_TV, platformOf} from '../../../lib/units/ios-device/plugins/devicestate.js'
 import {importFresh, mockModule} from '../../helpers/module-mock.mts'
 
 var lib = new URL('../../../lib/', import.meta.url)
@@ -97,9 +98,11 @@ interface Unit {
   done(channel: string): Promise<Decoded>
 }
 
+// loadPlugin <plugin> <type of the device, '' when WDA cannot tell it> <name of the device>
 async function loadPlugin(
   name: string
 , deviceType = 'iPhone'
+, deviceName = 'iPhone XR'
 ): Promise<{plugin: any, unit: Unit}> {
   var pushed: unknown[][] = []
   var router = wirerouter()
@@ -202,6 +205,19 @@ async function loadPlugin(
         return {baseUrl: 'http://127.0.0.1:1', sessionId: 'stf-1', deviceType: deviceType}
       })
     })
+  , mockModule(module('units/ios-device/plugins/devicestate.js'), {
+      APPLE_TV: APPLE_TV
+    , platformOf: platformOf
+    , default: syrup.serial().define(function() {
+        return {
+          type: function() {
+            return deviceType ?
+              Bluebird.resolve(deviceType) :
+              Bluebird.reject(new Error('WDA is not there'))
+          }
+        }
+      })
+    })
   , mockModule(module('units/ios-device/plugins/group.js'), {
       default: syrup.serial().define(function() {
         return group
@@ -212,7 +228,7 @@ async function loadPlugin(
     var plugin = await (await importFresh(module('units/ios-device/plugins/' + name + '.js')))
       .default.consume({
         serial: SERIAL
-      , deviceName: 'iPhone XR'
+      , deviceName: deviceName
       , provider: 'provider'
       , screenWsUrlPattern: ''
       , screenPort: 7400
@@ -464,6 +480,22 @@ describe('zebrunner: ios-device go-ios plugins', function() {
       ]).to.deep.equal([true, 'WIFI', 'Lab', -40, 30, 36, 80])
       // the build of iOS comes from lockdown, not a made up architecture
       expect(sent[0]!.message.options.architect).to.equal('')
+      expect(sent[0]!.message.options.platform).to.equal('iOS')
+    })
+
+    ;[
+      ['an iPhone with "tv" in its name', 'iPhone', 'Kotvitsky TV', 'iOS']
+    , ['an Apple TV', 'Apple TV', 'Living room', 'tvOS']
+    , ['a device WDA cannot tell the type of', '', 'Apple TV', 'iOS']
+    ].forEach(function([label, deviceType, deviceName, platform]) {
+      it(`should register ${label} as ${platform}`, async function() {
+        var {plugin, unit} = await loadPlugin('info/index', deviceType, deviceName)
+        await plugin.manageDeviceInfo()
+        var initialize = unit.sent().find(function(item) {
+          return item.type === 'InitializeIosDeviceState'
+        })
+        expect(initialize!.message.options).to.include({name: deviceName, platform: platform})
+      })
     })
   })
 })

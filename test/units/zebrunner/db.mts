@@ -65,8 +65,18 @@ describe('zebrunner: dbapi', function() {
     })
     expect(writes[0]).to.eql({
       deviceType: 'Apple TV'
+    , platform: 'tvOS'
     , display: {height: 1080, width: 1920, scale: 1}
     })
+
+    await dbapi.setIosDeviceScreen({
+      serial: 'serial'
+    , deviceType: 'iPhone'
+    , width: 1170
+    , height: 2532
+    , scale: 3
+    })
+    expect(writes[1]).to.include({deviceType: 'iPhone', platform: 'iOS'})
   })
 
   it('should keep the battery of an iOS device', async function() {
