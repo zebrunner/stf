@@ -140,6 +140,8 @@ Every Android device worker sends its ports to the processor (`DevicePortsMessag
 | `GET /api/v1/devices/{serial}/owner` | the owner of the group of the device |
 | `GET /api/v1/devices/{serial}/type` | the device type of an iOS device (`iOS`, `tvOS`) |
 
+The `size`, `owner` and `type` routes need an access token (`Authorization: Bearer <token>`) as the other routes of the API.
+
 The routes of the enrolled device hosts (`/api/v1/nodes/...`, `/api/v1/zebrunner/screen-auth`, `/api/v1/zebrunner/nodes/...`) are described in [Nodes (enrollment)](#nodes-enrollment).
 
 The device lists and `GET /api/v1/devices/{serial}` also return `name`, the model of the device, and `screenPort` and `connectPort`, the ports of its worker (Android and iOS, see [Ports of the Android devices](#ports-of-the-android-devices)). The operations tagged `admin` need an admin with the session cookie of the app as with an access token (`lib/units/api/helpers/securityHandlers.ts`; upstream checked the token only).
