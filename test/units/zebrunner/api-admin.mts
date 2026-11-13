@@ -27,6 +27,9 @@ var USERS: Record<string, {email: string, privilege: string}> = {
 var restoreDb = mockModule(new URL('../../../lib/db/index.js', import.meta.url), {default: {}})
 var restoreDbApi = mockModule(new URL('../../../lib/db/api.js', import.meta.url), {default: {
   loadUser: function(email: string) {
+    if (email === 'broken@example.com') {
+      return Bluebird.reject(new Error('the database is gone'))
+    }
     return Bluebird.resolve(USERS[email] || null)
   }
   // the id of a token is the email of its user here
@@ -126,5 +129,10 @@ describe('zebrunner: admin operations of the API', function() {
         expect(outcome.user && outcome.user.email, entry.name).to.equal('user@example.com')
       }
     })
+  })
+
+  it('should answer 500 when the user of an access token cannot be loaded', async function() {
+    var outcome = await authenticate({tags: ['user']}, {token: 'broken@example.com'})
+    expect(outcome).to.eql({code: 500, user: null})
   })
 })
