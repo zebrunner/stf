@@ -119,6 +119,8 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 | `STF_ZMQ_CURVE_SERVER_PUBLIC_KEY` | | Public key of the triproxies: the units and the device providers connect to them over CURVE |
 | `STF_ZMQ_CURVE_SECRET_KEY` | | Secret key of the client, with `STF_ZMQ_CURVE_SERVER_PUBLIC_KEY`; its public key is derived from it. The server units share one key (the triproxies accept it); a device host has its own one, registered by its enrollment |
 
+`stf auth-zebrunner --app-url` is the address the sign-in sends the browser to with the token (`?jwt=...`), taken as is like the other `auth-*` units: mcloud gives `${STF_URL}/stf`, which stf-proxy rewrites to `/` of the app.
+
 ### Ports of the Android devices
 
 `stf provider` gives every device worker a group of 4 ports of `--min-port`..`--max-port` (`STF_PROVIDER_MIN_PORT`, `STF_PROVIDER_MAX_PORT`): the first one is the screen WebSocket, the second one the remote debug port the users connect to (`adb connect`). With `--connect-port` (`STF_PROVIDER_CONNECT_PORT`, mcloud-device passes it) the remote debug port is fixed (`lib/util/zebrunner-connect-port.ts`):
