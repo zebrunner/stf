@@ -394,7 +394,10 @@ describe('zebrunner: device data of an iOS device', function() {
     var datautil = (await import('../../../lib/util/datautil.js')).default
     var device = datautil.applyData({
       serial: 'udid'
-    , model: 'iPhone_XR'
+    , ios: true
+    , platform: 'iOS'
+    , product: 'iPhone11,8'
+    , model: 'iPhone'
     , memory: {rom: 60982}
     } as unknown as Parameters<typeof datautil.applyData>[0]) as unknown as {
       name: string
@@ -402,7 +405,7 @@ describe('zebrunner: device data of an iOS device', function() {
       memory: {ram: number, rom: number}
     }
     expect(device.name).to.equal('iPhone XR')
-    expect(device.cpu.name).to.equal('Apple A12')
+    expect(device.cpu.name).to.equal('Apple A12 Bionic')
     expect(device.memory).to.deep.equal({ram: 3072, rom: 60982})
   })
 })

@@ -54,7 +54,7 @@ The type of the device (iPhone or Apple TV), its screen and its iOS version come
 | bundletool 1.18.3, OpenJDK 21 (JRE) | converts the uploaded `.aab` files into `.apk` files (storage-temp) |
 | GraphicsMagick, TurboJPEG | resize the images and the screenshots (storage-plugin-image) |
 | `libplist-utils` (`plistutil`) | reads the binary `Info.plist` of uploaded `.ipa` files |
-| iOS, Android and tvOS icons | replace the generic icons of `@devicefarmer/stf-device-db` |
+| iOS, Android and tvOS icons (`icon/`) | the icons of the device list; `@devicefarmer/stf-device-db` 2 draws the other device pictures as SVG |
 
 go-ios, socat and curl, which the `ios-device` unit and the scripts of the device containers use, are installed by the mcloud-device image.
 
