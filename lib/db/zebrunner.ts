@@ -189,9 +189,11 @@ export default function extendDbApi(dbapi: DbApi, db: Db) {
   }
 
   // The type and the screen of an iOS device, which its unit reads from WebDriverAgent
+  // the platform follows the type WDA tells, also when the unit could not read it before it registered the device
   dbapi.setIosDeviceScreen = function(message) {
     return db.run(r.table('devices').get<DeviceDocument>(message.serial).update({
       deviceType: message.deviceType
+    , platform: message.deviceType === 'Apple TV' ? 'tvOS' : 'iOS'
     , display: {
         height: message.height
       , width: message.width
