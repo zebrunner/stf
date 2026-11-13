@@ -77,6 +77,9 @@ The file `VERSION` is the release in work (bumped by hand after a release). The 
 every merge into `develop` after `Report` passed: `public.ecr.aws/zebrunner/stf:<VERSION>-develop-<sha>` (7 characters
 of the commit) and `<VERSION>-develop-latest`, by the reusable workflow `docker-publish.yml` of
 [mcloud-conventions](https://github.com/zebrunner/mcloud-conventions) over `make push`.
+The workflows of upstream publish nothing from the fork: `Docker` (`docker.yml`) only builds the images of the pull
+requests, `Prepare release` and `Release` (the npm package `@devicefarmer/stf` and the Docker Hub image
+`devicefarmer/stf`) run in DeviceFarmer/stf only.
 
 Without docker (Node.js 22.18 or later):
 

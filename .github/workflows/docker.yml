@@ -19,7 +19,9 @@ jobs:
       id-token: write
     with:
       tag: latest
-      push: ${{ github.event_name == 'push' }}
+      # Fork (Zebrunner): devicefarmer/stf is the image of upstream; the fork builds it on the pull requests only and
+      # publishes its own image by the Publish job of ci.yml
+      push: ${{ github.event_name == 'push' && github.repository == 'DeviceFarmer/stf' }}
 
   debian:
     name: Debian image
