@@ -253,13 +253,26 @@ describe('zebrunner: device API', function() {
 
   describe('GET /devices/{serial}/type', function() {
     it('should answer the type of the device', async function() {
-      dbapi.getDeviceType.resolves('tvOS')
-      expect((await call('getDeviceType', {serial: 'serial'})).body).to.equal('tvOS')
+      dbapi.getDeviceType.resolves('Apple TV')
+      var reply = await call('getDeviceType', {serial: 'serial'})
+      expect(reply.code).to.equal(200)
+      expect(reply.body).to.eql({type: 'Apple TV'})
     })
 
-    it('should answer no type for an error', async function() {
+    it('should answer 404 for an unknown device or a device without a type', async function() {
+      dbapi.getDeviceType.resolves(null)
+      var reply = await call('getDeviceType', {serial: 'serial'})
+      expect(reply.code).to.equal(404)
+      expect(reply.body.description).to.equal('Device not found')
+      dbapi.getDeviceType.resolves('')
+      reply = await call('getDeviceType', {serial: 'serial'})
+      expect(reply.code).to.equal(404)
+      expect(reply.body.description).to.equal('Device type unknown')
+    })
+
+    it('should answer 500 for an error', async function() {
       dbapi.getDeviceType.rejects(new Error('db'))
-      expect((await call('getDeviceType', {serial: 'serial'})).body).to.eql({deviceType: null})
+      expect((await call('getDeviceType', {serial: 'serial'})).code).to.equal(500)
     })
   })
 })
