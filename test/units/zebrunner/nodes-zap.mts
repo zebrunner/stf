@@ -251,6 +251,86 @@ describe('zebrunner: node keys and tokens of the server units', function() {
     })
   })
 
+  describe('ZAP handler before the first read of the keys', function() {
+    this.timeout(10000)
+
+    var sockets: Array<ReturnType<typeof zmq.socket>> = []
+
+    function socket(type: Parameters<typeof zmq.socket>[0], curve: CurveConfig) {
+      var sock = zmqcurve.secure(zmq.socket(type), curve)
+      sock.setsockopt(zmq.options.linger, 0)
+      sockets.push(sock)
+      return sock
+    }
+
+    function client(keys: {secretKey: string}) {
+      return zmqcurve.config({
+        STF_ZMQ_CURVE_SERVER_PUBLIC_KEY: server.publicKey
+      , STF_ZMQ_CURVE_SECRET_KEY: keys.secretKey
+      })
+    }
+
+    afterEach(async function() {
+      sockets.forEach(function(sock) {
+        sock.close()
+      })
+      sockets = []
+      await zmqcurve.stopZapHandler()
+    })
+
+    it('should defer the nodes until the keys are read, then let them in', async function() {
+      // the API unit does not answer yet: the triproxy starts before it
+      api.keyStatus = 500
+      var endpoint = `tcp://127.0.0.1:${await freePort()}`
+      var received: string[] = []
+      var pull = socket('pull', zmqcurve.config({
+        STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey
+      , STF_ZMQ_CURVE_SECRET_KEY: units.secretKey
+      , STF_NODES_API_URL: api.origin
+      , STF_STORAGE_TOKEN: INTERNAL
+      }))
+      pull.on('message', function(message: Buffer) {
+        received.push(message.toString())
+      })
+      // a deferred connection ends with the handshake interval of the server (30 s by default)
+      ;(pull as unknown as {_socket: {handshakeInterval: number}})._socket.handshakeInterval = 300
+      pull.bindSync(endpoint)
+      await delay(300)
+      expect(zmqcurve.nodeKeysPending()).to.equal(true)
+
+      socket('push', client(units)).connect(endpoint).send('units')
+      socket('push', client(enrolled)).connect(endpoint).send('enrolled')
+      socket('push', client(revoked)).connect(endpoint).send('revoked')
+      await delay(1000)
+      // the key of the server units does not wait for the nodes
+      expect(received).to.deep.equal(['units'])
+
+      // the first read: the deferred node connects again by itself and is let in, the revoked one
+      // is refused now
+      zmqcurve.setNodeKeys({allowed: [enrolled.publicKey], denied: [revoked.publicKey]})
+      expect(zmqcurve.nodeKeysPending()).to.equal(false)
+      await delay(1500)
+      expect(received.sort()).to.deep.equal(['enrolled', 'units'])
+    })
+
+    it('should refuse the unknown keys at once without the nodes of the API', async function() {
+      var endpoint = `tcp://127.0.0.1:${await freePort()}`
+      var received: string[] = []
+      var pull = socket('pull', zmqcurve.config({
+        STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey
+      , STF_ZMQ_CURVE_SECRET_KEY: units.secretKey
+      }))
+      pull.on('message', function(message: Buffer) {
+        received.push(message.toString())
+      })
+      pull.bindSync(endpoint)
+      expect(zmqcurve.nodeKeysPending()).to.equal(false)
+      socket('push', client(enrolled)).connect(endpoint).send('enrolled')
+      await delay(1000)
+      expect(received).to.deep.equal([])
+    })
+  })
+
   describe('storage', function() {
     describe('createTokenVerifier', function() {
       it('should check a node token with the API unit and trust it for a while', async function() {

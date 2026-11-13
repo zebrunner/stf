@@ -16,7 +16,12 @@
 *
 * The keys of the enrolled nodes (ZEBRUNNER.md#nodes-enrollment) come from the API unit of
 * STF_NODES_API_URL (lib/util/zebrunner-nodes-client.ts): the keys of the active nodes are allowed,
-* the keys of the revoked nodes and the retired keys are refused (deny wins).
+* the keys of the revoked nodes and the retired keys are refused (deny wins). Until their first read
+* (the start of the triproxy, the API unit not answering yet) another key is deferred, not refused:
+* ZAP 300, a temporary failure, sends no ERROR: libzmq closes the connection at the end of the
+* handshake interval of the server (ZMQ_HANDSHAKE_IVL, 30 s) and the client connects again, so the
+* nodes that connect at once after a restart of the server are let in then instead of being refused
+* for good (a refusal ends their connection, libzmq does not connect it again).
 **/
 
 import crypto from 'crypto'
@@ -224,6 +229,14 @@ export interface NodeKeySets {
 const NO_NODE_KEYS: NodeKeySets = {allowed: new Set(), denied: new Set()}
 let nodeKeys = NO_NODE_KEYS
 let nodeWatcher: Watcher | null = null
+// the keys of the enrolled nodes were read once since the start of the watcher
+let nodeKeysRead = false
+const deferredLogged = new Map<string, number>()
+
+// The keys of the enrolled nodes are expected, not read yet: the unknown keys are deferred
+export function nodeKeysPending(): boolean {
+  return nodeWatcher !== null && !nodeKeysRead
+}
 
 // isAllowedKey <key> <clients> <nodes>: the keys of the variables and of the active nodes, minus
 // the keys of the revoked nodes and the retired ones: deny wins
@@ -253,6 +266,7 @@ export function setNodeKeys(keys: NodeKeys) {
     )
   }
   nodeKeys = next
+  nodeKeysRead = true
 }
 
 function logDenied(address: string, key: string) {
@@ -268,6 +282,17 @@ function logDenied(address: string, key: string) {
     log.warn(
       'Refused the ZeroMQ client %s with the unknown key "%s" (not the key of an active enrolled ' +
       'node)'
+    , address
+    , key
+    )
+  }
+}
+
+function logDeferred(address: string, key: string) {
+  if (once(deferredLogged, address)) {
+    log.info(
+      'Deferred the ZeroMQ client %s with the key "%s": the keys of the enrolled nodes are not ' +
+      'read yet, it connects again'
     , address
     , key
     )
@@ -302,17 +327,25 @@ async function serveZap(router: zmq.Router) {
       // routing id, delimiter, version, request id, domain, address, identity, mechanism, key
       const [routingId, delimiter, , requestId, , address, , mechanism, credentials] = frames
       const key = credentials ? Buffer.from(credentials).toString('hex') : ''
-      const allowed = String(mechanism) === 'CURVE' && isAllowedKey(key, allowedClients)
-      if (!allowed) {
-        logDenied(String(address), key)
+      const curve = String(mechanism) === 'CURVE'
+      let status = ['200', 'OK']
+      if (!curve || !isAllowedKey(key, allowedClients)) {
+        if (curve && nodeKeysPending()) {
+          logDeferred(String(address), key)
+          status = ['300', 'The keys of the enrolled nodes are not read yet']
+        }
+        else {
+          logDenied(String(address), key)
+          status = ['400', 'Unknown client key']
+        }
       }
       await router.send([
         routingId!
       , delimiter!
       , '1.0'
       , requestId!
-      , allowed ? '200' : '400'
-      , allowed ? 'OK' : 'Unknown client key'
+      , status[0]!
+      , status[1]!
       , ''
       , ''
       ])
@@ -376,6 +409,7 @@ export function stopZapHandler(): Promise<void> {
     nodeWatcher = null
   }
   nodeKeys = NO_NODE_KEYS
+  nodeKeysRead = false
   const router = zapHandler
   zapHandler = null
   if (!router) {
@@ -504,6 +538,7 @@ export default {
 , config
 , generateKeyPair
 , isAllowedKey
+, nodeKeysPending
 , publicKeyOf
 , secure
 , setNodeKeys
