@@ -72,6 +72,9 @@ default, required by `push`). `make push` uses the buildx builder `mcloud` (dock
 once; the other platform is built emulated by QEMU (`docker run --privileged --rm tonistiigi/binfmt --install all`),
 which takes long for the native modules: building every platform on its own machine and joining them with
 `docker buildx imagetools create` (as `.github/workflows/docker-build.yml`) is faster.
+The base image `ubuntu:26.04` is pinned by the digest of its multi-platform index (Dependabot updates it), the Node.js
+tarballs by their sha256 of `SHASUMS256.txt` of nodejs.org: a new Node.js version changes `.nvmrc`, the URLs and the sums
+in `Dockerfile`. The image is built for `linux/amd64` and `linux/arm64` only, another platform stops the build.
 
 The file `VERSION` is the release in work (bumped by hand after a release). The `Publish` job of CI pushes the image of
 every merge into `develop` after `Report` passed: `public.ecr.aws/zebrunner/stf:<VERSION>-develop-<sha>` (7 characters
