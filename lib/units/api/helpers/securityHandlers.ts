@@ -86,6 +86,13 @@ function accessTokenAuth(req: SecurityRequest, res: Response, next: (err?: unkno
           })
           .catch(function(err) {
             log.error('Failed to load user: ', err.stack)
+            // Fork (Zebrunner): answer, the request hung (upstream only logged the error)
+            if (!res.headersSent) {
+              return res.status(500).json({
+                success: false
+              , description: 'Internal Server Error'
+              })
+            }
           })
       })
       .catch(function(err) {
