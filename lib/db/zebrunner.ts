@@ -63,7 +63,8 @@ export interface ZebrunnerDbApi extends NodesDbApi {
   getDeviceSize(serial: string): Promise<DeviceDocument['display'] | null>
   getDeviceGroupOwner(serial: string): Promise<DeviceGroup['owner'] | null>
   setDeviceGroupOwner(message: {serial: string}): Promise<r.WriteResult>
-  getDeviceType(serial: string): Promise<string | null | undefined>
+  // null for an unknown device, '' for a device without a type
+  getDeviceType(serial: string): Promise<string | null>
   ownedDeviceChannels(email: string): Promise<string[]>
   visibleDeviceChannel(email: string, channel: string): Promise<boolean>
   initializeIosDeviceState(
@@ -239,7 +240,7 @@ export default function extendDbApi(dbapi: DbApi, db: Db) {
 
   dbapi.getDeviceType = function(serial) {
     return db.run(r.table('devices').get<DeviceDocument>(serial)).then(function(device) {
-      return device ? device.deviceType : null
+      return device ? device.deviceType || '' : null
     })
   }
 

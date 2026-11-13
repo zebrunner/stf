@@ -135,10 +135,10 @@ Every Android device worker sends its ports to the processor (`DevicePortsMessag
 
 | Route | What it does |
 | --- | --- |
-| `PUT /api/v1/devices/{serial}` with `{"status": ...}` | `disconnected`, `offline`, `available` (frees the device), `busy` (needs `owner.name`, marks the device as used by the owner), `unauthorized`, `preparing`, `unhealthy` |
+| `PUT /api/v1/devices/{serial}` with `{"status": ...}` or `{"device": {"status": ...}}` (the form mcloud-grid sends) | `disconnected`, `offline`, `available` (frees the device), `busy` (needs `owner.name`, also takes `owner.email`, marks the device as used by the owner), `unauthorized`, `preparing`, `unhealthy`, in any case; another status is refused with 400 |
 | `GET /api/v1/devices/{serial}/size` | the display of the device, `{height: 0, width: 0, scale: 0}` when unknown |
 | `GET /api/v1/devices/{serial}/owner` | the owner of the group of the device |
-| `GET /api/v1/devices/{serial}/type` | the device type of an iOS device (`iOS`, `tvOS`) |
+| `GET /api/v1/devices/{serial}/type` | the type of an iOS device as WebDriverAgent tells it, `{"type": "iPhone"}` (also an iPad) or `{"type": "Apple TV"}`; 404 for an unknown device or a device without a type (Android, or not read yet) |
 
 The `size`, `owner` and `type` routes need an access token (`Authorization: Bearer <token>`) as the other routes of the API.
 
