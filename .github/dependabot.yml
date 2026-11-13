@@ -4,6 +4,11 @@ updates:
   directory: "/"
   schedule:
     interval: weekly
+# Fork (Zebrunner): the digest of the base image of Dockerfile
+- package-ecosystem: docker
+  directory: "/"
+  schedule:
+    interval: weekly
 - package-ecosystem: npm
   directory: "/"
   schedule:
