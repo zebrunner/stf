@@ -1,5 +1,5 @@
 // Fork (Zebrunner): the go-ios plugins of the ios-device unit (lib/units/ios-device/plugins/shell.ts,
-// devicelog.ts, filesystem.ts) with a fake go-ios binary on the PATH and their STF side faked
+// devicelog.ts, filesystem.ts, reboot.ts) with a fake go-ios binary on the PATH and their STF side faked
 import {EventEmitter} from 'node:events'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -70,6 +70,14 @@ else if (rest[0] === 'fsync' && rest.includes('tree')) {
     process.exit(1)
   }
   process.stdout.write('|-DCIM/\\n|  |-100APPLE/\\n|  |  |-IMG_0001.JPG\\n|-notes.txt\\n')
+}
+else if (rest[0] === 'reboot') {
+  fs.appendFileSync(process.env.FAKE_GO_IOS_CALLS, JSON.stringify(args) + '\\n')
+  if (process.env.FAKE_GO_IOS_FAIL) {
+    var failure = {level: 'error', msg: 'failed to reboot', err: 'device is locked'}
+    console.error(JSON.stringify(failure))
+    process.exit(1)
+  }
 }
 else if (rest[0] === 'fsync' && rest.includes('pull')) {
   var src = option('--srcPath')
@@ -241,6 +249,42 @@ describe('zebrunner: ios-device go-ios plugins', function() {
   after(function() {
     process.env.PATH = originalPath
     fs.rmSync(bin, {recursive: true, force: true})
+  })
+
+  describe('reboot', function() {
+    var calls: string
+
+    beforeEach(function() {
+      calls = path.join(bin, 'calls')
+      fs.writeFileSync(calls, '')
+      process.env.FAKE_GO_IOS_CALLS = calls
+    })
+
+    afterEach(function() {
+      delete process.env.FAKE_GO_IOS_CALLS
+      delete process.env.FAKE_GO_IOS_FAIL
+    })
+
+    it('should reboot the device with go-ios and answer when it did', async function() {
+      var {unit} = await loadPlugin('reboot')
+      var started = Date.now()
+      unit.send('tx-1', new wire.RebootMessage())
+      var done = await unit.done('tx-1')
+      expect(done.message.success).to.equal(true)
+      expect(Date.now() - started).to.be.below(3000)
+      expect(fs.readFileSync(calls, 'utf8')).to.equal(
+        JSON.stringify(['reboot', '--udid=' + SERIAL]) + '\n'
+      )
+    })
+
+    it('should answer the error of go-ios when the reboot fails', async function() {
+      process.env.FAKE_GO_IOS_FAIL = '1'
+      var {unit} = await loadPlugin('reboot')
+      unit.send('tx-1', new wire.RebootMessage())
+      var done = await unit.done('tx-1')
+      expect(done.message.success).to.equal(false)
+      expect(done.message.data).to.equal('failed to reboot: device is locked')
+    })
   })
 
   describe('shell', function() {
