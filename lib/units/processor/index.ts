@@ -90,7 +90,7 @@ export default db.ensureConnectivity(function(options: ProcessorOptions) {
   // user connects with them. The key comes from the device, so it has to hash to the fingerprint
   // it is filed under before it is trusted.
   function storeAdbPublicKey(fingerprint: string, publicKey: string) {
-    return adb.util.parsePublicKey(publicKey)
+    return Promise.resolve(adb.util.parsePublicKey(publicKey))
       .then(function(key) {
         if (key.fingerprint !== fingerprint) {
           throw new Error('Public key does not match its fingerprint')

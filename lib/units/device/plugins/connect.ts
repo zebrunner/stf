@@ -87,7 +87,7 @@ export default syrup.serial()
           }
 
           return Promise.map(message.adbPublicKeys || [], function(publicKey) {
-            return adb.util.parsePublicKey(publicKey)
+            return Promise.resolve(adb.util.parsePublicKey(publicKey))
               .catch(function(err) {
                 log.warn('Ignoring unparseable ADB public key', err.message)
                 return null
