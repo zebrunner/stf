@@ -73,7 +73,7 @@ once; the other platform is built emulated by QEMU (`docker run --privileged --r
 which takes long for the native modules: building every platform on its own machine and joining them with
 `docker buildx imagetools create` (as `.github/workflows/docker-build.yml`) is faster.
 
-The file `VERSION` is the release in work (bumped by hand after a release). The `Publish` job of CI pushes the image of
+The file `VERSION` is the release of the fork in work (bumped by hand after a release), the tag of the image; the `version` of `package.json` is the upstream release the fork is merged with (`CHANGELOG.md`), it is not the version of the fork. The `Publish` job of CI pushes the image of
 every merge into `develop` after `Report` passed: `public.ecr.aws/zebrunner/stf:<VERSION>-develop-<sha>` (7 characters
 of the commit) and `<VERSION>-develop-latest`, by the reusable workflow `docker-publish.yml` of
 [mcloud-conventions](https://github.com/zebrunner/mcloud-conventions) over `make push`.
@@ -90,7 +90,7 @@ node build.mts build
 
 ## Run
 
-The units are started by the `docker-compose.yml` of mcloud (`stf app`, `stf auth-zebrunner`, `stf processor`, `stf storage-temp`, ...) and by `start_all.sh` of mcloud-device (`stf provider` for Android, `node /app/lib/cli ios-device` for iOS). For development, `stf local` starts all the server units on one machine, `--auth-type zebrunner` uses the Zebrunner sign-in; its provider is the enrolled node `local` at `127.0.0.1`, which it enrolls with `stf node-add` after the migration (only enrolled nodes provide devices, see [Nodes (enrollment)](#nodes-enrollment)).
+The units are started by the `docker-compose.yml` of mcloud (`stf app`, `stf auth-zebrunner`, `stf processor`, `stf storage-temp`, ...) and by `entrypoint.sh` of mcloud-device (`stf provider` for Android, `stf ios-device` for iOS). For development, `stf local` starts all the server units on one machine, `--auth-type zebrunner` uses the Zebrunner sign-in; its provider is the enrolled node `local` at `127.0.0.1`, which it enrolls with `stf node-add` after the migration (only enrolled nodes provide devices, see [Nodes (enrollment)](#nodes-enrollment)).
 
 ## Configuration
 
@@ -113,7 +113,7 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 | `STF_PROVIDER_DEVICE_NAME` | | Name of the device of the container, shown as its model |
 | `STF_PROVIDER_HOST` | `127.0.0.1` | Host of the device container: the address of its enrolled node (the address of the invite), part of the node proof of its devices and the host of their screen URLs |
 | `STF_PROVIDER_VNC_PORT` | `5900` | VNC port of the single device of a provider |
-| `STF_PROVIDER_CONNECT_PORT` | | Fixed remote debug port (`adb connect`, `--connect-url-pattern`) of the device of a provider, 1..65535, see [Ports of the Android devices](#ports-of-the-android-devices) |
+| `STF_PROVIDER_CONNECT_PORT` | | Fixed remote debug port (`adb connect`, `--connect-url-pattern`) of the Android device of a provider, 1..65535 for the provider; mcloud-device accepts 1024..65535 and passes it to Android only (the `--connect-port` of an iOS device is `MJPEG_PORT`), see [Ports of the Android devices](#ports-of-the-android-devices) |
 | `STF_PROCESSOR_PUBLIC_IP` | `localhost` | Host of the screen URLs of iOS devices without a URL pattern |
 | `STF_ZMQ_CURVE_SERVER_SECRET_KEY` | | Secret key of the triproxies: their tcp endpoints are CURVE servers that accept only the key of the server units (`STF_ZMQ_CURVE_SECRET_KEY`) and the keys of the active enrolled nodes (`STF_NODES_API_URL`), see [ZeroMQ](#zeromq) |
 | `STF_ZMQ_CURVE_SERVER_PUBLIC_KEY` | | Public key of the triproxies: the units and the device providers connect to them over CURVE |
@@ -125,7 +125,7 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 
 - the port is taken out of the pool, the screen and the other ports never get it; the range needs 4 ports besides it (`7404`..`7410` with `7405`: the screen port is `7404`);
 - one device worker holds it at a time, the first one started while it is free. mcloud runs one device per provider; another device started meanwhile gets the second port of its group, with a warning. The port is free again when its worker exits;
-- an invalid port (not 1..65535) or a range without the 4 ports stops the provider at start.
+- an invalid port (not 1..65535) or a range without the 4 ports stops the provider at start; mcloud-device stops before, on a port below 1024.
 
 Every Android device worker sends its ports to the processor (`DevicePortsMessage`) before it is ready, which stores them in the device document as `screenPort` and `connectPort`, as for the iOS devices. The REST API returns them (`GET /api/v1/devices?fields=serial,platform,present,display,screenPort,connectPort,provider`); the adb relay of mcloud reads `GET /api/v1/nodes/relay`, see [Nodes (enrollment)](#nodes-enrollment).
 
