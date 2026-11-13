@@ -129,7 +129,7 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 
 Every Android device worker sends its ports to the processor (`DevicePortsMessage`) before it is ready, which stores them in the device document as `screenPort` and `connectPort`, as for the iOS devices. The REST API returns them (`GET /api/v1/devices?fields=serial,platform,present,display,screenPort,connectPort,provider`); the adb relay of mcloud reads `GET /api/v1/nodes/relay`, see [Nodes (enrollment)](#nodes-enrollment).
 
-`stf ios-device` takes the options of a device unit plus `--wda-host`, `--wda-port`, `--mjpeg-port`, `--device-name` and `--host`, see `node lib/cli ios-device --help`.
+`stf ios-device` takes the options of a device unit plus `--wda-host` (`127.0.0.1` by default; mcloud-device passes `WDA_HOST`, the connector container), `--wda-port`, `--mjpeg-port`, `--device-name` and `--host`, see `stf ios-device --help`. Its `--connect-port` is the port of the MJPEG stream of WebDriverAgent (mcloud-device passes `MJPEG_PORT`), unless `--mjpeg-port` is given; the API returns it as the `connectPort` of the device.
 
 ## REST API
 
