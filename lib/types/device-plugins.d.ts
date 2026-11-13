@@ -27,8 +27,14 @@ export type ZmqSocket = ReturnType<typeof zmqutil.socket>
 export type Channels = ChannelManager
 export type LocalSocket = Awaited<ReturnType<typeof devutil.waitForLocalSocket>>
 export type Identity = ReturnType<typeof devutil.makeIdentity>
-export type DeviceData = NonNullable<ReturnType<typeof deviceData.find>>
-export type DeviceFlags = NonNullable<DeviceData['flags']>
+export type DeviceData = deviceData.DeviceRecord
+// The quirks of a few models, which stf-device-db 2 no longer has
+export interface DeviceFlags {
+  forceMaxPressure?: number
+  forceTouchMode?: string
+  forceMinScreenScale?: number
+  forceTouchOrigin?: string
+}
 
 export type NonNullableFields<T> = {[K in keyof T]: NonNullable<T[K]>}
 
