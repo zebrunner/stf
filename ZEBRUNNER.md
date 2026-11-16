@@ -369,6 +369,7 @@ The `make` targets are thin wrappers over the npm scripts. They run `npm ci` fir
   bash .github/scripts/zebrunner-ios-simulator.sh 27
   IOS_VERSION=27 npx mocha --exit --extension mts test/zebrunner-ios
   ```
+- The iOS legs do not build WebDriverAgent: `.github/scripts/zebrunner-ios-simulator.sh` downloads `WebDriverAgentRunner-Build-Sim-<arch>.zip` of the appium/WebDriverAgent release `WDA_REF` (`zebrunner-ios.yml`) while the simulator boots, checked by the sha256 the script has for that release (a new `WDA_REF` needs its sums).
 
 ### Keeping up with upstream
 
