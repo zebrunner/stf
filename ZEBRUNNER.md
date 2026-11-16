@@ -71,8 +71,8 @@ make push VERSION=3.1    # linux/amd64 and linux/arm64 built by docker buildx an
 `IMAGE_REPO` sets another repository, `VERSION` is the tag and the `org.opencontainers.image.version` label (`dev` by
 default, required by `push`). `make push` uses the buildx builder `mcloud` (docker-container driver), which it creates
 once; the other platform is built emulated by QEMU (`docker run --privileged --rm tonistiigi/binfmt --install all`),
-which takes long for the native modules: building every platform on its own machine and joining them with
-`docker buildx imagetools create` (as `.github/workflows/docker-build.yml`) is faster.
+which takes long for the native modules: the `Publish` job of CI builds every platform on a runner of its own instead
+and pushes it by digest (`PUSH_OUTPUT` of `make push`), then joins them with `docker buildx imagetools create`.
 The base image `ubuntu:26.04` is pinned by the digest of its multi-platform index (Dependabot updates it), the Node.js
 tarballs by their sha256 of `SHASUMS256.txt` of nodejs.org: a new Node.js version changes `.nvmrc`, the URLs and the sums
 in `Dockerfile`. The image is built for `linux/amd64` and `linux/arm64` only, another platform stops the build.
