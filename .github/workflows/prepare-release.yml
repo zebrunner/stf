@@ -14,6 +14,8 @@ permissions:
 jobs:
   prepare:
     name: Prepare release
+    # Fork (Zebrunner): the release branch of upstream, which Release publishes; the fork has VERSION (ZEBRUNNER.md)
+    if: github.repository == 'DeviceFarmer/stf'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
