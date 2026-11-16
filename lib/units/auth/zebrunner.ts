@@ -48,6 +48,9 @@ interface ZebrunnerLocals {
   userData: ZebrunnerUserData
 }
 
+// The answers of the IAM login to credentials it does not accept
+var REFUSED = [400, 401, 403, 404]
+
 export default function(options: ZebrunnerAuthOptions) {
   var log = logger.createLogger('auth-zebrunner')
   var app = express()
@@ -67,8 +70,10 @@ export default function(options: ZebrunnerAuthOptions) {
   , res: express.Response<unknown, ZebrunnerLocals>
   , next: express.NextFunction
   ) {
+    var signedIn = false
     axios.post<ZebrunnerAuthData>(options.zebrunner.loginURL, req.body)
       .then(function(response) {
+        signedIn = true
         res.locals.authData = response.data
         return axios.get<ZebrunnerUserData>(
           `${options.zebrunner.userinfoURL}/${res.locals.authData.userId}`
@@ -84,17 +89,28 @@ export default function(options: ZebrunnerAuthOptions) {
         return next()
       })
       .catch(function(error: unknown) {
-        if (axios.isAxiosError(error) && error.response && error.response.status === 404) {
+        var status = axios.isAxiosError(error) && error.response ? error.response.status : 0
+        // IAM refuses unknown or wrong credentials and deactivated users: they count for ratelimit()
+        if (!signedIn && REFUSED.includes(status)) {
+          log.warn('Authentication failure (IAM answered %d)', status)
           return res.status(400)
             .json({
               success: false
             , error: 'InvalidCredentialsError'
             })
         }
-        else {
-          log.error('authMiddleware, response error', error)
-          return next(error)
-        }
+        // Never the error itself: the config of an axios error holds the submitted password
+        // and the token of the user
+        log.error(
+          'Zebrunner IAM failed to %s: %s'
+        , signedIn ? 'load the user' : 'sign in'
+        , error instanceof Error ? error.message : String(error)
+        )
+        return res.status(502)
+          .json({
+            success: false
+          , error: 'ServerError'
+          })
       })
   }
 
@@ -149,7 +165,7 @@ export default function(options: ZebrunnerAuthOptions) {
     res.status(200)
       .json({
         success: true
-      , redirect: urlutil.addParams(`${options.appUrl}stf`, {
+      , redirect: urlutil.addParams(options.appUrl, {
           jwt: token
         })
       })

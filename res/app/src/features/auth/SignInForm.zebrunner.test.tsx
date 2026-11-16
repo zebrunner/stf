@@ -1,5 +1,5 @@
 // Fork (Zebrunner): the sign-in form explains the sign-in limit of lib/util/ratelimit.ts
-import {fireEvent, render, screen} from '@testing-library/react'
+import {cleanup, fireEvent, render, screen} from '@testing-library/react'
 import {MantineProvider} from '@mantine/core'
 import {afterEach, beforeAll, describe, expect, it, vi} from 'vitest'
 import {SignInForm} from './SignInForm'
@@ -18,7 +18,9 @@ beforeAll(() => {
   }))
 })
 
+// unmount before jsdom is torn down: a render React schedules after the test would find no window
 afterEach(() => {
+  cleanup()
   vi.unstubAllGlobals()
 })
 

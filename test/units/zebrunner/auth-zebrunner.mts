@@ -5,6 +5,7 @@ import express from 'express'
 import jws from 'jws'
 
 import jwtutil from '../../../lib/util/jwtutil.js'
+import logger from '../../../lib/util/logger.js'
 import {listen, startUnit, type Running} from '../../helpers/zebrunner.mts'
 
 var SECRET = 'auth-test-secret'
@@ -30,6 +31,10 @@ describe('zebrunner: auth-zebrunner', function() {
     app.use(express.json())
     app.post('/api/iam/v1/auth/login', function(req, res) {
       logins.push(req.body)
+      if (req.body.password === 'deactivated') {
+        res.status(401).json({message: 'unauthorized'})
+        return
+      }
       if (req.body.password !== 'right') {
         res.status(404).json({message: 'not found'})
         return
@@ -58,7 +63,8 @@ describe('zebrunner: auth-zebrunner', function() {
     auth = await startUnit(new URL('../../../lib/units/auth/zebrunner.js', import.meta.url), {
       secret: SECRET
     , ssid: 'ssid'
-    , appUrl: 'http://stf.example.com/'
+      // --app-url of the docker-compose.yml of mcloud: ${STF_URL}/stf
+    , appUrl: 'http://stf.example.com/stf'
     , zebrunner: {
         loginURL: iam.origin + '/api/iam/v1/auth/login'
       , userinfoURL: iam.origin + '/api/iam/v1/users'
@@ -104,6 +110,7 @@ describe('zebrunner: auth-zebrunner', function() {
     var body = await res.json() as {success: boolean, redirect: string}
     expect(body.success).to.equal(true)
     var redirect = new URL(body.redirect)
+    // --app-url as is, as the other auth units: it was followed by stf, /stfstf?jwt=...
     expect(redirect.origin + redirect.pathname).to.equal('http://stf.example.com/stf')
     expect(jwtutil.decode(redirect.searchParams.get('jwt')!, SECRET)).to.eql({
       email: 'jdoe@example.com'
@@ -142,6 +149,70 @@ describe('zebrunner: auth-zebrunner', function() {
     }
     expect((await signIn({username: 'brute', password: 'right'})).status).to.equal(429)
     expect((await signIn({username: 'jdoe', password: 'right'})).status).to.equal(200)
+  })
+
+  it('should answer invalid credentials when Zebrunner refuses them with 401', async function() {
+    var res = await signIn({username: 'jdoe', password: 'deactivated'})
+    expect(res.status).to.equal(400)
+    expect(await res.json()).to.eql({success: false, error: 'InvalidCredentialsError'})
+  })
+
+  describe('with an unavailable IAM', function() {
+    var broken: Running
+    var messages: string[] = []
+    function onEntry(entry: {message: string}) {
+      messages.push(entry.message)
+    }
+
+    before(async function() {
+      broken = await startUnit(new URL('../../../lib/units/auth/zebrunner.js', import.meta.url), {
+        secret: SECRET
+      , ssid: 'ssid'
+      , appUrl: 'http://stf.example.com/'
+      , zebrunner: {
+          loginURL: iam.origin + '/broken/login'
+        , userinfoURL: iam.origin + '/api/iam/v1/users'
+        }
+      })
+      logger.on('entry', onEntry)
+    })
+
+    after(async function() {
+      logger.removeListener('entry', onEntry)
+      await broken.close()
+    })
+
+    async function signInBroken(body: object) {
+      var res = await fetch(broken.origin + '/auth/zebrunner/')
+      var all = cookies(res)
+      var csrf = all.find(function(cookie) {
+        return cookie.startsWith('XSRF-TOKEN=')
+      })!.slice('XSRF-TOKEN='.length)
+      return fetch(broken.origin + '/auth/api/v1/zebrunner', {
+        method: 'POST'
+      , headers: {
+          'content-type': 'application/json'
+        , cookie: all.join('; ')
+        , 'x-xsrf-token': decodeURIComponent(csrf)
+        }
+      , body: JSON.stringify(body)
+      })
+    }
+
+    it('should answer a server error without logging the credentials', async function() {
+      messages.length = 0
+      var res = await signInBroken({username: 'jdoe', password: 'TopSecret-123'})
+      expect(res.status).to.equal(502)
+      expect(await res.json()).to.eql({success: false, error: 'ServerError'})
+      expect(messages.join('\n')).to.contain('Zebrunner IAM failed to sign in')
+      expect(messages.join('\n')).not.to.contain('TopSecret-123')
+    })
+
+    it('should not lock a user out while IAM is unavailable', async function() {
+      for (var i = 0; i < 6; i++) {
+        expect((await signInBroken({username: 'outage', password: 'x'})).status).to.equal(502)
+      }
+    })
   })
 
   it('should refuse a sign-in without the CSRF token', async function() {
