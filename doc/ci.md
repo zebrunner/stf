@@ -1,8 +1,10 @@
 # CI
 
 `.github/workflows/ci.yml` runs on every pull request and on pushes to
-`master` and `develop`. A quick OS matrix runs by default; a full matrix runs
-weekly and with the manual `matrix-profile=full` input, see
+`master` and `develop`, except for documentation-only changes. Fork (Zebrunner):
+a push runs no device legs, a pull request the quick Android matrix and the quick
+iOS matrix only when it changes an iOS file or has the label `ci:ios`; the full
+matrix of both runs nightly and with the manual `matrix-profile=full` input, see
 [Fork CI](../ZEBRUNNER.md#ci). Linux jobs run on `ubuntu-24.04`; iOS uses
 macOS simulators. CI needs no secrets: the only
 token involved is the automatic `GITHUB_TOKEN`, used to post the report.
@@ -16,14 +18,14 @@ described under Releasing below.
 
 | Job | What it proves |
 |---|---|
-| `plan` | `.github/android-matrix.json` is well formed, and produces the Android matrix |
+| `plan` | `.github/android-matrix.json` is well formed, and produces the Android matrix; fork: the iOS matrix, and whether the device legs run |
 | `build` | `npm ci` and the webpack bundle all succeed, and `stf -V` runs |
-| `lint` | `node build.mts lint` (eslint over `lib/`, the React/TypeScript UI in `res/app/src`, root JS, a `tsc` typecheck, plus jsonlint) |
-| `unit` | `mocha` over `test/` (`lib/util`, `lib/wire`) |
-| `component` | `vitest` + jsdom over the UI specs in `res/app/src/**/*.test.ts(x)` |
+| `checks`: lint | `node build.mts lint` (eslint over `lib/`, the React/TypeScript UI in `res/app/src`, root JS, a `tsc` typecheck, plus jsonlint) |
+| `checks`: unit | `mocha` over `test/` (`lib/util`, `lib/wire`) |
+| `checks`: component | `vitest` + jsdom over the UI specs in `res/app/src/**/*.test.ts(x)` |
 | `integration` | `stf local` boots against a RethinkDB service, fake devices round-trip through STF's own db layer, and the Playwright web UI suite passes without any device |
-| `android` (matrix) | selected Android releases at API 31 and above: boot an emulator, attach `stf local` to it, and drive it from the browser |
-| `ios` (matrix) | selected stable iOS versions; full runs also include intermediate and optional preview versions |
+| `android` (matrix) | selected Android releases at API 31 and above: boot an emulator, attach `stf local` to it, and drive it from the browser; not on a push |
+| `ios` (matrix) | selected stable iOS versions; full runs also include the oldest, intermediate and optional preview versions; not on a push, on a pull request only with iOS changes or the label `ci:ios` |
 | `report` | aggregates everything into one sticky PR comment |
 
 ### The component tier
@@ -273,7 +275,8 @@ specs, so it still needs no browser and works anywhere, which is what
 CONTRIBUTING asks of it.
 
 `test:component` is the Vitest tier. It runs in jsdom and needs no browser; CI
-still runs it as its own job so the report shows it as a separate line.
+runs it in the `checks` job after lint and unit, with a verdict of its own so
+the report shows it as a separate line.
 
 The fork commits `package-lock.json` (and `test/playwright/package-lock.json`):
 CI and the `Dockerfile` install it with `npm ci`, and the dependency cache is

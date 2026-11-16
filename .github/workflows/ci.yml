@@ -1,12 +1,18 @@
 name: CI
 
+# Fork (Zebrunner): a push runs no device legs, the nightly run has them all; a pull
+# request runs the iOS legs only when it changes an iOS file (ios.paths of
+# .github/zebrunner-ci.json) or gets the label ci:ios (doc/ci.md#what-runs)
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
+    paths-ignore: ['**.md', 'doc/**', 'LICENSE', '.github/ISSUE_TEMPLATE/**']
   push:
     branches: [master, develop]
+    paths-ignore: ['**.md', 'doc/**', 'LICENSE', '.github/ISSUE_TEMPLATE/**']
   schedule:
-    # Fork (Zebrunner): exercise every supported version weekly.
-    - cron: "0 4 * * 1"
+    # Fork (Zebrunner): every supported version, every night.
+    - cron: "30 2 * * *"
   workflow_dispatch:
     inputs:
       matrix-profile:
@@ -24,8 +30,11 @@ on:
 permissions:
   contents: read
 
+# Fork (Zebrunner): the run of another label than ci:ios skips its jobs and has a
+# group of its own, so it does not cancel the run of the pull request; the
+# nightly and manual runs do not cancel the push runs of develop either.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}${{ github.event.action == 'labeled' && github.event.label.name != 'ci:ios' && format('-{0}', github.run_id) || '' }}
   cancel-in-progress: true
 
 env:
@@ -38,12 +47,22 @@ env:
 jobs:
   # Reads .github/android-matrix.json so the matrix and the report's coverage
   # check cannot drift apart.
+  # Fork (Zebrunner): and the iOS matrix of .github/zebrunner-ci.json (the plan
+  # job of zebrunner-ios.yml before), and whether the device legs run at all.
   plan:
     name: Plan
+    if: github.event.action != 'labeled' || github.event.label.name == 'ci:ios'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
+      android: ${{ steps.devices.outputs.android }}
+      ios: ${{ steps.devices.outputs.ios }}
+      ios-matrix: ${{ steps.devices.outputs.ios-matrix }}
+      devices-note: ${{ steps.devices.outputs.note }}
     steps:
       - uses: actions/checkout@v7
 
@@ -55,8 +74,25 @@ jobs:
         id: plan
         run: node .github/scripts/plan-matrix.mts
 
+      # Without the list of files (an API error) the iOS legs run.
+      - name: Plan the device legs
+        id: devices
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          IOS_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:ios') }}
+          CHANGED_FILES: changed-files.txt
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = pull_request ] && [ "$IOS_LABEL" != true ]; then
+            gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files?per_page=100" \
+              --jq '.[] | .filename, (.previous_filename // empty)' > changed-files.txt ||
+              { echo "::warning::could not list the files of the pull request, running the iOS legs"; rm -f changed-files.txt; }
+          fi
+          node .github/scripts/zebrunner-ci.mts devices
+
   build:
     name: Build
+    if: github.event.action != 'labeled' || github.event.label.name == 'ci:ios'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     outputs:
@@ -138,11 +174,20 @@ jobs:
           retention-days: 3
           if-no-files-found: warn
 
-  lint:
-    name: Lint
+  # Fork (Zebrunner): lint, unit and component tests in one job (three before):
+  # together they take less than the integration job, each step still runs
+  # when another one failed and records its own verdict.
+  checks:
+    name: Lint, unit and component tests
     needs: build
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
+    # the node registry tests (test/units/zebrunner/nodes-rethinkdb.mts) need a RethinkDB
+    services:
+      rethinkdb:
+        image: rethinkdb:2.4.2
+        ports:
+          - 28015:28015
     steps:
       - uses: actions/checkout@v7
 
@@ -151,6 +196,7 @@ jobs:
           node-version-file: '.nvmrc'
 
       - name: Restore dependency cache
+        id: deps
         uses: actions/cache/restore@v6
         with:
           path: |
@@ -167,98 +213,24 @@ jobs:
       # valid, so only running the step finds it. bash -n finds it here instead.
       - name: 'Shell-parse every run: block'
         id: runblocks
-        if: always()
+        if: ${{ !cancelled() }}
         run: node .github/scripts/check-run-blocks.mts
 
-      - name: Record verdict
-        if: always()
-        run: |
-          bash .github/scripts/verdict.sh lint \
-            'Lint (eslint + jsonlint + translations + workflow shell)' \
-            '${{ job.status }}' \
-            'lib/, res/ and root JS + JSON, translation catalogs, and every workflow run: block'
-
-      - name: Upload verdict
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: verdict-lint
-          path: verdict.json
-          retention-days: 3
-          if-no-files-found: warn
-
-  unit:
-    name: Unit tests
-    needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    # the node registry tests (test/units/zebrunner/nodes-rethinkdb.mts) need a RethinkDB
-    services:
-      rethinkdb:
-        image: rethinkdb:2.4.2
-        ports:
-          - 28015:28015
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: '.nvmrc'
-
-      - name: Restore dependency cache
-        uses: actions/cache/restore@v6
-        with:
-          path: |
-            node_modules
-          key: ${{ needs.build.outputs.cache-key }}
-          fail-on-cache-miss: true
-
       - name: Wait for RethinkDB
+        id: rethinkdb
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' }}
         run: bash .github/scripts/wait-for-port.sh 28015 60 rethinkdb
 
       - name: mocha unit specs
         id: unit
+        if: ${{ !cancelled() && steps.rethinkdb.outcome == 'success' }}
         env:
           STF_TEST_RETHINKDB: tcp://127.0.0.1:28015
         run: npm run test:unit
 
-      - name: Record verdict
-        if: always()
-        run: |
-          bash .github/scripts/verdict.sh unit 'Unit tests (mocha)' \
-            '${{ steps.unit.outcome || job.status }}' 'lib/util, lib/wire and lib/db specs'
-
-      - name: Upload verdict
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: verdict-unit
-          path: verdict.json
-          retention-days: 3
-          if-no-files-found: warn
-
-  component:
-    name: Component tests
-    needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: '.nvmrc'
-
-      - name: Restore dependency cache
-        uses: actions/cache/restore@v6
-        with:
-          path: |
-            node_modules
-          key: ${{ needs.build.outputs.cache-key }}
-          fail-on-cache-miss: true
-
       - name: vitest (res/app React specs)
         id: component
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' }}
         run: npm run test:component -- --reporter=default --reporter=junit --outputFile.junit=../../test-results/vitest/junit.xml
 
       - name: Summarise vitest results
@@ -290,18 +262,36 @@ jobs:
           retention-days: 3
           if-no-files-found: warn
 
-      - name: Record verdict
+      # The verdict of a step that did not run (the dependency cache failed) is
+      # the status of the job, as in the jobs of their own before.
+      - name: Record verdicts
         if: always()
+        env:
+          LINT: ${{ steps.lint.outcome == 'success' && steps.runblocks.outcome || steps.lint.outcome }}
+          UNIT: ${{ steps.unit.outcome }}
+          COMPONENT: ${{ steps.component.outcome }}
+          JOB: ${{ job.status }}
+          VITEST: ${{ steps.vitest.outputs.summary }}
         run: |
-          bash .github/scripts/verdict.sh component 'Component tests (vitest + React)' \
-            '${{ steps.component.outcome || job.status }}' '${{ steps.vitest.outputs.summary }}'
+          mkdir -p verdicts
+          outcome() {
+            if [ "$1" = skipped ] || [ -z "$1" ]; then echo "$JOB"; else echo "$1"; fi
+          }
+          VERDICT_OUT=verdicts/lint.json bash .github/scripts/verdict.sh lint \
+            'Lint (eslint + jsonlint + translations + workflow shell)' \
+            "$(outcome "$LINT")" \
+            'lib/, res/ and root JS + JSON, translation catalogs, and every workflow run: block'
+          VERDICT_OUT=verdicts/unit.json bash .github/scripts/verdict.sh unit 'Unit tests (mocha)' \
+            "$(outcome "$UNIT")" 'lib/util, lib/wire and lib/db specs'
+          VERDICT_OUT=verdicts/component.json bash .github/scripts/verdict.sh component \
+            'Component tests (vitest + React)' "$(outcome "$COMPONENT")" "$VITEST"
 
-      - name: Upload verdict
+      - name: Upload verdicts
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: verdict-component
-          path: verdict.json
+          name: verdict-checks
+          path: verdicts
           retention-days: 3
           if-no-files-found: warn
 
@@ -466,6 +456,8 @@ jobs:
   android:
     name: Android ${{ matrix.android }} (API ${{ matrix.api }})
     needs: [plan, build]
+    # Fork (Zebrunner): not on a push, see the plan job
+    if: needs.plan.outputs.android == 'true'
     runs-on: ubuntu-24.04
     # Room for two 50 minute emulator attempts plus the setup around them. A
     # healthy leg spends under three minutes in the emulator step and never
@@ -779,6 +771,7 @@ jobs:
 
   compose:
     name: Compose
+    if: github.event.action != 'labeled' || github.event.label.name == 'ci:ios'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
@@ -911,16 +904,20 @@ jobs:
           retention-days: 3
           if-no-files-found: warn
 
-  # Fork (Zebrunner): the iOS simulator legs, see .github/workflows/zebrunner-ios.yml
+  # Fork (Zebrunner): the iOS simulator legs, see .github/workflows/zebrunner-ios.yml;
+  # not on a push, on a pull request only with iOS changes or the label ci:ios
   ios:
+    needs: plan
+    if: needs.plan.outputs.ios == 'true'
     uses: ./.github/workflows/zebrunner-ios.yml
     with:
       matrix-profile: ${{ github.event_name == 'schedule' && 'full' || inputs.matrix-profile || 'quick' }}
+      matrix: ${{ needs.plan.outputs.ios-matrix }}
 
   report:
     name: Report
-    needs: [plan, build, lint, unit, component, integration, android, compose, ios]
-    if: always()
+    needs: [plan, build, checks, integration, android, compose, ios]
+    if: always() && (github.event.action != 'labeled' || github.event.label.name == 'ci:ios')
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -948,7 +945,11 @@ jobs:
           # Android side comes from the same file the matrix is built from, so
           # adding a leg cannot leave it unenforced.
           EXPECTED_TIERS: build lint unit component integration compose
-          EXPECTED_ANDROID_FILE: .github/android-matrix.json
+          # Fork (Zebrunner): the device legs the plan job left out (a push, a
+          # pull request without iOS changes) are not expected
+          EXPECTED_ANDROID_FILE: ${{ needs.plan.outputs.android == 'true' && '.github/android-matrix.json' || '' }}
+          EXPECTED_IOS: ${{ needs.plan.outputs.ios == 'true' }}
+          DEVICES_NOTE: ${{ needs.plan.outputs.devices-note }}
         run: node .github/scripts/render-report.mts verdicts report.md
 
       - name: Job summary
@@ -973,15 +974,23 @@ jobs:
           retention-days: 3
           if-no-files-found: error
 
+      # Fork (Zebrunner): without the plan the report would expect no device leg
       - name: Fail if any tier failed
+        env:
+          PLAN: ${{ needs.plan.result }}
         run: |
           if [ "${{ steps.render.outputs.failed }}" != "0" ]; then
             echo "::error::${{ steps.render.outputs.failed }} CI tier(s) failed"
             exit 1
           fi
+          if [ "$PLAN" != success ]; then
+            echo "::error::the plan job did not succeed ($PLAN)"
+            exit 1
+          fi
 
   # Fork (Zebrunner): the image of a merge into develop to public.ecr.aws once
   # Report passed (the file VERSION, ZEBRUNNER.md#build). arm64 is built with QEMU.
+  # Report does not wait for device legs on a push: they run in the nightly run.
   publish:
     name: Publish
     needs: report

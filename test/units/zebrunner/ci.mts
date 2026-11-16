@@ -8,7 +8,10 @@ import {expect} from 'chai'
 
 import {
   androidLegs
+, devicePlan
+, globRegExp
 , IOS_CHECKS
+, iosChanged
 , iosLegs
 , iosMissing
 , iosReport
@@ -122,10 +125,91 @@ describe('zebrunner: CI', function() {
       })).to.eql(['15', '16', '17', '18', '26', '27'])
     })
 
-    it('should leave preview iOS to the full matrix', function() {
+    it('should leave the oldest and the preview iOS to the full matrix', function() {
       expect(iosLegs('quick').map(function(leg) {
         return leg.ios
-      })).to.eql(['15', '18', '26'])
+      })).to.eql(['18', '26'])
+    })
+
+    it('should match the globs of ios.paths', function() {
+      expect(globRegExp('lib/units/ios-device/**').test('lib/units/ios-device/plugins/wda.ts'))
+        .to.equal(true)
+      expect(globRegExp('lib/units/ios-device/**').test('lib/units/ios-device-x/a.ts'))
+        .to.equal(false)
+      expect(globRegExp('lib/types/ios-device*').test('lib/types/ios-device-modules.d.ts'))
+        .to.equal(true)
+      expect(globRegExp('lib/types/ios-device*').test('lib/types/ios-device/a.d.ts'))
+        .to.equal(false)
+      expect(globRegExp('**/*.md').test('README.md')).to.equal(true)
+      expect(globRegExp('**/*.md').test('doc/ci.md')).to.equal(true)
+      expect(globRegExp('a.b?').test('a.bc')).to.equal(true)
+      expect(globRegExp('a.b?').test('axbc')).to.equal(false)
+    })
+
+    it('should tell the files the iOS legs test', function() {
+      expect(iosChanged([
+        'lib/units/ios-device/plugins/wda/WdaClient.ts'
+      , 'lib/cli/ios-device/index.ts'
+      , 'test/zebrunner-ios/wda.mts'
+      , '.github/scripts/zebrunner-ios-simulator.sh'
+      , '.github/zebrunner-ci.json'
+      , 'lib/units/device/index.ts'
+      , 'package-lock.json'
+      , 'Dockerfile'
+      , 'README.md'
+      ])).to.eql([
+        'lib/units/ios-device/plugins/wda/WdaClient.ts'
+      , 'lib/cli/ios-device/index.ts'
+      , 'test/zebrunner-ios/wda.mts'
+      , '.github/scripts/zebrunner-ios-simulator.sh'
+      , '.github/zebrunner-ci.json'
+      ])
+    })
+
+    describe('device legs', function() {
+      function plan(event: string, files: string[] | null, label = 'false') {
+        var list = path.join(dir, 'changed-files.txt')
+        if (files) {
+          fs.writeFileSync(list, files.join('\n') + '\n')
+        }
+        return devicePlan({GITHUB_EVENT_NAME: event, IOS_LABEL: label, CHANGED_FILES: list})
+      }
+
+      it('should run no device leg on a push', function() {
+        var result = plan('push', null)
+        expect([result.android, result.ios]).to.eql([false, false])
+        expect(result.note).to.match(/every night/)
+      })
+
+      it('should run every device leg nightly and by hand', function() {
+        for (var event of ['schedule', 'workflow_dispatch']) {
+          var result = plan(event, ['README.md'])
+          expect([result.android, result.ios]).to.eql([true, true])
+        }
+      })
+
+      it('should run iOS on a pull request that changes an iOS file', function() {
+        var result = plan('pull_request', ['lib/units/device/index.ts'
+        , 'lib/units/ios-device/plugins/wda/session.ts'])
+        expect([result.android, result.ios]).to.eql([true, true])
+        expect(result.changed).to.eql(['lib/units/ios-device/plugins/wda/session.ts'])
+      })
+
+      it('should leave out iOS on a pull request without iOS changes and say why', function() {
+        var result = plan('pull_request', ['lib/units/device/index.ts', 'package-lock.json'])
+        expect([result.android, result.ios]).to.eql([true, false])
+        expect(result.note).to.include('ci:ios')
+      })
+
+      it('should run iOS on a pull request with the label ci:ios', function() {
+        var result = plan('pull_request', ['README.md'], 'true')
+        expect([result.android, result.ios]).to.eql([true, true])
+      })
+
+      it('should run iOS when the files of the pull request are unknown', function() {
+        var result = plan('pull_request', null)
+        expect([result.android, result.ios]).to.eql([true, true])
+      })
     })
 
     it('should pass a leg whose checks pass', function() {
@@ -264,6 +348,37 @@ describe('zebrunner: CI', function() {
         expect(text.includes('**iOS 16**')).to.equal(profile === 'full')
         expect(text).to.include('no verdict')
       }
+    })
+
+    it('should not expect the device legs that did not run', function() {
+      var cases = [
+        {android: '.github/android-matrix.json', ios: 'false', coverage: '**OS coverage: quick**'
+        , missing: '**Android 12 (API 31)**'}
+      , {android: '', ios: 'false', coverage: '**OS coverage: none** - no device legs ran: why.'
+        , missing: null}
+      ]
+      cases.forEach(function(c, index) {
+        var report = path.join(dir, 'devices-' + index + '.md')
+        var run = spawnSync(process.execPath, [
+          '.github/scripts/render-report.mts', path.join(dir, 'missing'), report
+        ], {
+          encoding: 'utf8'
+        , env: {...process.env, CI_MATRIX_PROFILE: 'quick', EXPECTED_TIERS: ''
+          , EXPECTED_ANDROID_FILE: c.android, EXPECTED_IOS: c.ios, DEVICES_NOTE: 'why'}
+        })
+        expect(run.status, run.stderr).to.equal(0)
+        var text = fs.readFileSync(report, 'utf8')
+        expect(text).to.include(c.coverage)
+        expect(text).not.to.include('**iOS 18**')
+        expect(text).not.to.include('iOS not selected')
+        if (c.missing) {
+          expect(text).to.include(c.missing)
+          expect(text).to.include('iOS not run: why.')
+        }
+        else {
+          expect(text).not.to.include('**Android')
+        }
+      })
     })
 
     it('should show recovered failures as warnings instead of claiming all green', function() {
