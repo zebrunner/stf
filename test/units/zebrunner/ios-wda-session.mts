@@ -209,5 +209,22 @@ describe('zebrunner: iOS WDA session', function() {
       })).to.equal(true)
       expect(wdaClient.fatal).to.eql([])
     })
+
+    // the last one: a second client of the same fake WDA
+    it('should connect to the MJPEG stream of --mjpeg-port when it is set', async function() {
+      var connected = sockets.length
+      var other = await loadWdaClient({
+        serial: 'udid-mjpeg'
+      , wdaHost: '127.0.0.1'
+      , wdaPort: Number(new URL(wda.origin).port)
+        // nothing listens on it
+      , connectPort: 1
+      , mjpegPort: mjpegPort
+      })
+      await until(function() {
+        return sockets.length > connected
+      })
+      expect(other.fatal).to.eql([])
+    })
   })
 })

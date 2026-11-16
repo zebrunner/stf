@@ -626,11 +626,10 @@ export default syrup.serial()
     }
 
     function connectToWdaMjpeg(connectOptions: IosDeviceOptions) {
+      var mjpegPort = connectOptions.mjpegPort || connectOptions.connectPort
       log.info('connecting to WdaMjpeg')
-      socket.connect(connectOptions.connectPort, connectOptions.wdaHost, function() {
-        log.info(
-          `Connected to WdaMjpeg ${connectOptions.wdaHost}:${connectOptions.connectPort}`
-        )
+      socket.connect(mjpegPort, connectOptions.wdaHost, function() {
+        log.info(`Connected to WdaMjpeg ${connectOptions.wdaHost}:${mjpegPort}`)
       })
 
       push.send([
