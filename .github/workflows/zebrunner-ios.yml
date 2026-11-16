@@ -24,6 +24,7 @@ permissions:
 env:
   CI_MATRIX_PROFILE: ${{ inputs.matrix-profile || 'quick' }}
   NPM_INSTALL_FLAGS: --no-audit --no-fund --ignore-scripts
+  # The release of the simulator build of WebDriverAgent; its sha256 are in zebrunner-ios-simulator.sh
   WDA_REF: v16.15.0
 
 jobs:

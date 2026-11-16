@@ -4,7 +4,7 @@
 #
 # usage: zebrunner-ios-simulator.sh <ios-major> [<runtime-version-to-download>]
 # The simulator and WebDriverAgent keep running; stop them with `xcrun simctl shutdown <udid>`.
-# env:   WDA_REF (the WebDriverAgent tag), WDA_DIR (where to clone it), LOG_DIR
+# env:   WDA_REF (the WebDriverAgent release), WDA_DIR (where to unpack it), LOG_DIR
 set -euo pipefail
 
 ios_major="$1"
@@ -83,27 +83,38 @@ xcrun simctl boot "$udid"
 xcrun simctl bootstatus "$udid" -b >&2
 echo "simulator=$udid" >> "$stages"
 
-if [[ ! -d "$wda_dir" ]]; then
-  note "cloning WebDriverAgent $wda_ref"
-  git -c advice.detachedHead=false clone --quiet --depth 1 --branch "$wda_ref" https://github.com/appium/WebDriverAgent "$wda_dir"
-fi
+# wda_sha256 <ref>-<arch>: the sha256 of WebDriverAgentRunner-Build-Sim-<arch>.zip of the release
+# (the digests of its assets on https://github.com/appium/WebDriverAgent/releases), a new WDA_REF
+# needs its own
+wda_sha256() {
+  case "$1" in
+    v16.15.0-arm64) echo 447270266d582a5f69b59910ca24a76a821560347e0d77703844a8f9dfb42807 ;;
+    v16.15.0-x86_64) echo 247624a6bfc83a014c2b307b98ce24c6bf0fb4273675398c88df05f326a2a98d ;;
+  esac
+}
 
-note "building WebDriverAgent"
-destination="platform=iOS Simulator,id=$udid,arch=$(uname -m)"
-xcodebuild build-for-testing \
-  -project "$wda_dir/WebDriverAgent.xcodeproj" \
-  -scheme WebDriverAgentRunner \
-  -destination "$destination" \
-  -derivedDataPath "$wda_dir/build" \
-  CODE_SIGNING_ALLOWED=NO > "$log_dir/wda-build.log" 2>&1 ||
-  {
-    tail -50 "$log_dir/wda-build.log" >&2
+# The simulator build of the release (Xcode 16.4, iOS 13 and later) instead of a build of the
+# sources: the build took 1.5-7.5 minutes of every leg
+runner="$wda_dir/WebDriverAgentRunner-Runner.app"
+if [[ ! -d "$runner" ]]; then
+  arch=$(uname -m)
+  sum=$(wda_sha256 "$wda_ref-$arch")
+  if [[ -z "$sum" ]]; then
+    echo "::error::no sha256 of WebDriverAgent $wda_ref for $arch in $0" >&2
     exit 1
-  }
+  fi
+  note "downloading WebDriverAgent $wda_ref ($arch)"
+  mkdir -p "$wda_dir"
+  zip="$wda_dir/wda-$wda_ref-$arch.zip"
+  curl -fsSL --retry 3 --retry-all-errors -o "$zip" \
+    "https://github.com/appium/WebDriverAgent/releases/download/$wda_ref/WebDriverAgentRunner-Build-Sim-$arch.zip"
+  echo "$sum  $zip" | shasum -a 256 -c - >&2
+  unzip -q -o "$zip" -d "$wda_dir"
+  rm "$zip"
+fi
 
 note "starting WebDriverAgent"
 # The runner app starts its tests itself when launched, `xcodebuild test` hung on iOS 16
-runner="$wda_dir/build/Build/Products/Debug-iphonesimulator/WebDriverAgentRunner-Runner.app"
 runner_id=com.facebook.WebDriverAgentRunner.xctrunner
 xcrun simctl install "$udid" "$runner"
 
