@@ -5,6 +5,7 @@ import {expect} from 'chai'
 
 interface Operation {
   operationId?: string
+  security?: unknown
   responses?: Record<string, {
     schema?: {
       $ref?: string
@@ -58,6 +59,19 @@ describe('zebrunner: API contract', function() {
     expect(
       swagger.paths['/devices/{serial}/type']!.get!.responses!['200']!.schema!.$ref
     ).to.equal('#/definitions/TypeResponse')
+  })
+
+  it('should need an access token for every operation but the node ones', function() {
+    // the enrolled nodes authenticate with their invite or node token, checked by the operations themselves
+    var nodeOperations = ['enrollNode', 'getNodeSelf', 'getNodeKeys', 'checkNodeToken']
+    var open = Object.values(swagger.paths).flatMap(function(path) {
+      return [path.get, path.put, path.post, path.delete]
+    }).filter(function(operation): operation is Operation {
+      return Boolean(operation && operation.operationId && !operation.security)
+    }).map(function(operation) {
+      return operation.operationId
+    })
+    expect(open).to.have.members(nodeOperations)
   })
 
   it('should document fork access-token and device-status contracts', function() {

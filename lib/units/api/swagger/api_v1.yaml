@@ -2039,10 +2039,13 @@ paths:
         default:
           description: >
             Unexpected Error:
+              * 401: Unauthorized => bad credentials
               * 404: Not Found => unknown device
               * 500: Internal Server Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+      security:
+        - accessTokenAuth: []
   /devices/groups/{id}:
     x-swagger-router-controller: devices
     put:
@@ -2154,10 +2157,13 @@ paths:
         default:
           description: >
             Unexpected Error:
+              * 401: Unauthorized => bad credentials
               * 404: Not Found => unknown device
               * 500: Internal Server Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+      security:
+        - accessTokenAuth: []
   /devices/{serial}/groups:
     x-swagger-router-controller: devices
     get:
@@ -2214,10 +2220,13 @@ paths:
         default:
           description: >
             Unexpected Error:
+              * 401: Unauthorized => bad credentials
               * 404: Not Found => unknown device
               * 500: Internal Server Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+      security:
+        - accessTokenAuth: []
   /devices/{serial}/bookings:
     x-swagger-router-controller: devices
     get:
