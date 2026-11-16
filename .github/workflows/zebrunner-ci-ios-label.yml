@@ -1,13 +1,12 @@
 ---
 # Fork (Zebrunner): the label ci:ios runs the CI of a pull request again, and the plan job of ci.yml then
 # plans the iOS legs (ZEBRUNNER.md#ci). ci.yml itself does not run on labeled events: a run for every
-# other label would put skipped checks of the same names over the ones of the real run.
-# pull_request_target: the token may re-run CI for the pull requests of forks too; no code of the pull
-# request is checked out or run here.
+# other label would put skipped checks of the same names over the ones of the real run. The token of a
+# pull request from a fork cannot run CI again: run its CI again by hand after adding the label.
 name: CI iOS label
 
 on:
-  pull_request_target:
+  pull_request:
     types: [labeled]
 
 permissions: {}
