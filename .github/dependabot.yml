@@ -12,7 +12,7 @@ updates:
 - package-ecosystem: npm
   directory: "/"
   schedule:
-    interval: daily
+    interval: weekly
   open-pull-requests-limit: 10
   ignore:
   - dependency-name: semver
@@ -28,7 +28,17 @@ updates:
   - dependency-name: "@types/node"
     update-types:
     - version-update:semver-major
+  # Fork (Zebrunner): one pull request a week for the minor and patch updates, one for each major
+  # update; the @mantine packages take a major update together
   groups:
     mantine:
       patterns:
       - "@mantine/*"
+      update-types:
+      - major
+    npm-minor-patch:
+      patterns:
+      - "*"
+      update-types:
+      - minor
+      - patch
