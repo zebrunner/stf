@@ -1,0 +1,51 @@
+---
+# Fork (Zebrunner): the label ci:ios runs the CI of a pull request again, and the plan job of ci.yml then
+# plans the iOS legs (ZEBRUNNER.md#ci). ci.yml itself does not run on labeled events: a run for every
+# other label would put skipped checks of the same names over the ones of the real run.
+# pull_request_target: the token may re-run CI for the pull requests of forks too; no code of the pull
+# request is checked out or run here.
+name: CI iOS label
+
+on:
+  pull_request_target:
+    types: [labeled]
+
+permissions: {}
+
+concurrency:
+  group: ci-ios-label-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  rerun:
+    name: Run CI again with the iOS legs
+    if: github.event.label.name == 'ci:ios'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: write
+    steps:
+      # The last CI run of the head commit, cancelled first if it still runs (only a finished run can
+      # run again); none for a change of documentation only
+      - name: Run CI again
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          run=$(gh run list --workflow ci.yml --event pull_request --commit "$SHA" --limit 1 \
+            --json databaseId,status --jq '.[] | "\(.databaseId) \(.status)"')
+          if [ -z "$run" ]; then
+            echo "no CI run of $SHA"
+            exit 0
+          fi
+          id=${run% *}
+          if [ "${run#* }" != completed ]; then
+            gh run cancel "$id" || true
+            for _ in $(seq 1 60); do
+              [ "$(gh run view "$id" --json status --jq .status)" = completed ] && break
+              sleep 5
+            done
+          fi
+          gh run rerun "$id"
+          echo "CI run $id runs again: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$id"
