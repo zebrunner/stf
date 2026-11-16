@@ -2,10 +2,10 @@ name: CI
 
 # Fork (Zebrunner): a push runs no device legs, the nightly run has them all; a pull
 # request runs the iOS legs only when it changes an iOS file (ios.paths of
-# .github/zebrunner-ci.json) or gets the label ci:ios (doc/ci.md#what-runs)
+# .github/zebrunner-ci.json) or has the label ci:ios, whose labeled event runs CI
+# again (zebrunner-ci-ios-label.yml; ZEBRUNNER.md#ci)
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
     paths-ignore: ['**.md', 'doc/**', 'LICENSE', '.github/ISSUE_TEMPLATE/**']
   push:
     branches: [master, develop]
@@ -30,11 +30,10 @@ on:
 permissions:
   contents: read
 
-# Fork (Zebrunner): the run of another label than ci:ios skips its jobs and has a
-# group of its own, so it does not cancel the run of the pull request; the
-# nightly and manual runs do not cancel the push runs of develop either.
+# Fork (Zebrunner): the nightly and manual runs do not cancel the push runs of
+# develop, nor the other way round.
 concurrency:
-  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}${{ github.event.action == 'labeled' && github.event.label.name != 'ci:ios' && format('-{0}', github.run_id) || '' }}
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -51,7 +50,6 @@ jobs:
   # job of zebrunner-ios.yml before), and whether the device legs run at all.
   plan:
     name: Plan
-    if: github.event.action != 'labeled' || github.event.label.name == 'ci:ios'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -74,15 +72,22 @@ jobs:
         id: plan
         run: node .github/scripts/plan-matrix.mts
 
-      # Without the list of files (an API error) the iOS legs run.
+      # The labels are read again (a run again for the label ci:ios has the
+      # event of before); without the list of files (an API error) the iOS legs run.
       - name: Plan the device legs
         id: devices
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          IOS_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:ios') }}
+          EVENT_IOS_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:ios') }}
           CHANGED_FILES: changed-files.txt
         run: |
+          IOS_LABEL="$EVENT_IOS_LABEL"
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            labels=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" --jq '.[].name') &&
+              IOS_LABEL=$(printf '%s\n' "$labels" | grep -qx 'ci:ios' && echo true || echo false)
+          fi
+          export IOS_LABEL
           if [ "$GITHUB_EVENT_NAME" = pull_request ] && [ "$IOS_LABEL" != true ]; then
             gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files?per_page=100" \
               --jq '.[] | .filename, (.previous_filename // empty)' > changed-files.txt ||
@@ -92,7 +97,6 @@ jobs:
 
   build:
     name: Build
-    if: github.event.action != 'labeled' || github.event.label.name == 'ci:ios'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     outputs:
@@ -771,7 +775,6 @@ jobs:
 
   compose:
     name: Compose
-    if: github.event.action != 'labeled' || github.event.label.name == 'ci:ios'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
@@ -917,7 +920,7 @@ jobs:
   report:
     name: Report
     needs: [plan, build, checks, integration, android, compose, ios]
-    if: always() && (github.event.action != 'labeled' || github.event.label.name == 'ci:ios')
+    if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
