@@ -988,7 +988,8 @@ jobs:
   publish:
     name: Publish
     needs: report
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    # the explicit result of report: the implicit success() is false when a device leg before it is skipped (a push)
+    if: ${{ !cancelled() && needs.report.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
     permissions:
       contents: read
       id-token: write
