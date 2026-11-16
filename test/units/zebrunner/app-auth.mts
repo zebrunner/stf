@@ -12,9 +12,14 @@ var restoreDbApi = mockModule(new URL('../../../lib/db/api.js', import.meta.url)
   saveUserAfterLogin: sinon.stub().resolves()
 , saveSession: sinon.stub().resolves()
 }})
+// authsession.js fresh too: a copy another test file loaded before (another order of the files,
+// mocha --parallel) keeps the db mock of that file
+var authsessionUrl = new URL('../../../lib/util/authsession.js', import.meta.url)
+var restoreAuthsession = mockModule(authsessionUrl, {...await importFresh(authsessionUrl)})
 var auth = (await importFresh(
   new URL('../../../lib/units/app/middleware/auth.js', import.meta.url)
 )).default
+restoreAuthsession()
 restoreDbApi()
 restoreDb()
 
