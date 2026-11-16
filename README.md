@@ -4,6 +4,8 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/devicefarmer/stf.svg)](https://hub.docker.com/r/devicefarmer/stf/)
 [![npm](https://img.shields.io/npm/v/@devicefarmer/stf)](https://www.npmjs.com/package/@devicefarmer/stf)
 
+> This is the Zebrunner fork of STF, the device farm of MCloud: it adds iOS devices, the Zebrunner sign-in and the enrollment of the device nodes, and needs Node.js 22.18 or later. Its build, configuration and tests are in [ZEBRUNNER.md](ZEBRUNNER.md); the rest of this README is the one of upstream.
+
 **STF** (or Smartphone Test Farm) is a web application for debugging smartphones, smartwatches and other gadgets remotely, from the comfort of your browser.
 
 ## Overview
@@ -105,7 +107,7 @@ Here are some things we are planning to address ASAP.
 
 ### Long term goals
 
-1. iOS support
+1. iOS support (the Zebrunner fork has it, see [ZEBRUNNER.md](ZEBRUNNER.md))
 
 ## A quick note about security
 
@@ -113,7 +115,7 @@ As the product has evolved from an internal tool running in our internal network
 
 ## Requirements
 
-* [Node.js](https://nodejs.org/) up to 20.x **required** (some dependencies don't support newer versions)
+* [Node.js](https://nodejs.org/) 22.18 or later **required** (`engines` of `package.json`, `.nvmrc`)
 * [ADB](http://developer.android.com/tools/help/adb.html) properly set up
 * [RethinkDB](http://rethinkdb.com/) >= 2.2
 * [CMake](https://cmake.org/) >= 3.9 (for [node-jpeg-turbo](https://github.com/julusian/node-jpeg-turbo#readme))
