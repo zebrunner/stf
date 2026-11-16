@@ -45,6 +45,16 @@ within another 5 seconds and preserves the test script's exit status. This
 prevents an emulator that acknowledges shutdown but stays alive from holding
 the action open until its 50 minute step timeout.
 
+Fork (Zebrunner): `android-leg.sh` gives STF 120 s (`STF_WAIT`) to register the
+device and as long again to mark it present and ready; a healthy leg needs 1 s
+and at most 16 s, so a device that never becomes ready reaches the retry within
+a few minutes instead of seven. The legs remove the preinstalled toolchains
+(`.github/scripts/free-disk.sh`) only on a runner with less than 30G free: the
+`ubuntu-24.04` image has 86G, a leg uses about 12G. The system images are not
+cached: they take 17-71 s to install, are 1-2G each (one per leg, ten in the
+full profile), and the Actions cache of the repository is already at its 10G
+limit, where they would evict the npm caches of every job.
+
 All available legs come from `.github/android-matrix.json`; the fork's minimum
 API and quick/full selection are applied by `zebrunner-ci.mts` to both the
 matrix and the report's expected coverage. To add or change an available leg, edit that
