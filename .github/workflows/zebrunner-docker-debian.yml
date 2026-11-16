@@ -1,0 +1,38 @@
+---
+# Fork (Zebrunner): the Debian image of upstream (Dockerfile-debian-x86_64), which the fork does not publish, built
+# only when a pull request changes what it is built from beyond the sources the Dockerfile and the Compose job of
+# ci.yml build anyway: its Dockerfile, the dependencies it installs with npm install, the build context.
+name: Docker Debian
+
+on:
+  pull_request:
+    paths:
+      - Dockerfile-debian-x86_64
+      - package.json
+      - package-lock.json
+      - .dockerignore
+      - .github/workflows/zebrunner-docker-debian.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-debian-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  debian:
+    name: Debian image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile-debian-x86_64
+          platforms: linux/amd64

@@ -76,14 +76,22 @@ which takes long for the native modules: building every platform on its own mach
 The base image `ubuntu:26.04` is pinned by the digest of its multi-platform index (Dependabot updates it), the Node.js
 tarballs by their sha256 of `SHASUMS256.txt` of nodejs.org: a new Node.js version changes `.nvmrc`, the URLs and the sums
 in `Dockerfile`. The image is built for `linux/amd64` and `linux/arm64` only, another platform stops the build.
+The layers of `Dockerfile` go from the least to the most often changed: the build packages and Node.js, `npm ci` of
+`package.json` and `package-lock.json` (stage `deps`, with a cache mount of the npm cache), the `node_modules` of the
+image (`prod-deps`, `npm prune --omit=dev`), then the sources and their build (`build`, `npm pack`). A change of the
+sources only rebuilds the last stage (15 s instead of 2-3 min on the build host) and changes a 9.5 MB layer of the image
+instead of 160 MB; CI keeps the layers in the buildx cache of GitHub Actions (`type=gha`: scope `compose-amd64` of the
+Compose job, `docker-arm64` of the `Docker` workflow).
 
 The file `VERSION` is the release of the fork in work (bumped by hand after a release), the tag of the image; the `version` of `package.json` is the upstream release the fork is merged with (`CHANGELOG.md`), it is not the version of the fork. The `Publish` job of CI pushes the image of
 every merge into `develop` after `Report` passed: `public.ecr.aws/zebrunner/stf:<VERSION>-develop-<sha>` (7 characters
 of the commit) and `<VERSION>-develop-latest`, by the reusable workflow `docker-publish.yml` of
 [mcloud-conventions](https://github.com/zebrunner/mcloud-conventions) over `make push`.
 The workflows of upstream publish nothing from the fork: `Docker` (`docker.yml`) only builds the images of the pull
-requests, `Prepare release` and `Release` (the npm package `@devicefarmer/stf` and the Docker Hub image
-`devicefarmer/stf`) run in DeviceFarmer/stf only.
+requests (the arm64 one: the Compose job of CI builds and tests the amd64 image), `Docker Debian`
+(`zebrunner-docker-debian.yml`) the Debian image of upstream (`Dockerfile-debian-x86_64`) when a pull request changes
+it, `package.json`, `package-lock.json` or `.dockerignore`, `Prepare release` and `Release` (the npm package
+`@devicefarmer/stf` and the Docker Hub image `devicefarmer/stf`) run in DeviceFarmer/stf only.
 
 Without docker (Node.js 22.18 or later):
 
