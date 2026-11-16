@@ -53,11 +53,17 @@ function getDeviceType(req: ApiRequest, res: Response) {
 
   dbapi.getDeviceType(serial)
     .then(function(deviceType) {
-      return res.status(200).json(deviceType)
+      if (deviceType === null) {
+        return res.status(404).json({success: false, description: 'Device not found'})
+      }
+      if (!deviceType) {
+        return res.status(404).json({success: false, description: 'Device type unknown'})
+      }
+      return res.status(200).json({type: deviceType})
     })
     .catch(function(err) {
       log.info('Failed to get device type: ', err.stack)
-      return res.status(200).json({deviceType: null})
+      res.status(500).json({success: false})
     })
 }
 
