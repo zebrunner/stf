@@ -36,8 +36,8 @@ seconds anywhere; the Playwright tiers are what exercise the rendered UI.
 
 Fork (Zebrunner): `res/app/vitest.config.ts` sets `pool: 'vmThreads'`: each file
 runs in a VM context of a reused worker thread instead of a new worker process,
-which skips most of the per-file jsdom and import setup (11 s to about 4 s on a
-4-CPU runner, the same 106 results).
+which skips most of the per-file jsdom and import setup (9-12 s to 3 s in CI,
+the same 106 results).
 
 ## The Android matrix
 
@@ -277,14 +277,16 @@ runs `node build.mts test` (compile, lint and `stf -V`) and then the mocha
 specs, so it still needs no browser and works anywhere, which is what
 CONTRIBUTING asks of it.
 
-Fork (Zebrunner): `test:unit` runs the spec files in parallel (`mocha
---parallel`, one worker per CPU but one; 36 s to 17 s with three workers). A
-worker runs several files one after another, in no fixed order, so a file must
-not depend on what another one loaded or mocked: `importFresh` of
-`test/helpers/module-mock.mts` reloads only the module it is given, so a test
-that mocks a dependency of a dependency loads that one fresh as well (see
-`test/units/zebrunner/app-auth.mts`). A file must not bind a fixed port or write
-a fixed path either; `npm run test:unit -- --no-parallel` runs them one at a time.
+Fork (Zebrunner): `test:unit` runs the spec files one after another, not with
+`mocha --parallel` (measured: 36 s to 17 s with three workers): the zeromq addon
+crashes a worker process (SIGSEGV or SIGABRT, `Workerpool Worker terminated
+Unexpectedly`) in about 4% of the parallel runs, in `nodes-zap.mts` or
+`zmq-curve.mts`, on Node.js 22 and 26, never in a serial run; the unit tests are
+not on the critical path of CI. Should it be tried again: a worker runs several
+files one after another in no fixed order, so a file must not depend on what
+another one loaded or mocked (`importFresh` of `test/helpers/module-mock.mts`
+reloads only the module it is given: `test/units/zebrunner/app-auth.mts` loads
+the dependency it mocks the database of fresh as well).
 
 `test:component` is the Vitest tier. It runs in jsdom and needs no browser; CI
 still runs it as its own job so the report shows it as a separate line.

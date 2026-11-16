@@ -12,8 +12,8 @@ var restoreDbApi = mockModule(new URL('../../../lib/db/api.js', import.meta.url)
   saveUserAfterLogin: sinon.stub().resolves()
 , saveSession: sinon.stub().resolves()
 }})
-// authsession.js fresh too: mocha --parallel runs several files in one process, and the copy
-// another file loaded keeps the db mock of that file
+// authsession.js fresh too: a copy another test file loaded before (another order of the files,
+// mocha --parallel) keeps the db mock of that file
 var authsessionUrl = new URL('../../../lib/util/authsession.js', import.meta.url)
 var restoreAuthsession = mockModule(authsessionUrl, {...await importFresh(authsessionUrl)})
 var auth = (await importFresh(

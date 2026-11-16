@@ -182,6 +182,9 @@ describe('zebrunner: node keys and tokens of the server units', function() {
       finally {
         watcher.stop()
       }
+      // a request of a poll that started before the stop may still arrive (a busy machine, the
+      // parallel mocha run), no poll starts after it
+      await delay(30)
       var count = api.requests.length
       await delay(80)
       expect(api.requests.length).to.equal(count)
