@@ -5,8 +5,12 @@
 //   android.minApi on, for plan-matrix.mts and render-report.mts
 // - the iOS legs of zebrunner-ios.yml (ios.include) and their part of the report
 //   of render-report.mts: the expected legs and a matrix like the Android one
+// - devicePlan: whether the Android and iOS legs of ci.yml run (ios.paths, the
+//   label ci:ios)
 //
 // usage: node zebrunner-ci.mts ios-matrix
+//        node zebrunner-ci.mts devices (env: GITHUB_EVENT_NAME, IOS_LABEL,
+//          CHANGED_FILES; writes GITHUB_OUTPUT)
 //        node zebrunner-ci.mts ios-verdict (env: IOS_VERSION, SETUP_OUTCOME,
 //          TEST_OUTCOME, RESULTS_FILE, STAGES_FILE; writes GITHUB_OUTPUT)
 //
@@ -24,7 +28,7 @@ export interface IosLeg {
 
 interface ZebrunnerCi {
   android?: {minApi?: number}
-  ios?: {include?: IosLeg[]}
+  ios?: {include?: IosLeg[], paths?: string[]}
 }
 
 export interface IosVerdict {
@@ -52,8 +56,10 @@ export function matrixProfile(): 'quick' | 'full' {
   return profile
 }
 
-// Keep the floor and the newest stable representative of each of the two newest OS majors.
-function quickLegs<T>(legs: T[], version: (leg: T) => number, revision: (leg: T) => number): T[] {
+// Keep the newest stable representative of each of the two newest OS majors, and the floor.
+function quickLegs<T>(
+  legs: T[], version: (leg: T) => number, revision: (leg: T) => number, floor = true
+): T[] {
   var sorted = legs.slice().sort(function(a, b) {
     return revision(a) - revision(b)
   })
@@ -61,7 +67,7 @@ function quickLegs<T>(legs: T[], version: (leg: T) => number, revision: (leg: T)
   sorted.forEach(function(leg) {
     newest.set(version(leg), leg)
   })
-  var selected = new Set([sorted[0], ...Array.from(newest.values()).slice(-2)])
+  var selected = new Set([...floor ? [sorted[0]] : [], ...Array.from(newest.values()).slice(-2)])
   return sorted.filter(function(leg) {
     return selected.has(leg)
   })
@@ -109,6 +115,8 @@ export function iosLegs(profile = matrixProfile()): IosLeg[] {
   , function(leg) {
       return Number(leg.ios)
     }
+    // Fork (Zebrunner): the oldest iOS runs with the full profile only, the nightly run
+  , false
   )
 }
 
@@ -131,10 +139,87 @@ export const IOS_CHECKS = [
 , {key: 'stable', label: 'Stable', failure: 'the unit would have stopped'}
 ]
 
+// globRegExp <glob>: the pattern of a path glob of ios.paths: ** any directories, * and ? any
+// characters of one name
+export function globRegExp(glob: string): RegExp {
+  var source = ''
+  for (var i = 0; i < glob.length; i++) {
+    var c = glob[i]!
+    if (glob.startsWith('**/', i)) {
+      source += '(?:.*/)?'
+      i += 2
+    }
+    else if (glob.startsWith('**', i)) {
+      source += '.*'
+      i += 1
+    }
+    else if (c === '*') {
+      source += '[^/]*'
+    }
+    else if (c === '?') {
+      source += '[^/]'
+    }
+    else {
+      source += c.replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    }
+  }
+  return new RegExp('^' + source + '$')
+}
+
+// iosChanged <files>: the files of the list that the iOS legs test (ios.paths)
+export function iosChanged(files: string[]): string[] {
+  var patterns = (settings().ios?.paths || []).map(globRegExp)
+  return files.filter(function(file) {
+    return patterns.some(function(pattern) {
+      return pattern.test(file)
+    })
+  })
+}
+
+export const IOS_LABEL = 'ci:ios'
+
+// devicePlan <env>: whether the Android and iOS legs run. A push runs none of them (the nightly
+// run has them), a pull request the iOS legs only when it changes a file of ios.paths or has the
+// label ci:ios. CHANGED_FILES: the files of the pull request, one a line; without it the iOS legs
+// run.
+export function devicePlan(env: NodeJS.ProcessEnv) {
+  var event = env.GITHUB_EVENT_NAME || ''
+  if (event === 'push') {
+    var note = 'a push runs no device legs: they run every night with the full profile, ' +
+      'and with workflow_dispatch'
+    return {android: false, ios: false, note: note, changed: [] as string[]}
+  }
+  if (event !== 'pull_request' || env.IOS_LABEL === 'true') {
+    return {android: true, ios: true, note: '', changed: [] as string[]}
+  }
+  var file = env.CHANGED_FILES || ''
+  if (!file || !fs.existsSync(file)) {
+    return {android: true, ios: true, note: '', changed: [] as string[]}
+  }
+  var changed = iosChanged(fs.readFileSync(file, 'utf8').split('\n').map(function(line) {
+    return line.trim()
+  }).filter(Boolean))
+  return {
+    android: true
+  , ios: changed.length > 0
+  , note: changed.length ? '' : 'the pull request changes no file of ios.paths of ' +
+      '.github/zebrunner-ci.json; the label ' + IOS_LABEL + ' runs them'
+  , changed: changed
+  }
+}
+
 const NO_VERDICT = 'no verdict: it never ran, was cancelled, or died before reporting'
+
+// iosExpected: whether the report expects the iOS legs (EXPECTED_IOS, devicePlan of the run)
+export function iosExpected(): boolean {
+  return process.env.EXPECTED_IOS !== 'false'
+}
 
 // iosMissing <seen>: a failing verdict for every expected leg that did not report
 export function iosMissing(seen: Record<string, boolean>): IosVerdict[] {
+  if (!iosExpected()) {
+    return []
+  }
   return iosLegs().filter(function(leg) {
     return !seen['ios-' + leg.ios]
   }).map(function(leg) {
@@ -338,6 +423,22 @@ function main(command: string | undefined) {
         'matrix=' + JSON.stringify({include: iosLegs()}) + '\n')
     }
     console.log(iosLegs().length + ' iOS legs planned')
+  }
+  else if (command === 'devices') {
+    var plan = devicePlan(process.env)
+    console.log('Android legs: ' + plan.android + ', iOS legs: ' + plan.ios +
+      (plan.note ? ' (' + plan.note + ')' : ''))
+    plan.changed.forEach(function(file) {
+      console.log('  iOS path: ' + file)
+    })
+    if (process.env.GITHUB_OUTPUT) {
+      fs.appendFileSync(process.env.GITHUB_OUTPUT, [
+        'android=' + plan.android
+      , 'ios=' + plan.ios
+      , 'ios-matrix=' + JSON.stringify({include: plan.ios ? iosLegs() : []})
+      , 'note=' + plan.note
+      ].join('\n') + '\n')
+    }
   }
   else if (command === 'ios-verdict') {
     var verdict = iosVerdict(process.env)

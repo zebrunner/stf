@@ -1,7 +1,8 @@
 ---
 # Fork (Zebrunner): the WDA client of the ios-device unit against WebDriverAgent on iOS simulators,
-# one leg per iOS version of .github/zebrunner-ci.json. ci.yml runs it with its other legs, and the
-# report of ci.yml shows the legs next to the Android ones. See test/zebrunner-ios/wda.mts.
+# one leg per iOS version of .github/zebrunner-ci.json. ci.yml runs it with its other legs (and
+# passes the matrix its plan job made), and the report of ci.yml shows the legs next to the
+# Android ones. See test/zebrunner-ios/wda.mts.
 name: iOS
 
 on:
@@ -10,6 +11,11 @@ on:
       matrix-profile:
         type: string
         default: quick
+      # The legs, as the ios-matrix output of the plan job of ci.yml; this workflow plans them
+      # without it
+      matrix:
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       matrix-profile:
@@ -30,6 +36,7 @@ env:
 jobs:
   plan:
     name: iOS plan
+    if: inputs.matrix == ''
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
@@ -48,13 +55,14 @@ jobs:
   simulator:
     name: iOS ${{ matrix.ios }}
     needs: plan
+    if: ${{ !cancelled() && (inputs.matrix != '' || needs.plan.result == 'success') }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     # An optional leg of .github/zebrunner-ci.json does not fail the workflow either
     continue-on-error: ${{ matrix.optional && true || false }}
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+      matrix: ${{ fromJSON(inputs.matrix || needs.plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v7
 
