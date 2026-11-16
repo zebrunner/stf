@@ -34,6 +34,11 @@ ordering, device state derivation, screen scaling math, translation lookup) and
 pure feature logic such as the logcat filters. It needs no browser, so it runs in
 seconds anywhere; the Playwright tiers are what exercise the rendered UI.
 
+Fork (Zebrunner): `res/app/vitest.config.ts` sets `pool: 'vmThreads'`: each file
+runs in a VM context of a reused worker thread instead of a new worker process,
+which skips most of the per-file jsdom and import setup (11 s to about 4 s on a
+4-CPU runner, the same 106 results).
+
 ## The Android matrix
 
 The Android legs, retries and Compose emulator use
@@ -271,6 +276,15 @@ under `test/` existed but `npm test` never ran them and still passed. It now
 runs `node build.mts test` (compile, lint and `stf -V`) and then the mocha
 specs, so it still needs no browser and works anywhere, which is what
 CONTRIBUTING asks of it.
+
+Fork (Zebrunner): `test:unit` runs the spec files in parallel (`mocha
+--parallel`, one worker per CPU but one; 36 s to 17 s with three workers). A
+worker runs several files one after another, in no fixed order, so a file must
+not depend on what another one loaded or mocked: `importFresh` of
+`test/helpers/module-mock.mts` reloads only the module it is given, so a test
+that mocks a dependency of a dependency loads that one fresh as well (see
+`test/units/zebrunner/app-auth.mts`). A file must not bind a fixed port or write
+a fixed path either; `npm run test:unit -- --no-parallel` runs them one at a time.
 
 `test:component` is the Vitest tier. It runs in jsdom and needs no browser; CI
 still runs it as its own job so the report shows it as a separate line.
