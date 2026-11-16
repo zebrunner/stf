@@ -105,7 +105,7 @@ describe('zebrunner: device API', function() {
   describe('PUT /devices/{serial} status', function() {
     var overrides: Array<[string, number]> = [
       ['offline', 1]
-    , ['unauthorized', 5]
+    , ['unauthorized', 2]
     , ['preparing', 6]
     , ['unhealthy', 7]
     ]
@@ -116,6 +116,19 @@ describe('zebrunner: device API', function() {
         expect(reply.code).to.equal(200)
         expect(dbapi.setDeviceStatusOverride.calledOnceWith('serial', code)).to.equal(true)
       })
+    })
+
+    it('should set the codes of the DeviceStatus enum of wire.proto', async function() {
+      var proto = await readFile(new URL('../../../lib/wire/wire.proto', import.meta.url), 'utf8')
+      var block = /enum DeviceStatus \{([^}]*)\}/.exec(proto)![1]!
+      var codes: Record<string, number> = {}
+      for (var [, name, value] of block.matchAll(/(\w+) = (\d+);/g)) {
+        codes[name!.toLowerCase()] = Number(value)
+      }
+      overrides.forEach(function([status, code]) {
+        expect(codes[status], status).to.equal(code)
+      })
+      expect(codes.online).to.equal(3)
     })
 
     it('should make a device absent, whatever the case of the status', async function() {
