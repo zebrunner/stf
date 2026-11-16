@@ -6,13 +6,20 @@ import express from 'express'
 import syrup from '@devicefarmer/stf-syrup'
 
 import wire from '../../../lib/wire/index.js'
-import {deviceTypeOf, screenOf} from '../../../lib/units/ios-device/plugins/devicestate.js'
+import {
+  deviceTypeOf
+, platformOf
+, screenOf
+} from '../../../lib/units/ios-device/plugins/devicestate.js'
 import type {IosDeviceStatePlugin} from '../../../lib/units/ios-device/plugins/devicestate.js'
 import {importFresh, mockModule} from '../../helpers/module-mock.mts'
 import {listen, type Running} from '../../helpers/zebrunner.mts'
 
 interface FakeWda {
   model: string
+  name?: string
+  // userInterfaceIdiom of UIKit, as WDA tells it: 1 a phone, 2 a TV
+  idiom?: number
   orientation: 'PORTRAIT' | 'LANDSCAPE'
   failures: number
   calls: string[]
@@ -30,7 +37,11 @@ function fakeWda(state: FakeWda) {
     next()
   })
   app.get('/wda/device/info', function(req, res) {
-    res.json({value: {model: state.model, name: 'My ' + state.model}})
+    res.json({value: {
+      model: state.model
+    , name: state.name || 'My ' + state.model
+    , userInterfaceIdiom: state.idiom
+    }})
   })
   app.get('/window/size', function(req, res) {
     var portrait = state.orientation === 'PORTRAIT'
@@ -101,11 +112,26 @@ describe('zebrunner: ios-device state', function() {
     return wda.close()
   })
 
-  it('should tell the type of the device by its model or name', function() {
-    expect(deviceTypeOf({model: 'iPhone', name: 'My iPhone'})).to.equal('iPhone')
-    expect(deviceTypeOf({model: 'iPad', name: 'iPad'})).to.equal('iPhone')
+  it('should tell the type of the device by its idiom or its model, never by its name', function() {
+    var phone = {model: 'iPhone', name: 'My iPhone', userInterfaceIdiom: 1}
+    expect(deviceTypeOf(phone)).to.equal('iPhone')
+    expect(deviceTypeOf({model: 'iPad', name: 'iPad', userInterfaceIdiom: 0})).to.equal('iPhone')
+    var tv = {model: 'Apple TV', name: 'Living room', userInterfaceIdiom: 2}
+    expect(deviceTypeOf(tv)).to.equal('Apple TV')
+    // an older WDA without the idiom
+    expect(deviceTypeOf({model: 'Apple TV', name: 'Living room'})).to.equal('Apple TV')
     expect(deviceTypeOf({model: 'AppleTV', name: 'Living room'})).to.equal('Apple TV')
-    expect(deviceTypeOf({model: 'Apple', name: 'Apple TV 4K'})).to.equal('Apple TV')
+    expect(deviceTypeOf({model: 'iPhone', name: 'iPhone'})).to.equal('iPhone')
+    // names with "tv" in them
+    var remote = {model: 'iPhone', name: 'Apple TV remote', userInterfaceIdiom: 1}
+    expect(deviceTypeOf(remote)).to.equal('iPhone')
+    expect(deviceTypeOf({model: 'iPhone', name: 'Kotvitsky iPhone'})).to.equal('iPhone')
+    expect(deviceTypeOf({model: 'iPad', name: 'iPad of the TV team'})).to.equal('iPhone')
+  })
+
+  it('should tell the platform of a type', function() {
+    expect(platformOf('Apple TV')).to.equal('tvOS')
+    expect(platformOf('iPhone')).to.equal('iOS')
   })
 
   it('should keep the screen of a phone portrait and the one of a TV as it is', function() {
@@ -164,8 +190,19 @@ describe('zebrunner: ios-device state', function() {
     })).to.eql(['IosDeviceScreenMessage', 'SdkIosVersion'])
   })
 
+  it('should report a phone with "tv" in its name as an iPhone', async function() {
+    state.name = 'Kotvitsky TV'
+    state.idiom = 1
+    var devicestate = await load()
+    await delay(200)
+
+    expect(await devicestate.type()).to.equal('iPhone')
+    expect(sent()[0]!.message).to.include({deviceType: 'iPhone'})
+  })
+
   it('should report an Apple TV', async function() {
-    state.model = 'AppleTV'
+    state.model = 'Apple TV'
+    state.idiom = 2
     state.orientation = 'LANDSCAPE'
     var devicestate = await load()
     await delay(200)
