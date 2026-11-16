@@ -63,7 +63,8 @@ describe('zebrunner: auth-zebrunner', function() {
     auth = await startUnit(new URL('../../../lib/units/auth/zebrunner.js', import.meta.url), {
       secret: SECRET
     , ssid: 'ssid'
-    , appUrl: 'http://stf.example.com/'
+      // --app-url of the docker-compose.yml of mcloud: ${STF_URL}/stf
+    , appUrl: 'http://stf.example.com/stf'
     , zebrunner: {
         loginURL: iam.origin + '/api/iam/v1/auth/login'
       , userinfoURL: iam.origin + '/api/iam/v1/users'
@@ -109,6 +110,7 @@ describe('zebrunner: auth-zebrunner', function() {
     var body = await res.json() as {success: boolean, redirect: string}
     expect(body.success).to.equal(true)
     var redirect = new URL(body.redirect)
+    // --app-url as is, as the other auth units: it was followed by stf, /stfstf?jwt=...
     expect(redirect.origin + redirect.pathname).to.equal('http://stf.example.com/stf')
     expect(jwtutil.decode(redirect.searchParams.get('jwt')!, SECRET)).to.eql({
       email: 'jdoe@example.com'

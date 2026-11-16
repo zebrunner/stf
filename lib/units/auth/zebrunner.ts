@@ -165,7 +165,7 @@ export default function(options: ZebrunnerAuthOptions) {
     res.status(200)
       .json({
         success: true
-      , redirect: urlutil.addParams(`${options.appUrl}stf`, {
+      , redirect: urlutil.addParams(options.appUrl, {
           jwt: token
         })
       })
