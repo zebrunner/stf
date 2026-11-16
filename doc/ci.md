@@ -7,7 +7,9 @@ weekly and with the manual `matrix-profile=full` input, see
 macOS simulators. CI needs no secrets: the only
 token involved is the automatic `GITHUB_TOKEN`, used to post the report.
 
-`.github/workflows/docker.yml` builds the images on the same events, and
+`.github/workflows/docker.yml` builds the images on the same events (fork: the
+arm64 image only, and the Debian image only when its files change, see
+[Build](../ZEBRUNNER.md#build)), and
 `prepare-release.yml` and `release.yml` cut a release between them. Neither
 holds a stored credential either: both registries are reached over OIDC,
 described under Releasing below.

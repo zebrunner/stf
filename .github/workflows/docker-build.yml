@@ -14,6 +14,11 @@ on:
         type: boolean
         required: false
         default: false
+      # Fork (Zebrunner): the architectures to build, a JSON array
+      arches:
+        type: string
+        required: false
+        default: '["amd64", "arm64"]'
 
 env:
   IMAGE: devicefarmer/stf
@@ -29,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [amd64, arm64]
+        arch: ${{ fromJSON(inputs.arches) }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -51,6 +56,10 @@ jobs:
         with:
           context: .
           platforms: linux/${{ matrix.arch }}
+          # Fork (Zebrunner): the layers of the packages, Node.js and npm ci of
+          # the Dockerfile come from the cache when only the sources changed
+          cache-from: type=gha,scope=docker-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=docker-${{ matrix.arch }},ignore-error=true
           outputs: ${{ inputs.push
             && format('type=image,name={0},push-by-digest=true,name-canonical=true,push=true', env.IMAGE)
             || 'type=cacheonly' }}
