@@ -7,16 +7,17 @@ import type Promise from 'bluebird'
 
 import dbapi from '../../../db/api.js'
 import type {DevicePayload} from '../../../types/units-api.js'
+import wire from '../../../wire/index.js'
 
-// The DeviceStatus values of lib/wire/wire.proto
+// The overrides take the DeviceStatus values of lib/wire/wire.proto: the UI and mcloud-grid read them
 const STATUS_CODES: Record<string, number> = {
-  offline: 1
-, unauthorized: 5
-, preparing: 6
-, unhealthy: 7
+  offline: wire.DeviceStatus.OFFLINE
+, unauthorized: wire.DeviceStatus.UNAUTHORIZED
+, preparing: wire.DeviceStatus.PREPARING
+, unhealthy: wire.DeviceStatus.UNHEALTHY
 }
 
-const ONLINE = 3
+const ONLINE = wire.DeviceStatus.ONLINE
 
 // updates <serial> <body>: the database writes of the status of the body, or the message of a
 // 400 answer

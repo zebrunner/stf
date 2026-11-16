@@ -4,6 +4,11 @@ updates:
   directory: "/"
   schedule:
     interval: weekly
+# Fork (Zebrunner): the digest of the base image of Dockerfile
+- package-ecosystem: docker
+  directory: "/"
+  schedule:
+    interval: weekly
 - package-ecosystem: npm
   directory: "/"
   schedule:
@@ -19,6 +24,10 @@ updates:
   - dependency-name: express-validator
     versions:
     - 6.9.2
+  # Fork (Zebrunner): the types of the Node.js of .nvmrc and of the image (22)
+  - dependency-name: "@types/node"
+    update-types:
+    - version-update:semver-major
   groups:
     mantine:
       patterns:

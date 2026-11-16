@@ -105,7 +105,7 @@ describe('zebrunner: device API', function() {
   describe('PUT /devices/{serial} status', function() {
     var overrides: Array<[string, number]> = [
       ['offline', 1]
-    , ['unauthorized', 5]
+    , ['unauthorized', 2]
     , ['preparing', 6]
     , ['unhealthy', 7]
     ]
@@ -116,6 +116,19 @@ describe('zebrunner: device API', function() {
         expect(reply.code).to.equal(200)
         expect(dbapi.setDeviceStatusOverride.calledOnceWith('serial', code)).to.equal(true)
       })
+    })
+
+    it('should set the codes of the DeviceStatus enum of wire.proto', async function() {
+      var proto = await readFile(new URL('../../../lib/wire/wire.proto', import.meta.url), 'utf8')
+      var block = /enum DeviceStatus \{([^}]*)\}/.exec(proto)![1]!
+      var codes: Record<string, number> = {}
+      for (var [, name, value] of block.matchAll(/(\w+) = (\d+);/g)) {
+        codes[name!.toLowerCase()] = Number(value)
+      }
+      overrides.forEach(function([status, code]) {
+        expect(codes[status], status).to.equal(code)
+      })
+      expect(codes.online).to.equal(3)
     })
 
     it('should make a device absent, whatever the case of the status', async function() {
@@ -253,13 +266,26 @@ describe('zebrunner: device API', function() {
 
   describe('GET /devices/{serial}/type', function() {
     it('should answer the type of the device', async function() {
-      dbapi.getDeviceType.resolves('tvOS')
-      expect((await call('getDeviceType', {serial: 'serial'})).body).to.equal('tvOS')
+      dbapi.getDeviceType.resolves('Apple TV')
+      var reply = await call('getDeviceType', {serial: 'serial'})
+      expect(reply.code).to.equal(200)
+      expect(reply.body).to.eql({type: 'Apple TV'})
     })
 
-    it('should answer no type for an error', async function() {
+    it('should answer 404 for an unknown device or a device without a type', async function() {
+      dbapi.getDeviceType.resolves(null)
+      var reply = await call('getDeviceType', {serial: 'serial'})
+      expect(reply.code).to.equal(404)
+      expect(reply.body.description).to.equal('Device not found')
+      dbapi.getDeviceType.resolves('')
+      reply = await call('getDeviceType', {serial: 'serial'})
+      expect(reply.code).to.equal(404)
+      expect(reply.body.description).to.equal('Device type unknown')
+    })
+
+    it('should answer 500 for an error', async function() {
       dbapi.getDeviceType.rejects(new Error('db'))
-      expect((await call('getDeviceType', {serial: 'serial'})).body).to.eql({deviceType: null})
+      expect((await call('getDeviceType', {serial: 'serial'})).code).to.equal(500)
     })
   })
 })

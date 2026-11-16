@@ -37,8 +37,8 @@ export interface IosDeviceOptions {
   connectPort: number
   wdaHost: string
   wdaPort: number
-  // Never set by the CLI; the MJPEG stream is read from connectPort
-  mjpegPort?: number
+  // The MJPEG stream of WDA, connectPort when it is not set
+  mjpegPort: number | undefined
   vncInitialSize: number[]
   heartbeatInterval: number
   bootCompleteTimeout: number
@@ -46,8 +46,6 @@ export interface IosDeviceOptions {
   lockRotation: boolean | undefined
   cleanup: boolean
   screenReset: boolean
-  udidStorage: string | false
-  iproxy: boolean
   deviceName: string
   host: string
 }

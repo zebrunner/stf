@@ -1,7 +1,4 @@
-import {exec} from 'child_process'
-
 import syrup from '@devicefarmer/stf-syrup'
-import Promise from 'bluebird'
 
 import logger from '../../../util/logger.js'
 import wire from '../../../wire/index.js'
@@ -9,6 +6,10 @@ import wireutil from '../../../wire/util.js'
 import type {IosDeviceOptions, Push, Router} from '../../../types/ios-device.js'
 import routerSyrup from '../support/router.js'
 import pushSyrup from '../support/push.js'
+import {execGoIos} from './util/goios.js'
+
+// go-ios asks the device to restart and returns, the device goes away afterwards
+const REBOOT_TIMEOUT = 30000
 
 export default syrup.serial()
   .dependency(routerSyrup)
@@ -18,17 +19,16 @@ export default syrup.serial()
 
     router.on(wire.RebootMessage, function(channel) {
       var reply = wireutil.reply(options.serial)
-      var udid = options.serial
-      exec(`ios reboot --udid=${udid}`)
-      Promise.delay(5000)
+      execGoIos(options.serial, ['reboot'], REBOOT_TIMEOUT)
         .then(function() {
+          log.important('Rebooting the device')
           push.send([
             channel
           , reply.okay()
           ])
         })
-        .error(function(err) {
-          log.error('Reboot failed', err.stack)
+        .catch(function(err: Error) {
+          log.error('Reboot failed: %s', err.message)
           push.send([
             channel
           , reply.fail(err.message)

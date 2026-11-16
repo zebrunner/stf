@@ -27,8 +27,9 @@ export interface IosWdaOptions {
   serial: string
   wdaHost: string
   wdaPort: number
-  // The port of the MJPEG server of WDA, the unit connects to it at start
+  // The port of the MJPEG server of WDA, the unit connects to it at start, unless mjpegPort is set
   connectPort: number
+  mjpegPort?: number
   deviceType?: string
 }
 
@@ -96,6 +97,7 @@ export async function loadWdaClient(options: IosWdaOptions): Promise<IosWda> {
     , wdaHost: options.wdaHost
     , wdaPort: options.wdaPort
     , connectPort: options.connectPort
+    , mjpegPort: options.mjpegPort
     }) as WdaClientPlugin
   }
   finally {

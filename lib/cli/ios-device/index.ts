@@ -7,6 +7,8 @@ var require = createRequire(import.meta.url)
 
 var command = 'ios-device'
 
+var describe = 'Start an iOS or tvOS device unit (Zebrunner).'
+
 var builder = function(yargs: Argv) {
   return yargs
     .strict()
@@ -33,7 +35,7 @@ var builder = function(yargs: Argv) {
     , default: true
     })
     .option('connect-port', {
-      describe: 'Port allocated to adb connections.'
+      describe: 'The port of the device: the MJPEG stream of WDA, unless --mjpeg-port is set.'
     , type: 'number'
     , demand: true
     })
@@ -156,29 +158,18 @@ var builder = function(yargs: Argv) {
     , demand: true
     })
     .option('wda-host', {
-      describe: 'iOS device host ip address where WDA is started.'
+      describe: 'The host of WebDriverAgent (the connector container in mcloud-device).'
     , type: 'string'
-    , default: '192.168.88.78'
+    , default: '127.0.0.1'
     })
     .option('wda-port', {
-      describe: 'The port the WDA should run et.'
+      describe: 'The port of WebDriverAgent.'
     , type: 'number'
     , default: 20001
     })
     .option('mjpeg-port', {
-      describe: 'The port the WDA mjpeg is started.'
+      describe: 'The port of the MJPEG stream of WebDriverAgent, --connect-port by default.'
     , type: 'number'
-    , default: 20002
-    })
-    .option('udid-storage', {
-      describe: 'The path for ip information of devoces'
-    , type: 'string'
-    , default: false
-    })
-    .option('iproxy', {
-      describe: 'If the option with iproxy is passed, use proxy connection with devices'
-    , type: 'boolean'
-    , default: false
     })
     .option('device-name', {
       describe: 'Device name'
@@ -216,6 +207,7 @@ var handler = function(argv: CommandArgv<typeof builder>) {
   , connectPort: argv.connectPort
   , wdaHost: argv.wdaHost
   , wdaPort: argv.wdaPort
+  , mjpegPort: argv.mjpegPort
   , vncInitialSize: argv.vncInitialSize
   , heartbeatInterval: argv.heartbeatInterval
   , bootCompleteTimeout: argv.bootCompleteTimeout
@@ -223,8 +215,6 @@ var handler = function(argv: CommandArgv<typeof builder>) {
   , lockRotation: argv.lockRotation
   , cleanup: argv.cleanup
   , screenReset: argv.screenReset
-  , udidStorage: typeof argv.udidStorage === 'string' ? argv.udidStorage : false
-  , iproxy: argv.iproxy
   , deviceName: String(argv.deviceName)
   , host: argv.host
   } satisfies IosDeviceOptions)
@@ -232,6 +222,7 @@ var handler = function(argv: CommandArgv<typeof builder>) {
 
 export {
   command
+, describe
 , builder
 , handler
 }

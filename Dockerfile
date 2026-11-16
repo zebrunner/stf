@@ -4,18 +4,29 @@
 
 # Fork (Zebrunner): the build stage builds /app with the build tools (gcc,
 # python3, cmake, the -dev packages, the JDK), the image gets /app, node and
-# the runtime packages only.
-FROM ubuntu:26.04 AS build
+# the runtime packages only. The base is pinned by the digest of its
+# multi-platform index (Dependabot updates it).
+FROM ubuntu:26.04@sha256:065aa8626841f16057b78b027b464cd59c4fac36c204c72dcbf48d66f5fa8a96 AS build
 
 WORKDIR /app
 COPY . /tmp/build/
 
 ARG TARGETARCH
 
+# Fork (Zebrunner): the steps below run for amd64 or arm64 only; another or an
+# empty TARGETARCH (the builder without BuildKit) stops the build here.
+RUN case "${TARGETARCH}" in \
+      amd64|arm64) ;; \
+      *) echo "TARGETARCH '${TARGETARCH}' is not supported: build linux/amd64 or linux/arm64 with BuildKit" >&2; \
+        exit 1 ;; \
+    esac
+
 # Fork (Zebrunner): the amd64 and arm64 images are alike: stf has the uid 998,
 # /app belongs to root, the build tools and caches are removed. zeromq ships
 # its glibc addon for arm64, no musl libc nor pnpm is needed to build it.
-# npm ci installs the versions of the committed package-lock.json.
+# npm ci installs the versions of the committed package-lock.json. The Node.js
+# tarballs are checked by their sha256 of
+# https://nodejs.org/dist/v22.23.2/SHASUMS256.txt (.nvmrc has the version).
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
     export DEBIAN_FRONTEND=noninteractive && \
     useradd --system \
@@ -23,7 +34,6 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
       --create-home \
       --shell /usr/sbin/nologin \
       stf && \
-    sed -i'' 's@http://archive.ubuntu.com/ubuntu/@mirror://mirrors.ubuntu.com/mirrors.txt@' /etc/apt/sources.list && \
     echo '--- Updating repositories' && \
     apt-get update && \
     echo '--- Upgrading repositories' && \
@@ -32,8 +42,10 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
     cd /tmp && \
     wget --progress=dot:mega \
       https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-x64.tar.xz && \
+    echo 'd60acfe00a2932254bb0ad20e01b0d74397a0875595de719654b214f4b03f307  node-v22.23.2-linux-x64.tar.xz' > node.sha256 && \
+    sha256sum -c node.sha256 && \
     tar -xJf node-v*.tar.xz --strip-components 1 -C /usr/local && \
-    rm node-v*.tar.xz && \
+    rm node-v*.tar.xz node.sha256 && \
     su stf -s /bin/bash -c '/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js install' && \
     apt-get -y install --no-install-recommends libzmq3-dev libprotobuf-dev git yasm cmake && \
     apt-get clean && \
@@ -78,8 +90,10 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     cd /tmp && \
     wget --progress=dot:mega \
       https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-arm64.tar.xz && \
+    echo 'fff4078c5def658577f92c88db7db3bc0072924bfb93fe52c1e744a54e94abb8  node-v22.23.2-linux-arm64.tar.xz' > node.sha256 && \
+    sha256sum -c node.sha256 && \
     tar -xJf node-v*.tar.xz --strip-components 1 -C /usr/local && \
-    rm node-v*.tar.xz && \
+    rm node-v*.tar.xz node.sha256 && \
     useradd --system \
       --uid 998 \
       --create-home \
@@ -93,7 +107,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     set -x && \
     cd /tmp/build && \
     export PATH=$PWD/node_modules/.bin:$PATH && \
-    sed -i'' -e '/phantomjs/d' package.json && \
     export VCPKG_FORCE_SYSTEM_BINARIES="arm" && \
     echo 'npm ci --python="/usr/bin/python3" --loglevel http' | su stf -s /bin/bash && \
     echo '--- Assembling app' && \
@@ -123,7 +136,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 RUN find /app/node_modules \( -path '*/prebuilds/*win32*' -o -path '*/prebuilds/*darwin*' \
       -o -path '*/zeromq/build/win32' -o -path '*/zeromq/build/darwin' \) -prune -exec rm -rf {} +
 
-FROM ubuntu:26.04
+FROM ubuntu:26.04@sha256:065aa8626841f16057b78b027b464cd59c4fac36c204c72dcbf48d66f5fa8a96
 
 # Sneak the stf executable into $PATH.
 ENV PATH=/app/bin:$PATH

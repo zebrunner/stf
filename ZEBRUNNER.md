@@ -39,6 +39,7 @@ The device page of an iOS device has the tabs of an Android one, served by `lib/
 | Speed of taps and gestures | a WDA session STF creates (no Appium test runs) gets `snapshotMaxDepth=1`, `waitForIdleTimeout=0`, `animationCoolOffTimeout=0`: WDA snapshots the app for every move of `/actions`, a tap takes 0.4 s instead of 1.4 s (`wda/fast-input.ts`); the automations that look for elements run with the defaults, which come back when the session ends | a session of Appium keeps its own settings (WDA resets them in every new session), so the screen of a running test keeps the slower taps |
 | Clipboard (Dashboard) | WDA reads and writes the pasteboard with its runner in front for a moment (iOS 16+ gives the pasteboard to the app in front only), then the app that was in front comes back; paste also types the text into the focused field, like Android (`clipboard.ts`, `wda/pasteboard.ts`) | about 2-3 seconds; WDA accepts the "Allow Paste" alert itself |
 | Apps (Dashboard) | Settings, its Wi-Fi page, General > iPhone Storage (Manage Apps) and Developer, opened through WDA (`radio.ts`, `wda/settings.ts`) | only Settings and the App Store on tvOS |
+| Reboot (Dashboard) | `ios reboot` (`reboot.ts`), answered when go-ios asked the device to restart, with the error of go-ios when it failed | the device leaves STF until it is back |
 | Info | hardware, iOS build, CPU architecture, SIM, storage and battery (temperature, voltage, health) from lockdown through `ios info`, `ios diskspace` and `ios batteryregistry` (`info/index.ts`, the battery every 5 minutes); marketing name, release date, CPU, RAM, screen size, ppi and refresh rate of the model by its ProductType (`lib/util/zebrunner-ios-models.json`, 133 iPhone and iPad models up to October 2026, from Wikipedia and Apple; add the new models there) | RAM is the smallest of a model; Airplane Mode is read from the root page of Settings whenever the unit opens Settings (Wi-Fi, Bluetooth, the Apps shortcuts), iOS logs it only when it changes; roaming and the cellular technology are not known |
 | Network (Info) | the system log through `ios ostrace` (no tunnel) for up to 15 seconds every 5 minutes: the primary interface (`symptomsd`) and the Wi-Fi link, SSID, RSSI, SNR, channel and bandwidth (`wifid`); `IosNetworkEvent` | the log costs the device some CPU while it is read |
 
@@ -72,11 +73,17 @@ default, required by `push`). `make push` uses the buildx builder `mcloud` (dock
 once; the other platform is built emulated by QEMU (`docker run --privileged --rm tonistiigi/binfmt --install all`),
 which takes long for the native modules: building every platform on its own machine and joining them with
 `docker buildx imagetools create` (as `.github/workflows/docker-build.yml`) is faster.
+The base image `ubuntu:26.04` is pinned by the digest of its multi-platform index (Dependabot updates it), the Node.js
+tarballs by their sha256 of `SHASUMS256.txt` of nodejs.org: a new Node.js version changes `.nvmrc`, the URLs and the sums
+in `Dockerfile`. The image is built for `linux/amd64` and `linux/arm64` only, another platform stops the build.
 
 The file `VERSION` is the release in work (bumped by hand after a release). The `Publish` job of CI pushes the image of
 every merge into `develop` after `Report` passed: `public.ecr.aws/zebrunner/stf:<VERSION>-develop-<sha>` (7 characters
 of the commit) and `<VERSION>-develop-latest`, by the reusable workflow `docker-publish.yml` of
 [mcloud-conventions](https://github.com/zebrunner/mcloud-conventions) over `make push`.
+The workflows of upstream publish nothing from the fork: `Docker` (`docker.yml`) only builds the images of the pull
+requests, `Prepare release` and `Release` (the npm package `@devicefarmer/stf` and the Docker Hub image
+`devicefarmer/stf`) run in DeviceFarmer/stf only.
 
 Without docker (Node.js 22.18 or later):
 
@@ -119,6 +126,8 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 | `STF_ZMQ_CURVE_SERVER_PUBLIC_KEY` | | Public key of the triproxies: the units and the device providers connect to them over CURVE |
 | `STF_ZMQ_CURVE_SECRET_KEY` | | Secret key of the client, with `STF_ZMQ_CURVE_SERVER_PUBLIC_KEY`; its public key is derived from it. The server units share one key (the triproxies accept it); a device host has its own one, registered by its enrollment |
 
+`stf auth-zebrunner --app-url` is the address the sign-in sends the browser to with the token (`?jwt=...`), taken as is like the other `auth-*` units: mcloud gives `${STF_URL}/stf`, which stf-proxy rewrites to `/` of the app.
+
 ### Ports of the Android devices
 
 `stf provider` gives every device worker a group of 4 ports of `--min-port`..`--max-port` (`STF_PROVIDER_MIN_PORT`, `STF_PROVIDER_MAX_PORT`): the first one is the screen WebSocket, the second one the remote debug port the users connect to (`adb connect`). With `--connect-port` (`STF_PROVIDER_CONNECT_PORT`, mcloud-device passes it) the remote debug port is fixed (`lib/util/zebrunner-connect-port.ts`):
@@ -129,16 +138,18 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 
 Every Android device worker sends its ports to the processor (`DevicePortsMessage`) before it is ready, which stores them in the device document as `screenPort` and `connectPort`, as for the iOS devices. The REST API returns them (`GET /api/v1/devices?fields=serial,platform,present,display,screenPort,connectPort,provider`); the adb relay of mcloud reads `GET /api/v1/nodes/relay`, see [Nodes (enrollment)](#nodes-enrollment).
 
-`stf ios-device` takes the options of a device unit plus `--wda-host`, `--wda-port`, `--mjpeg-port`, `--device-name` and `--host`, see `node lib/cli ios-device --help`.
+`stf ios-device` takes the options of a device unit plus `--wda-host` (`127.0.0.1` by default; mcloud-device passes `WDA_HOST`, the connector container), `--wda-port`, `--mjpeg-port`, `--device-name` and `--host`, see `stf ios-device --help`. Its `--connect-port` is the port of the MJPEG stream of WebDriverAgent (mcloud-device passes `MJPEG_PORT`), unless `--mjpeg-port` is given; the API returns it as the `connectPort` of the device.
 
 ## REST API
 
 | Route | What it does |
 | --- | --- |
-| `PUT /api/v1/devices/{serial}` with `{"status": ...}` | `disconnected`, `offline`, `available` (frees the device), `busy` (needs `owner.name`, marks the device as used by the owner), `unauthorized`, `preparing`, `unhealthy` |
+| `PUT /api/v1/devices/{serial}` with `{"status": ...}` or `{"device": {"status": ...}}` (the form mcloud-grid sends) | `disconnected`, `offline`, `available` (frees the device), `busy` (needs `owner.name`, also takes `owner.email`, marks the device as used by the owner), `unauthorized`, `preparing`, `unhealthy`, in any case; another status is refused with 400 |
 | `GET /api/v1/devices/{serial}/size` | the display of the device, `{height: 0, width: 0, scale: 0}` when unknown |
 | `GET /api/v1/devices/{serial}/owner` | the owner of the group of the device |
-| `GET /api/v1/devices/{serial}/type` | the device type of an iOS device (`iOS`, `tvOS`) |
+| `GET /api/v1/devices/{serial}/type` | the type of an iOS device as WebDriverAgent tells it, `{"type": "iPhone"}` (also an iPad) or `{"type": "Apple TV"}`; 404 for an unknown device or a device without a type (Android, or not read yet) |
+
+The `size`, `owner` and `type` routes need an access token (`Authorization: Bearer <token>`) as the other routes of the API.
 
 The routes of the enrolled device hosts (`/api/v1/nodes/...`, `/api/v1/zebrunner/screen-auth`, `/api/v1/zebrunner/nodes/...`) are described in [Nodes (enrollment)](#nodes-enrollment).
 
@@ -164,7 +175,7 @@ Without the token the storage is open as in upstream (open routes, any download 
 
 The units and the device providers talk over ZeroMQ through the triproxies, which have no authentication in upstream: anyone who reaches their ports reads the events of all the devices and sends commands to them. With the `STF_ZMQ_CURVE_*` variables every tcp endpoint uses [CURVE](http://curvezmq.org) (`lib/util/zmqcurve.ts`, applied by `lib/util/zmqutil.ts` to every socket):
 
-- the triproxies (the only units that bind) are CURVE servers with `STF_ZMQ_CURVE_SERVER_SECRET_KEY`; their ZAP handler accepts the key of the server units (the public key of `STF_ZMQ_CURVE_SECRET_KEY` of the triproxy) and the keys of the active enrolled nodes, which it reads from the API unit (`STF_NODES_API_URL`, with `STF_STORAGE_TOKEN`) every 5 s, keeping the last ones while the API unit does not answer; the keys of the revoked nodes and the retired keys of the nodes are refused (deny wins). It refuses the other keys, logging the address and the key once a minute. Without a running ZAP handler libzmq refuses every client (`ZMQ_ZAP_ENFORCE_DOMAIN`). A process runs one ZAP handler whatever the number of its CURVE sockets; a new set of keys never restarts it, and a start right after a stop waits until libzmq freed the endpoint of the old handler;
+- the triproxies (the only units that bind) are CURVE servers with `STF_ZMQ_CURVE_SERVER_SECRET_KEY`; their ZAP handler accepts the key of the server units (the public key of `STF_ZMQ_CURVE_SECRET_KEY` of the triproxy) and the keys of the active enrolled nodes, which it reads from the API unit (`STF_NODES_API_URL`, with `STF_STORAGE_TOKEN`) every 5 s, keeping the last ones while the API unit does not answer; the keys of the revoked nodes and the retired keys of the nodes are refused (deny wins). It refuses the other keys, logging the address and the key once a minute. Until the first read of the keys (the start of the triproxy, the API unit not answering yet) it defers the other keys instead (ZAP 300, a temporary failure, logged once a minute too): libzmq ends such a connection at the handshake interval of the server (30 s) and the client connects again, so the nodes that connect right after a restart of MCloud are let in then, not refused for good. Without a running ZAP handler libzmq refuses every client (`ZMQ_ZAP_ENFORCE_DOMAIN`). A process runs one ZAP handler whatever the number of its CURVE sockets; a new set of keys never restarts it, and a start right after a stop waits until libzmq freed the endpoint of the old handler;
 - the other units and the providers connect as CURVE clients of `STF_ZMQ_CURVE_SERVER_PUBLIC_KEY` with `STF_ZMQ_CURVE_SECRET_KEY`. A client whose key is refused logs `The ZeroMQ server <endpoint> refused the CURVE key <public key> of this host: it is not the key of an active enrolled node (enroll the node with this key, or it was revoked)` once a minute per endpoint (the monitor of the socket). libzmq does not connect a refused socket again, not even after the node is enrolled: the unit has to restart.
 
 The keys are 64 hex characters: `stf curve-keygen` prints a new pair (`public=...`, `secret=...`), `stf curve-keygen --secret-key <key>` the pair of a secret key. A deployment has one server pair and a client pair for the server units; every device host has its own client pair, registered by its enrollment, see [Nodes (enrollment)](#nodes-enrollment): adding or revoking a node needs no restart. `./zebrunner.sh setup` of mcloud generates the keys of the server and of the server units. A unit with an incomplete or invalid configuration does not start. Without the variables the sockets have no security, as in upstream (`stf local`, the tests); CURVE is all or nothing for a triproxy, the clients without it cannot connect.
@@ -368,7 +379,8 @@ The fork merges [DeviceFarmer/stf](https://github.com/DeviceFarmer/stf) `master`
 - a new wire message takes a free code above the upstream ones and is pinned in `test/wire/protobuf.mts`; a retired code is added to `reserved`;
 - `res/common/lang/po/stf.pot`: add and remove the fork messages only, do not commit a fully regenerated file (the translation check compares the messages, not the source references);
 - `api_v1_generated.json` stays the upstream file, the API unit reads `api_v1.yaml`;
-- `package-lock.json` and `test/playwright/package-lock.json` are committed (upstream ignores them): the image and CI install them with `npm ci`. After a merge that changes `package.json`, `npm install` updates the lock file, commit it with the merge; `npm audit` should stay clean, `overrides` in `package.json` pins the fixed versions of nested dependencies;
+- `package-lock.json` and `test/playwright/package-lock.json` are committed (upstream ignores them): the image and CI install them with `npm ci`. After a merge that changes `package.json`, `npm install` updates the lock file, commit it with the merge; `npm audit` should stay clean, `overrides` in `package.json` pins the fixed versions of nested dependencies (`resolutions` is the same for yarn, kept as upstream has it; npm ignores it);
+- `@types/node` follows the major of the Node.js of `.nvmrc` and of the image (22), so the type check refuses APIs of newer versions: keep it at a merge (upstream may have a newer one); dependabot proposes no major update of it;
 - no editor settings, generated files or permission changes.
 
 A sync: `git fetch upstream && git merge upstream/master`, `npm install` when `package.json` changed, then `make check` and `npm run test:component`.

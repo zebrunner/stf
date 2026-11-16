@@ -8,18 +8,20 @@ type InitialState = Parameters<typeof DbApi.initializeIosDeviceState>[1]
 type IosDeviceInfoMessageFields = Parameters<typeof DbApi.setIosDeviceInfo>[0]
 
 // The documents the methods write, as test/db/api.mts reads them: a built update term is
-// [UPDATE, [[target], {document}]], an insert one is [INSERT, [[table], {document}]]
+// [UPDATE, [[target], {document}]], an insert one is [INSERT, [[table], {document}]]; a read answers readResult
 var writes: any[] = []
 var updateResult: object = {skipped: 0}
+var readResult: object | null = null
 
 var restoreDb = mockModule(new URL('../../../lib/db/index.js', import.meta.url), {default: {
   run: function(query: {build(): any}) {
     var term = query.build()
-    if (Array.isArray(term) && term.length > 1 && Array.isArray(term[1]) && term[1][1]) {
-      writes.push(term[1][1])
+    var args = Array.isArray(term) && term.length > 1 && Array.isArray(term[1]) ? term[1] : []
+    if (args[1] && typeof args[1] === 'object') {
+      writes.push(args[1])
       return Promise.resolve(updateResult)
     }
-    return Promise.resolve(null)
+    return Promise.resolve(readResult)
   }
 }})
 
@@ -40,6 +42,15 @@ describe('zebrunner: dbapi', function() {
   beforeEach(function() {
     writes = []
     updateResult = {skipped: 0}
+    readResult = null
+  })
+
+  it('should tell an unknown device from a device without a type', async function() {
+    expect(await dbapi.getDeviceType('serial')).to.equal(null)
+    readResult = {serial: 'serial'}
+    expect(await dbapi.getDeviceType('serial')).to.equal('')
+    readResult = {serial: 'serial', deviceType: 'Apple TV'}
+    expect(await dbapi.getDeviceType('serial')).to.equal('Apple TV')
   })
 
   it('should override the status without a timestamp of the device units', async function() {

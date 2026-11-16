@@ -5,6 +5,7 @@ import yargs, {type Argv} from 'yargs'
 
 import * as api from '../../../lib/cli/api/index.js'
 import * as authZebrunner from '../../../lib/cli/auth-zebrunner/index.js'
+import * as iosDevice from '../../../lib/cli/ios-device/index.js'
 import * as local from '../../../lib/cli/local/index.js'
 import * as provider from '../../../lib/cli/provider/index.js'
 import * as storageS3 from '../../../lib/cli/storage-s3/index.js'
@@ -227,6 +228,72 @@ describe('zebrunner: CLI', function() {
   describe('local', function() {
     it('should start the Zebrunner auth unit', function() {
       expect(parse(local, ['--auth-type', 'zebrunner']).authType).to.equal('zebrunner')
+    })
+  })
+
+  describe('ios-device', function() {
+    // the options entrypoint.sh of mcloud-device passes
+    var iosArgs = [
+      '--serial', 'udid'
+    , '--screen-port', '7400'
+    , '--connect-port', '20002'
+    , '--provider', 'provider'
+    , '--public-ip', 'mcloud.example.com'
+    , '--storage-url', 'http://stf/'
+    , '--connect-push', 'tcp://dev:7270'
+    , '--connect-sub', 'tcp://dev:7250'
+    , '--connect-app-dealer', 'tcp://app:7160'
+    , '--connect-dev-dealer', 'tcp://dev:7260'
+    , '--wda-host', 'connector'
+    , '--wda-port', '20001'
+    ]
+
+    // unitOptions <args>: the options the handler gives the ios-device unit; the handler requires
+    // the unit, so the first mock stays in the require cache and sets this variable
+    var options: Record<string, any> = {}
+    function unitOptions(args: string[]) {
+      var argv = parse(iosDevice, args)
+      var restore = mockModule(new URL('../../../lib/units/ios-device/index.js', import.meta.url), {
+        default: function(given: Record<string, unknown>) {
+          options = given
+        }
+      })
+      options = {}
+      try {
+        iosDevice.handler(argv as Parameters<typeof iosDevice.handler>[0])
+      }
+      finally {
+        restore()
+      }
+      return options
+    }
+
+    it('should be listed in the help of stf', function() {
+      expect(iosDevice.describe).to.be.a('string').and.not.equal('')
+    })
+
+    it('should read the MJPEG stream of --connect-port without --mjpeg-port', function() {
+      var options = unitOptions(iosArgs)
+      expect(options.connectPort).to.equal(20002)
+      expect(options).to.have.property('mjpegPort').that.is.not.a('number')
+      expect(options.wdaHost).to.equal('connector')
+    })
+
+    it('should give the unit --mjpeg-port', function() {
+      expect(unitOptions(iosArgs.concat(['--mjpeg-port', '20003'])).mjpegPort).to.equal(20003)
+    })
+
+    it('should default to WDA on the local host', function() {
+      expect(parse(iosDevice, iosArgs.slice(0, -4)).wdaHost).to.equal('127.0.0.1')
+    })
+
+    it('should refuse the options it does not use', function() {
+      expect(function() {
+        parse(iosDevice, iosArgs.concat(['--iproxy']))
+      }).to.throw(/Unknown argument/)
+      expect(function() {
+        parse(iosDevice, iosArgs.concat(['--udid-storage', '/tmp/udids']))
+      }).to.throw(/Unknown argument/)
     })
   })
 })
