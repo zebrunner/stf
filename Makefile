@@ -7,6 +7,9 @@ SHELL := /bin/bash
 IMAGE_REPO ?= public.ecr.aws/zebrunner/stf
 VERSION ?= dev
 PLATFORMS ?= linux/amd64,linux/arm64
+# the publish job of CI (mcloud-conventions) pushes each platform by digest (PUSH_OUTPUT); no PUSH_CACHE:
+# the sources are the first layer of the build
+PUSH_OUTPUT ?= --tag $(IMAGE_REPO):$(VERSION) --push
 
 .DEFAULT_GOAL := help
 .PHONY: help check lint test build push
@@ -30,7 +33,7 @@ push: ## the docker image IMAGE_REPO:VERSION for PLATFORMS, built by docker buil
 	@[[ "$(VERSION)" != dev ]] || { echo "make push VERSION=<tag>: the tag of the image is required"; exit 1; }
 	@docker buildx inspect mcloud > /dev/null 2>&1 || docker buildx create --name mcloud --driver docker-container --driver-opt network=host > /dev/null
 	docker buildx build --builder mcloud --progress=plain --provenance=false --platform $(PLATFORMS) \
-	  --build-arg VERSION=$(VERSION) --tag $(IMAGE_REPO):$(VERSION) --push .
+	  --build-arg VERSION=$(VERSION) $(PUSH_OUTPUT) .
 
 # The packages of package-lock.json, installed again when it changed: the hidden lock file of npm is the stamp; the
 # prepare script of npm ci builds lib/ and the UI (node build.mts build)
