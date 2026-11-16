@@ -12,6 +12,9 @@ export default defineConfig({
   }
   , test: {
     environment: 'jsdom'
+    // Fork (Zebrunner): each file in a VM context of a reused worker thread instead of a new
+    // worker process: the same results, 3x faster (doc/ci.md#the-component-tier)
+    , pool: 'vmThreads'
     , include: ['src/**/*.test.{ts,tsx}']
   }
 })

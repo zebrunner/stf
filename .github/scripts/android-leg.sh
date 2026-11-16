@@ -19,7 +19,10 @@ CHECKS_FILE="${CHECKS_FILE:-checks.json}"
 LOG_DIR="${STF_LOG_DIR:-stf-logs}"
 SERIAL="${STF_DEVICE_SERIAL:-emulator-${EMULATOR_PORT:-5554}}"
 BOOT_TIMEOUT="${BOOT_TIMEOUT:-720}"
-STF_WAIT="${STF_WAIT:-420}"
+# Fork (Zebrunner): a healthy leg has the device registered within 1 s and ready
+# within 16 s (the legs of 2026-11-16); 420 s only delayed the retry of a leg
+# whose device never became ready
+STF_WAIT="${STF_WAIT:-120}"
 
 export CHECKS_FILE LOG_DIR SERIAL
 mkdir -p "$LOG_DIR"

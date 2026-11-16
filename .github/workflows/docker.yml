@@ -22,10 +22,13 @@ jobs:
       # Fork (Zebrunner): devicefarmer/stf is the image of upstream; the fork builds it on the pull requests only and
       # publishes its own image by the Publish job of ci.yml
       push: ${{ github.event_name == 'push' && github.repository == 'DeviceFarmer/stf' }}
+      # Fork (Zebrunner): the Compose job of ci.yml builds and tests the amd64 image of every pull request
+      arches: ${{ github.repository == 'DeviceFarmer/stf' && '["amd64", "arm64"]' || '["arm64"]' }}
 
+  # Fork (Zebrunner): zebrunner-docker-debian.yml builds it in the fork, when its files change
   debian:
     name: Debian image
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.repository == 'DeviceFarmer/stf'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:

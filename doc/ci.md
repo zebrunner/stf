@@ -1,13 +1,17 @@
 # CI
 
 `.github/workflows/ci.yml` runs on every pull request and on pushes to
-`master` and `develop`. A quick OS matrix runs by default; a full matrix runs
-weekly and with the manual `matrix-profile=full` input, see
+`master` and `develop`, except for documentation-only changes. Fork (Zebrunner):
+a push runs no device legs, a pull request the quick Android matrix and the quick
+iOS matrix only when it changes an iOS file or has the label `ci:ios`; the full
+matrix of both runs nightly and with the manual `matrix-profile=full` input, see
 [Fork CI](../ZEBRUNNER.md#ci). Linux jobs run on `ubuntu-24.04`; iOS uses
 macOS simulators. CI needs no secrets: the only
 token involved is the automatic `GITHUB_TOKEN`, used to post the report.
 
-`.github/workflows/docker.yml` builds the images on the same events, and
+`.github/workflows/docker.yml` builds the images on the same events (fork: the
+arm64 image only, and the Debian image only when its files change, see
+[Build](../ZEBRUNNER.md#build)), and
 `prepare-release.yml` and `release.yml` cut a release between them. Neither
 holds a stored credential either: both registries are reached over OIDC,
 described under Releasing below.
@@ -16,14 +20,14 @@ described under Releasing below.
 
 | Job | What it proves |
 |---|---|
-| `plan` | `.github/android-matrix.json` is well formed, and produces the Android matrix |
+| `plan` | `.github/android-matrix.json` is well formed, and produces the Android matrix; fork: the iOS matrix, and whether the device legs run |
 | `build` | `npm ci` and the webpack bundle all succeed, and `stf -V` runs |
-| `lint` | `node build.mts lint` (eslint over `lib/`, the React/TypeScript UI in `res/app/src`, root JS, a `tsc` typecheck, plus jsonlint) |
-| `unit` | `mocha` over `test/` (`lib/util`, `lib/wire`) |
-| `component` | `vitest` + jsdom over the UI specs in `res/app/src/**/*.test.ts(x)` |
+| `checks`: lint | `node build.mts lint` (eslint over `lib/`, the React/TypeScript UI in `res/app/src`, root JS, a `tsc` typecheck, plus jsonlint) |
+| `checks`: unit | `mocha` over `test/` (`lib/util`, `lib/wire`) |
+| `checks`: component | `vitest` + jsdom over the UI specs in `res/app/src/**/*.test.ts(x)` |
 | `integration` | `stf local` boots against a RethinkDB service, fake devices round-trip through STF's own db layer, and the Playwright web UI suite passes without any device |
-| `android` (matrix) | selected Android releases at API 31 and above: boot an emulator, attach `stf local` to it, and drive it from the browser |
-| `ios` (matrix) | selected stable iOS versions; full runs also include intermediate and optional preview versions |
+| `android` (matrix) | selected Android releases at API 31 and above: boot an emulator, attach `stf local` to it, and drive it from the browser; not on a push |
+| `ios` (matrix) | selected stable iOS versions; full runs also include the oldest, intermediate and optional preview versions; not on a push, on a pull request only with iOS changes or the label `ci:ios` |
 | `report` | aggregates everything into one sticky PR comment |
 
 ### The component tier
@@ -33,6 +37,11 @@ It covers the protocol pieces the UI cannot work without (the `tx.*` transaction
 ordering, device state derivation, screen scaling math, translation lookup) and
 pure feature logic such as the logcat filters. It needs no browser, so it runs in
 seconds anywhere; the Playwright tiers are what exercise the rendered UI.
+
+Fork (Zebrunner): `res/app/vitest.config.ts` sets `pool: 'vmThreads'`: each file
+runs in a VM context of a reused worker thread instead of a new worker process,
+which skips most of the per-file jsdom and import setup (9-12 s to 3 s in CI,
+the same 106 results).
 
 ## The Android matrix
 
@@ -44,6 +53,16 @@ then allows 10 seconds for QEMU to exit before sending SIGTERM and another
 within another 5 seconds and preserves the test script's exit status. This
 prevents an emulator that acknowledges shutdown but stays alive from holding
 the action open until its 50 minute step timeout.
+
+Fork (Zebrunner): `android-leg.sh` gives STF 120 s (`STF_WAIT`) to register the
+device and as long again to mark it present and ready; a healthy leg needs 1 s
+and at most 16 s, so a device that never becomes ready reaches the retry within
+a few minutes instead of seven. The legs remove the preinstalled toolchains
+(`.github/scripts/free-disk.sh`) only on a runner with less than 30G free: the
+`ubuntu-24.04` image has 86G, a leg uses about 12G. The system images are not
+cached: they take 17-71 s to install, are 1-2G each (one per leg, ten in the
+full profile), and the Actions cache of the repository is already at its 10G
+limit, where they would evict the npm caches of every job.
 
 All available legs come from `.github/android-matrix.json`; the fork's minimum
 API and quick/full selection are applied by `zebrunner-ci.mts` to both the
@@ -272,8 +291,20 @@ runs `node build.mts test` (compile, lint and `stf -V`) and then the mocha
 specs, so it still needs no browser and works anywhere, which is what
 CONTRIBUTING asks of it.
 
+Fork (Zebrunner): `test:unit` runs the spec files one after another, not with
+`mocha --parallel` (measured: 36 s to 17 s with three workers): the zeromq addon
+crashes a worker process (SIGSEGV or SIGABRT, `Workerpool Worker terminated
+Unexpectedly`) in about 4% of the parallel runs, in `nodes-zap.mts` or
+`zmq-curve.mts`, on Node.js 22 and 26, never in a serial run; the unit tests are
+not on the critical path of CI. Should it be tried again: a worker runs several
+files one after another in no fixed order, so a file must not depend on what
+another one loaded or mocked (`importFresh` of `test/helpers/module-mock.mts`
+reloads only the module it is given: `test/units/zebrunner/app-auth.mts` loads
+the dependency it mocks the database of fresh as well).
+
 `test:component` is the Vitest tier. It runs in jsdom and needs no browser; CI
-still runs it as its own job so the report shows it as a separate line.
+runs it in the `checks` job after lint and unit, with a verdict of its own so
+the report shows it as a separate line.
 
 The fork commits `package-lock.json` (and `test/playwright/package-lock.json`):
 CI and the `Dockerfile` install it with `npm ci`, and the dependency cache is

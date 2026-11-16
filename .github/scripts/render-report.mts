@@ -8,7 +8,7 @@ import fs from 'fs'
 import path from 'path'
 import * as layers from './checks.mts'
 import {
-  androidLegs, iosLegs, iosMissing, iosOptional, iosReport, matrixProfile
+  androidLegs, iosExpected, iosLegs, iosMissing, iosOptional, iosReport, matrixProfile
 } from './zebrunner-ci.mts'
 
 interface Verdict {
@@ -217,31 +217,45 @@ function main() {
     ' STF CI report')
   lines.push('')
 
-  // Fork (Zebrunner): a quick run is not evidence that every OS was tested.
+  // Fork (Zebrunner): a quick run is not evidence that every OS was tested. The device legs that
+  // did not run at all (a push, a pull request without iOS changes) say why (DEVICES_NOTE).
   var profile = matrixProfile()
-  lines.push('**OS coverage: ' + profile + '**' + (profile === 'quick' ?
-    ' - oldest + two newest stable OS majors; intermediate and preview versions were not tested.' :
-    ' - all configured supported OS versions, including preview legs.'))
-  if (profile === 'quick') {
-    var selectedAndroid = expectedAndroid()
-    var omittedAndroid = expectedAndroid('full').filter(function(leg) {
-      return !selectedAndroid.some(function(selected) {
-        return selected.api === leg.api
+  var androidRan = Boolean(process.env.EXPECTED_ANDROID_FILE)
+  var notRun = process.env.DEVICES_NOTE || 'not planned'
+  if (!androidRan && !iosExpected()) {
+    lines.push('**OS coverage: none** - no device legs ran: ' + notRun + '.')
+  }
+  else {
+    lines.push('**OS coverage: ' + profile + '**' + (profile === 'quick' ?
+      ' - the newest stable version of the two newest OS majors, and the oldest Android; ' +
+        'intermediate versions, the oldest iOS and preview versions were not tested.' :
+      ' - all configured supported OS versions, including preview legs.'))
+    if (profile === 'quick') {
+      var selectedAndroid = expectedAndroid()
+      var omittedAndroid = expectedAndroid('full').filter(function(leg) {
+        return !selectedAndroid.some(function(selected) {
+          return selected.api === leg.api
+        })
       })
-    })
-    var omittedIos = iosLegs('full').filter(function(leg) {
-      return !iosLegs().some(function(selected) {
-        return selected.ios === leg.ios
+      var omittedIos = iosLegs('full').filter(function(leg) {
+        return !iosLegs().some(function(selected) {
+          return selected.ios === leg.ios
+        })
       })
-    })
-    if (omittedAndroid.length) {
-      lines.push('Android APIs not selected: ' + omittedAndroid.map(function(leg) {
-        return leg.api
-      }).join(', ') + '.')
+      if (omittedAndroid.length) {
+        lines.push('Android APIs not selected: ' + omittedAndroid.map(function(leg) {
+          return leg.api
+        }).join(', ') + '.')
+      }
+      if (iosExpected()) {
+        lines.push('iOS not selected: ' + omittedIos.map(function(leg) {
+          return leg.ios
+        }).join(', ') + '. Run CI with `matrix-profile: full` for complete coverage.')
+      }
     }
-    lines.push('iOS not selected: ' + omittedIos.map(function(leg) {
-      return leg.ios
-    }).join(', ') + '. Run CI with `matrix-profile: full` for complete coverage.')
+    if (!iosExpected()) {
+      lines.push('iOS not run: ' + notRun + '.')
+    }
   }
   lines.push('')
 

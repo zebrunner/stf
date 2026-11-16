@@ -7,9 +7,11 @@
     "that API level from the matrix and from the coverage check of the report:",
     "Zebrunner farms run Android 12 (API 31) and later. The upstream matrix file",
     "stays as it is, so new upstream legs come in with the merges.",
-    "CI_MATRIX_PROFILE=quick (default) selects the floor and the newest stable",
-    "API of each of the two newest OS majors. Non-stable SDK channels and",
-    "optional iOS preview legs run only with CI_MATRIX_PROFILE=full.",
+    "CI_MATRIX_PROFILE=quick (default) selects the newest stable version of each",
+    "of the two newest OS majors, and the floor of Android (API 31). The other",
+    "versions (the oldest iOS included), the non-stable SDK channels and the",
+    "optional iOS preview legs run only with CI_MATRIX_PROFILE=full (the nightly",
+    "run).",
     "",
     "ios.include is the matrix of .github/workflows/zebrunner-ios.yml, which ci.yml",
     "runs, and the iOS legs the report expects. download: the simulator runtime",
@@ -17,7 +19,14 @@
     "xcodes). xcode: the Xcode of the runner image, its default without it",
     "(the xcode-27 preview image). optional: why the leg does not fail the",
     "report for now and what makes it required again; the report shows it as",
-    "a warning and the job may fail. Remove it once the leg passes."
+    "a warning and the job may fail. Remove it once the leg passes.",
+    "",
+    "ios.paths: the files the iOS legs test (globs, ** any directories). A pull",
+    "request runs the iOS legs only when it changes one of them or has the label",
+    "ci:ios. Not in the list on purpose: package.json and package-lock.json (the",
+    "dependency updates, the nightly run tests them with iOS), the Dockerfile (it",
+    "installs no iOS tool: go-ios is in the mcloud-device image), ci.yml, lib/wire",
+    "and the other shared code (their unit tests run on every pull request)."
   ],
   "android": {
     "minApi": 31
@@ -34,6 +43,19 @@
         "runner": "xcode-27",
         "optional": "TODO make it required again (#1083). The iOS 27.1 runtime of the xcode-27 image has only the iPhone Duo, on which XCTest fails to start WebDriverAgent."
       }
+    ],
+    "paths": [
+      "lib/units/ios-device/**",
+      "lib/cli/ios-device/**",
+      "lib/types/ios-device*",
+      "lib/util/zebrunner-ios-models.*",
+      "test/zebrunner-ios/**",
+      "test/helpers/ios-wda.mts",
+      "test/helpers/module-mock.mts",
+      ".github/workflows/zebrunner-ios.yml",
+      ".github/scripts/zebrunner-ios-simulator.sh",
+      ".github/scripts/zebrunner-ci.mts",
+      ".github/zebrunner-ci.json"
     ]
   }
 }

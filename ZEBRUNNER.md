@@ -76,14 +76,22 @@ and pushes it by digest (`PUSH_OUTPUT` of `make push`), then joins them with `do
 The base image `ubuntu:26.04` is pinned by the digest of its multi-platform index (Dependabot updates it), the Node.js
 tarballs by their sha256 of `SHASUMS256.txt` of nodejs.org: a new Node.js version changes `.nvmrc`, the URLs and the sums
 in `Dockerfile`. The image is built for `linux/amd64` and `linux/arm64` only, another platform stops the build.
+The layers of `Dockerfile` go from the least to the most often changed: the build packages and Node.js, `npm ci` of
+`package.json` and `package-lock.json` (stage `deps`, with a cache mount of the npm cache), the `node_modules` of the
+image (`prod-deps`, `npm prune --omit=dev`), then the sources and their build (`build`, `npm pack`). A change of the
+sources only rebuilds the last stage (15 s instead of 2-3 min on the build host) and changes a 9.5 MB layer of the image
+instead of 160 MB; CI keeps the layers in the buildx cache of GitHub Actions (`type=gha`: scope `compose-amd64` of the
+Compose job, `docker-arm64` of the `Docker` workflow).
 
 The file `VERSION` is the release of the fork in work (bumped by hand after a release), the tag of the image; the `version` of `package.json` is the upstream release the fork is merged with (`CHANGELOG.md`), it is not the version of the fork. The `Publish` job of CI pushes the image of
-every merge into `develop` after `Report` passed: `public.ecr.aws/zebrunner/stf:<VERSION>-develop-<sha>` (7 characters
+every merge into `develop` after `Report` passed (on a push without the device legs, see [CI](#ci)): `public.ecr.aws/zebrunner/stf:<VERSION>-develop-<sha>` (7 characters
 of the commit) and `<VERSION>-develop-latest`, by the reusable workflow `docker-publish.yml` of
 [mcloud-conventions](https://github.com/zebrunner/mcloud-conventions) over `make push`.
 The workflows of upstream publish nothing from the fork: `Docker` (`docker.yml`) only builds the images of the pull
-requests, `Prepare release` and `Release` (the npm package `@devicefarmer/stf` and the Docker Hub image
-`devicefarmer/stf`) run in DeviceFarmer/stf only.
+requests (the arm64 one: the Compose job of CI builds and tests the amd64 image), `Docker Debian`
+(`zebrunner-docker-debian.yml`) the Debian image of upstream (`Dockerfile-debian-x86_64`) when a pull request changes
+it, `package.json`, `package-lock.json` or `.dockerignore`, `Prepare release` and `Release` (the npm package
+`@devicefarmer/stf` and the Docker Hub image `devicefarmer/stf`) run in DeviceFarmer/stf only.
 
 Without docker (Node.js 22.18 or later):
 
@@ -348,8 +356,8 @@ grid (4446) and stf-proxy (`STF_PORT`) on it. The ports of the devices must not 
 | Command | What it checks |
 | --- | --- |
 | `make check` | `make lint` and `make test`, every one of them, as CI; fails when one failed |
-| `make lint` | the Lint job of CI: `npm run lint` and the shell of the `run:` blocks of the workflows (`.github/scripts/check-run-blocks.mts`) |
-| `make test` | the Unit tests job of CI: `npm run test:unit` |
+| `make lint` | the lint of CI: `npm run lint` and the shell of the `run:` blocks of the workflows (`.github/scripts/check-run-blocks.mts`) |
+| `make test` | the unit tests of CI: `npm run test:unit` |
 | `node build.mts compile` | compiles `lib/` (the tests and `stf` run the compiled files) |
 | `npm run lint` | eslint, type checks, JSON and the translation template |
 | `npm run test:unit` | the mocha tests of `test/`, the fork ones are in `test/units/zebrunner/` |
@@ -359,16 +367,30 @@ The `make` targets are thin wrappers over the npm scripts. They run `npm ci` fir
 
 ### CI
 
-- CI runs on PRs and pushes to `develop`/`master`. Android starts at Android 12 (API 31): `.github/zebrunner-ci.json` sets the lowest API level; `.github/android-matrix.json` stays the upstream file. `.github/scripts/zebrunner-ci.mts` selects the same coverage for the job matrices and the report.
-- The default `quick` profile tests the oldest supported OS and the newest stable revision of each of the two newest OS majors: currently Android API 31, 36.1 and 37.1, and iOS 15, 18 and 26. Optional iOS previews and non-stable Android SDK channels are full-only. Build, lint, unit, component, integration and Compose still run normally.
-- Run all configured versions manually with `gh workflow run ci.yml --ref develop -f matrix-profile=full` (or Actions > CI > Run workflow > `full`). The full CI also runs every Monday at 04:00 UTC. The report states the profile, identifies untested versions and treats missing verdicts within the selected profile as failures.
-- `.github/workflows/zebrunner-ios.yml` tests the WDA client of the `ios-device` unit against WebDriverAgent on iOS simulators: iOS 15 (runtime from `xcodes`), 16, 17 (runtimes downloaded for Xcode 16.4), 18, 26 and 27 (the `xcode-27` preview image); the full matrix is `ios.include` of `.github/zebrunner-ci.json`. `ci.yml` passes its profile to this workflow; a standalone manual iOS run defaults to `full`. Tests start from a fresh session and the home screen rather than depending on previous test state. CI allows two retries per Playwright/iOS test; recovered failures are explicitly reported as flaky. WDA startup already has three attempts and Android has two whole-leg attempts; increasing those would only lengthen deterministic failures. iOS 27's known XCTest startup failure remains an explicit optional warning, not a passing capability check. Locally, on a Mac with Xcode:
+[![Nightly CI](https://github.com/zebrunner/stf/actions/workflows/ci.yml/badge.svg?event=schedule)](https://github.com/zebrunner/stf/actions/workflows/ci.yml?query=event%3Aschedule)
+
+- CI runs on PRs and pushes to `develop`/`master`, not for a change of documentation only (`**.md`, `doc/**`, `LICENSE`, `.github/ISSUE_TEMPLATE/**`). Build, lint, unit, component, integration and Compose run on every one of them; the device legs (Android emulators, iOS simulators) depend on the event:
+
+  | Event | Android legs | iOS legs |
+  | --- | --- | --- |
+  | pull request | `quick` | `quick`, only when the PR changes a file of `ios.paths` of `.github/zebrunner-ci.json` (the `ios-device` unit and CLI, the WDA test client, the iOS CI files) or has the label `ci:ios` |
+  | push to `develop`/`master` | none | none |
+  | nightly (`schedule`, 02:30 UTC, on `develop`) | `full` | `full` |
+  | `workflow_dispatch` | the `matrix-profile` input | the `matrix-profile` input |
+
+  So a merge into `develop` gets its image from the `Publish` job as soon as the other jobs passed, without waiting for the device legs; the nightly run tests what was merged during the day on every version. The dependency updates (`package.json`, `package-lock.json`) are not in `ios.paths`: the nightly run tests them with iOS, the label `ci:ios` before the merge. Adding the label `ci:ios` runs the last CI run of the PR again (`.github/workflows/zebrunner-ci-ios-label.yml`, which cancels it first when it still runs), whose `Plan` job reads the labels and plans the iOS legs; the other labels run nothing. The report of a run says which device legs did not run and why.
+- A failing nightly run fails the workflow run, so GitHub notifies it like any failed run (to the user who last changed the `cron` of `ci.yml`, see the GitHub docs on the notifications of scheduled workflows); its report is the summary of the `Report` job, the badge above shows the last one. GitHub disables a schedule after 60 days without any activity in the repository.
+- Android starts at Android 12 (API 31): `.github/zebrunner-ci.json` sets the lowest API level; `.github/android-matrix.json` stays the upstream file. `.github/scripts/zebrunner-ci.mts` selects the same coverage for the job matrices and the report.
+- The `quick` profile tests the newest stable revision of each of the two newest OS majors, and the oldest supported Android: currently Android API 31, 36.1 and 37.1, and iOS 18 and 26. The oldest iOS (15), the intermediate versions, the optional iOS previews and the non-stable Android SDK channels are full-only.
+- Run all configured versions manually with `gh workflow run ci.yml --ref develop -f matrix-profile=full` (or Actions > CI > Run workflow > `full`). The report states the profile, identifies untested versions and treats missing verdicts within the selected profile as failures.
+- `.github/workflows/zebrunner-ios.yml` tests the WDA client of the `ios-device` unit against WebDriverAgent on iOS simulators: iOS 15 (runtime from `xcodes`), 16, 17 (runtimes downloaded for Xcode 16.4), 18, 26 and 27 (the `xcode-27` preview image); the full matrix is `ios.include` of `.github/zebrunner-ci.json`. `ci.yml` passes its profile and the matrix of its `Plan` job to this workflow; a standalone manual iOS run (`gh workflow run zebrunner-ios.yml`) plans the matrix itself and defaults to `full`. Tests start from a fresh session and the home screen rather than depending on previous test state. CI allows two retries per Playwright/iOS test; recovered failures are explicitly reported as flaky. WDA startup already has three attempts and Android has two whole-leg attempts; increasing those would only lengthen deterministic failures. iOS 27's known XCTest startup failure remains an explicit optional warning, not a passing capability check. Locally, on a Mac with Xcode:
 
   ```bash
   node build.mts compile
   bash .github/scripts/zebrunner-ios-simulator.sh 27
   IOS_VERSION=27 npx mocha --exit --extension mts test/zebrunner-ios
   ```
+- The iOS legs do not build WebDriverAgent: `.github/scripts/zebrunner-ios-simulator.sh` downloads `WebDriverAgentRunner-Build-Sim-<arch>.zip` of the appium/WebDriverAgent release `WDA_REF` (`zebrunner-ios.yml`) while the simulator boots, checked by the sha256 the script has for that release (a new `WDA_REF` needs its sums).
 
 ### Keeping up with upstream
 
@@ -381,6 +403,7 @@ The fork merges [DeviceFarmer/stf](https://github.com/DeviceFarmer/stf) `master`
 - `api_v1_generated.json` stays the upstream file, the API unit reads `api_v1.yaml`;
 - `package-lock.json` and `test/playwright/package-lock.json` are committed (upstream ignores them): the image and CI install them with `npm ci`. After a merge that changes `package.json`, `npm install` updates the lock file, commit it with the merge; `npm audit` should stay clean, `overrides` in `package.json` pins the fixed versions of nested dependencies (`resolutions` is the same for yarn, kept as upstream has it; npm ignores it);
 - `@types/node` follows the major of the Node.js of `.nvmrc` and of the image (22), so the type check refuses APIs of newer versions: keep it at a merge (upstream may have a newer one); dependabot proposes no major update of it;
+- Dependabot proposes the npm updates weekly: the minor and patch updates of every package in one pull request, each major update in its own (the `@mantine/*` packages together);
 - no editor settings, generated files or permission changes.
 
 A sync: `git fetch upstream && git merge upstream/master`, `npm install` when `package.json` changed, then `make check` and `npm run test:component`.
