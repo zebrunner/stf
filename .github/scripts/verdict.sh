@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Record a single CI verdict as JSON so the report job can aggregate it.
+# Record a single CI verdict as JSON so the report job can aggregate it (check of #1201).
 #
 # usage: verdict.sh <id> <label> <github-outcome> [details]
 #
