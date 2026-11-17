@@ -1,0 +1,45 @@
+---
+# Fork (Zebrunner): a failed CI run whose iOS legs no hosted macOS runner took (GitHub cancels such a job
+# after about 15 minutes: "The job was not acquired by Runner of type hosted even after multiple
+# attempts") runs its failed jobs again, up to the third attempt; not a run with a real failure
+# (.github/scripts/zebrunner-ios-rerun.mts, ZEBRUNNER.md#ci). A push runs no iOS legs. workflow_run runs
+# the file of the default branch, and a token of this repository can run a pull request from a fork again.
+name: CI iOS rerun
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: ci-ios-rerun-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  rerun:
+    name: Run the iOS legs no runner took again
+    if: github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.event != 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      # the default branch, not the code of the run
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Run the failed jobs again
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: node .github/scripts/zebrunner-ios-rerun.mts

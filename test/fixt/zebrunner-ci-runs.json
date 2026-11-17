@@ -1,0 +1,81 @@
+{
+  "43963653821": {
+    "run": {"conclusion":"failure","created_at":"2026-11-16T21:47:38Z","event":"workflow_dispatch","head_branch":"develop","head_repository":{"full_name":"zebrunner/stf"},"id":43963653821,"name":"CI","run_attempt":1,"status":"completed","workflow_id":384942468},
+    "jobs": [
+      {"conclusion":"success","name":"Compose","runner_name":"GitHub Actions 1000008809","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Plan","runner_name":"GitHub Actions 1000008810","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Build","runner_name":"GitHub Actions 1000008811","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"failure","name":"ios / iOS 27","runner_name":"GitHub Actions 1000008816","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"cancelled","name":"ios / iOS 15","runner_name":"","status":"completed","steps":[]},
+      {"conclusion":"cancelled","name":"ios / iOS 17","runner_name":"","status":"completed","steps":[]},
+      {"conclusion":"cancelled","name":"ios / iOS 26","runner_name":"","status":"completed","steps":[]},
+      {"conclusion":"success","name":"ios / iOS 18","runner_name":"GitHub Actions 1000008854","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"ios / iOS 16","runner_name":"GitHub Actions 1000008867","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"skipped","name":"ios / iOS plan","runner_name":null,"status":"completed","steps":[]},
+      {"conclusion":"success","name":"Integration + device-less E2E","runner_name":"GitHub Actions 1000008822","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Lint, unit and component tests","runner_name":"GitHub Actions 1000008823","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 17 (API 37.1)","runner_name":"GitHub Actions 1000008825","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 12L (API 32)","runner_name":"GitHub Actions 1000008824","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 16 (API 36)","runner_name":"GitHub Actions 1000008826","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 12 (API 31)","runner_name":"GitHub Actions 1000008830","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 13 (API 33)","runner_name":"GitHub Actions 1000008829","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 14 (API 34)","runner_name":"GitHub Actions 1000008827","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 15 (API 35)","runner_name":"GitHub Actions 1000008831","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 16.1 (API 36.1)","runner_name":"GitHub Actions 1000008828","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 17 (API 37.2)","runner_name":"GitHub Actions 1000008833","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 17 (API 37.0)","runner_name":"GitHub Actions 1000008832","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"failure","name":"Report","runner_name":"GitHub Actions 1000008875","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"skipped","name":"Publish","runner_name":null,"status":"completed","steps":[]}
+    ]
+  },
+  "43934673364": {
+    "run": {"conclusion":"failure","created_at":"2026-11-16T18:59:57Z","event":"pull_request","head_branch":"ci-android-leg-speed","head_repository":{"full_name":"zebrunner/stf"},"id":43934673364,"name":"CI","run_attempt":1,"status":"completed","workflow_id":384942468},
+    "jobs": [
+      {"conclusion":"success","name":"Build","runner_name":"GitHub Actions 1000008405","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Plan","runner_name":"GitHub Actions 1000008406","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Compose","runner_name":"GitHub Actions 1000008407","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"ios / iOS plan","runner_name":"GitHub Actions 1000008408","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"ios / iOS 18","runner_name":"GitHub Actions 1000008421","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"ios / iOS 26","runner_name":"GitHub Actions 1000008462","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"cancelled","name":"ios / iOS 15","runner_name":"","status":"completed","steps":[]},
+      {"conclusion":"success","name":"Unit tests","runner_name":"GitHub Actions 1000008410","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 17 (API 37.1)","runner_name":"GitHub Actions 1000008411","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 16.1 (API 36.1)","runner_name":"GitHub Actions 1000008409","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 12 (API 31)","runner_name":"GitHub Actions 1000008413","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Component tests","runner_name":"GitHub Actions 1000008412","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Lint","runner_name":"GitHub Actions 1000008414","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Integration + device-less E2E","runner_name":"GitHub Actions 1000008415","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"failure","name":"Report","runner_name":"GitHub Actions 1000008599","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"skipped","name":"Publish","runner_name":null,"status":"completed","steps":[]}
+    ]
+  },
+  "44069379678": {
+    "run": {"conclusion":"success","created_at":"2026-11-17T10:56:09Z","event":"schedule","head_branch":"develop","head_repository":{"full_name":"zebrunner/stf"},"id":44069379678,"name":"CI","run_attempt":1,"status":"completed","workflow_id":384942468},
+    "jobs": [
+      {"conclusion":"success","name":"Plan","runner_name":"GitHub Actions 1000008985","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Compose","runner_name":"GitHub Actions 1000008986","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Build","runner_name":"GitHub Actions 1000008987","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"ios / iOS 15","runner_name":"GitHub Actions 1000008989","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"ios / iOS 18","runner_name":"GitHub Actions 1000008988","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"ios / iOS 27","runner_name":"GitHub Actions 1000008992","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"ios / iOS 26","runner_name":"GitHub Actions 1000009021","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"ios / iOS 17","runner_name":"GitHub Actions 1000008990","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"ios / iOS 16","runner_name":"GitHub Actions 1000008991","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"skipped","name":"ios / iOS plan","runner_name":null,"status":"completed","steps":[]},
+      {"conclusion":"success","name":"Lint, unit and component tests","runner_name":"GitHub Actions 1000008998","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Integration + device-less E2E","runner_name":"GitHub Actions 1000009000","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 12L (API 32)","runner_name":"GitHub Actions 1000009004","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 17 (API 37.2)","runner_name":"GitHub Actions 1000008999","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 14 (API 34)","runner_name":"GitHub Actions 1000009003","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 12 (API 31)","runner_name":"GitHub Actions 1000009001","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 16 (API 36)","runner_name":"GitHub Actions 1000009008","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 16.1 (API 36.1)","runner_name":"GitHub Actions 1000009002","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 15 (API 35)","runner_name":"GitHub Actions 1000009005","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 17 (API 37.1)","runner_name":"GitHub Actions 1000009007","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 17 (API 37.0)","runner_name":"GitHub Actions 1000009006","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Android 13 (API 33)","runner_name":"GitHub Actions 1000009009","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"success","name":"Report","runner_name":"GitHub Actions 1000009031","status":"completed","steps":[{"conclusion":"success","name":"Set up job"}]},
+      {"conclusion":"skipped","name":"Publish","runner_name":null,"status":"completed","steps":[]}
+    ]
+  }
+}
