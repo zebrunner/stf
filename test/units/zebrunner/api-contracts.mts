@@ -77,9 +77,12 @@ describe('zebrunner: API contract', function() {
     ).to.equal('#/definitions/TypeResponse')
   })
 
-  it('should need an access token for every operation but the node ones', function() {
-    // the enrolled nodes authenticate with their invite or node token, checked by the operations themselves
-    var nodeOperations = ['enrollNode', 'getNodeSelf', 'getNodeKeys', 'checkNodeToken']
+  it('should need an access token for every operation but the node and grid ones', function() {
+    // the enrolled nodes authenticate with their invite or node token, the auth_request of the grid with
+    // the token in Basic or the session cookie: the operations check them themselves
+    var nodeOperations = [
+      'enrollNode', 'getNodeSelf', 'getNodeKeys', 'checkNodeToken', 'getHubAuth'
+    ]
     var open = Object.values(swagger.paths).flatMap(function(path) {
       return [path.get, path.put, path.post, path.delete]
     }).filter(function(operation): operation is Operation {

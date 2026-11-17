@@ -2636,6 +2636,35 @@ paths:
               * 500: Internal Server Error
       security:
         - accessTokenAuth: []
+  /zebrunner/hub-auth:
+    x-swagger-router-controller: zebrunner-hub-auth
+    get:
+      summary: Authorizes a request of the grid
+      description: >
+        The auth_request of the grid of stf-proxy (/mcloud): 204 with the user in X-MCloud-User, X-MCloud-Admin
+        and X-MCloud-Token (the access token of the request) when the access token of the request (Authorization:
+        Basic <any name>:<token> or Bearer <token>) is valid, or for the scopes console and admin the session
+        cookie; the scope admin needs an admin. No authentication of the API unit: the route checks the
+        credential itself, stf-proxy does not let the users call it
+      operationId: getHubAuth
+      tags:
+        - user
+      parameters:
+        - name: scope
+          in: query
+          description: hub (the WebDriver hub, an access token only), console (the console of the grid) or admin
+          required: false
+          type: string
+      responses:
+        "204":
+          description: Allowed
+        default:
+          description: >
+            Unexpected Error:
+              * 400: Bad Request => unknown scope
+              * 401: Unauthorized => no or invalid credential
+              * 403: Forbidden => not an admin
+              * 500: Internal Server Error
   /zebrunner/nodes/keys:
     x-swagger-router-controller: zebrunner-nodes
     get:

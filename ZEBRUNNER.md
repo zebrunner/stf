@@ -14,6 +14,7 @@ The image `public.ecr.aws/zebrunner/stf` runs the STF units of [mcloud](https://
 | Sign-in through the Zebrunner IAM service | `lib/units/auth/zebrunner.ts`, `lib/cli/auth-zebrunner/`, `res/app/src/entries/auth-zebrunner.tsx` |
 | Device status, size, owner and type routes of the REST API | `lib/units/api/controllers/zebrunner.ts`, `lib/units/api/helpers/device-status.ts` |
 | Authentication of the storage routes and SSRF protection of downloads | `lib/util/storageauth.ts`, `lib/util/urlsafety.ts` |
+| The authorization of the grid of mcloud: stf-proxy lets a request of the hub, the console or the admin routes of the grid in for the user of an access token (or of the session cookie for the console), see [Grid authentication](#grid-authentication) | `lib/units/api/controllers/zebrunner-hub-auth.ts` |
 | Enrolled device hosts ("nodes"): one-time invites, per-node tokens, revocation, the CURVE keys of the nodes in the ZAP handler of the triproxies, node tokens in the storage, the node binding of the devices, the screen authorization of stf-proxy and the devices of the adb relay, see [Nodes (enrollment)](#nodes-enrollment) | `lib/util/zebrunner-nodes*.ts`, `lib/db/zebrunner-nodes.ts`, `lib/units/api/controllers/zebrunner-nodes.ts`, `lib/units/processor/zebrunner-nodes.ts` |
 | One provider per device container: fixed VNC port, fixed connect port (`STF_PROVIDER_CONNECT_PORT`), `UNHEALTHY` and exit when the device cannot be provided or the processor does not ack its registration, see [ZeroMQ](#zeromq) | `lib/cli/provider/`, `lib/units/provider/` |
 | `.ipa` manifests (Info.plist) in the apk storage plugin | `lib/units/storage/plugins/apk/task/` |
@@ -159,9 +160,21 @@ Every Android device worker sends its ports to the processor (`DevicePortsMessag
 
 The `size`, `owner` and `type` routes need an access token (`Authorization: Bearer <token>`) as the other routes of the API.
 
-The routes of the enrolled device hosts (`/api/v1/nodes/...`, `/api/v1/zebrunner/screen-auth`, `/api/v1/zebrunner/nodes/...`) are described in [Nodes (enrollment)](#nodes-enrollment).
+The routes of the enrolled device hosts (`/api/v1/nodes/...`, `/api/v1/zebrunner/screen-auth`, `/api/v1/zebrunner/nodes/...`) are described in [Nodes (enrollment)](#nodes-enrollment), `GET /api/v1/zebrunner/hub-auth` in [Grid authentication](#grid-authentication).
 
 The device lists and `GET /api/v1/devices/{serial}` also return `name`, the model of the device, and `screenPort` and `connectPort`, the ports of its worker (Android and iOS, see [Ports of the Android devices](#ports-of-the-android-devices)). The operations tagged `admin` need an admin with the session cookie of the app as with an access token (`lib/units/api/helpers/securityHandlers.ts`; upstream checked the token only).
+
+## Grid authentication
+
+stf-proxy of mcloud sends every request of the grid (`/mcloud`) through `auth_request` to `GET /api/v1/zebrunner/hub-auth?scope=<scope>` of the API unit, which answers 204 with the user in `X-MCloud-User` (the email), `X-MCloud-Admin` (`true` or `false`) and `X-MCloud-Token` (the access token of the request); stf-proxy passes them on to the grid, which reserves the devices of the sessions with the token of their user. The route has no authentication of the API unit, it checks the credential itself; stf-proxy does not let the users call it.
+
+| Scope | For | Credential | Answer |
+| --- | --- | --- | --- |
+| `hub` (default) | the WebDriver hub, the Playwright sessions, the termination of a session | an access token of the user: `Authorization: Basic <any name>:<token>` (the user info of the hub URL of a test: `https://<user>:<token>@<host>/mcloud/wd/hub`, the name is not checked) or `Bearer <token>`; never the session cookie, a page of another site would start sessions with it | 204, 401 without a valid token |
+| `console` | the console, the devices and the sessions of the grid | an access token or the session cookie | 204, 401 without a credential |
+| `admin` | the other routes of the grid (the metrics, the API of the hub) | an access token or the session cookie of an admin | 204, 401 without a credential, 403 for a user |
+
+An unknown scope is answered 400. The route answers for every WebDriver command, so it keeps the user of a token for 30 s and refuses an unknown token for 5 s without the database (by the sha256 of the token, up to 10000 tokens): a removed token or a changed privilege takes effect within 30 s, a new one within 5 s after a refused try. A token is never logged.
 
 ## Sessions
 
