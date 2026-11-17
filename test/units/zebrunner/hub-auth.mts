@@ -152,7 +152,7 @@ describe('zebrunner: hub auth', function() {
   it('should refuse a token made with another secret', async function() {
     dbapi.loadAccessToken.withArgs(TOKEN).resolves({
       id: 'x'
-    , jwt: jwtutil.encode({payload: {email: USER.email}, secret: 'other'})
+    , jwt: jwtutil.encode({payload: {email: USER.email, name: 'x'}, secret: 'other'})
     })
     expect((await call({authorization: 'Bearer ' + TOKEN})).code).to.equal(401)
   })
