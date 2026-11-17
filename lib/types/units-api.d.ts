@@ -43,6 +43,8 @@ export type ApiParams = {
   device: SwaggerParam<DevicePayload & {device?: DevicePayload}>
   adb: SwaggerParam<AdbKeyPayload>
   redirected?: SwaggerParam<boolean>
+  // Fork (Zebrunner): GET /zebrunner/hub-auth
+  scope?: SwaggerParam<string | undefined>
 }
 
 export interface SwaggerContext {
