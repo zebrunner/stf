@@ -197,6 +197,21 @@ describe('zebrunner: hub auth', function() {
     }
   })
 
+  it('should refuse an unknown token for a while without the database', async function() {
+    var clock = sinon.useFakeTimers({now: Date.now(), toFake: ['Date']})
+    try {
+      expect((await call({authorization: basic('user', 'unknown')})).code).to.equal(401)
+      expect((await call({authorization: basic('user', 'unknown')})).code).to.equal(401)
+      expect(dbapi.loadAccessToken.callCount).to.equal(1)
+      clock.tick(controller.REFUSED_TTL_MS + 1)
+      dbapi.loadAccessToken.withArgs('unknown').resolves(stored(USER.email))
+      expect((await call({authorization: basic('user', 'unknown')})).code).to.equal(204)
+    }
+    finally {
+      clock.restore()
+    }
+  })
+
   it('should answer 500 when the database fails', async function() {
     dbapi.loadAccessToken.withArgs(TOKEN).rejects(new Error('down'))
     expect((await call({authorization: basic('user', TOKEN)})).code).to.equal(500)

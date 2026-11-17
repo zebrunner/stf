@@ -11,7 +11,8 @@
 * would start sessions with it.
 *
 * stf-proxy asks for every WebDriver command, so a user of a token is kept for CACHE_TTL_MS: a
-* removed token or a changed privilege is seen after that time at most. No token is ever logged.
+* removed token or a changed privilege is seen after that time at most; an unknown token is refused
+* for REFUSED_TTL_MS without the database. No token is ever logged.
 **/
 
 import crypto from 'crypto'
@@ -27,6 +28,8 @@ import type {ApiRequest} from '../../../types/units-api.js'
 var log = logger.createLogger('api:controllers:hub-auth')
 
 export var CACHE_TTL_MS = 30 * 1000
+// an unknown token is refused without the database for a while: a client trying tokens costs no lookup each time
+export var REFUSED_TTL_MS = 5 * 1000
 // the tokens come from the requests: the cache does not grow without a limit
 export var CACHE_MAX_ENTRIES = 10000
 
@@ -38,7 +41,7 @@ export interface HubUser {
 }
 
 interface Cached {
-  user: HubUser
+  user: HubUser | null
   until: number
 }
 
@@ -83,22 +86,21 @@ function userOfToken(token: string, secret: string): Promise<HubUser | null> {
     return Promise.resolve(cached.user)
   }
   cache.delete(key)
+  function remember(user: HubUser | null) {
+    if (cache.size >= CACHE_MAX_ENTRIES) {
+      cache.clear()
+    }
+    cache.set(key, {user: user, until: Date.now() + (user ? CACHE_TTL_MS : REFUSED_TTL_MS)})
+    return user
+  }
   return Promise.resolve(dbapi.loadAccessToken(token))
     .then(function(stored) {
       var data = stored && stored.jwt ? jwtutil.decode(stored.jwt, secret) : null
       if (!data || typeof data.email !== 'string') {
-        return null
+        return remember(null)
       }
       return Promise.resolve(dbapi.loadUser(data.email)).then(function(user) {
-        if (!user) {
-          return null
-        }
-        var found = hubUser(user)
-        if (cache.size >= CACHE_MAX_ENTRIES) {
-          cache.clear()
-        }
-        cache.set(key, {user: found, until: Date.now() + CACHE_TTL_MS})
-        return found
+        return remember(user ? hubUser(user) : null)
       })
     })
 }

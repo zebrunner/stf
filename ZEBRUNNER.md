@@ -174,7 +174,7 @@ stf-proxy of mcloud sends every request of the grid (`/mcloud`) through `auth_re
 | `console` | the console, the devices and the sessions of the grid | an access token or the session cookie | 204, 401 without a credential |
 | `admin` | the other routes of the grid (the metrics, the API of the hub) | an access token or the session cookie of an admin | 204, 401 without a credential, 403 for a user |
 
-An unknown scope is answered 400. The route answers for every WebDriver command, so it keeps the user of a token for 30 s (by the sha256 of the token, up to 10000 tokens): a removed token or a changed privilege takes effect within that time. A token is never logged.
+An unknown scope is answered 400. The route answers for every WebDriver command, so it keeps the user of a token for 30 s and refuses an unknown token for 5 s without the database (by the sha256 of the token, up to 10000 tokens): a removed token or a changed privilege takes effect within 30 s, a new one within 5 s after a refused try. A token is never logged.
 
 ## Sessions
 
