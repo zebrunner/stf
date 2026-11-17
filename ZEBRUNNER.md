@@ -170,7 +170,7 @@ stf-proxy of mcloud sends every request of the grid (`/mcloud`) through `auth_re
 
 | Scope | For | Credential | Answer |
 | --- | --- | --- | --- |
-| `hub` (default) | the WebDriver hub, the Playwright sessions, the termination of a session | an access token of the user: `Authorization: Basic <any name>:<token>` (the user info of the hub URL of a test: `https://<email>:<token>@<host>/mcloud/wd/hub`) or `Bearer <token>`; never the session cookie, a page of another site would start sessions with it | 204, 401 without a valid token |
+| `hub` (default) | the WebDriver hub, the Playwright sessions, the termination of a session | an access token of the user: `Authorization: Basic <any name>:<token>` (the user info of the hub URL of a test: `https://<user>:<token>@<host>/mcloud/wd/hub`, the name is not checked) or `Bearer <token>`; never the session cookie, a page of another site would start sessions with it | 204, 401 without a valid token |
 | `console` | the console, the devices and the sessions of the grid | an access token or the session cookie | 204, 401 without a credential |
 | `admin` | the other routes of the grid (the metrics, the API of the hub) | an access token or the session cookie of an admin | 204, 401 without a credential, 403 for a user |
 
