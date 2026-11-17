@@ -88,7 +88,9 @@ describe('zebrunner: device API', function() {
         return operation.operationId
       }).filter(Boolean)
     })
-    expect(routed).to.have.members(['getDeviceSize', 'getDeviceOwner', 'getDeviceType'])
+    expect(routed).to.have.members([
+      'getDeviceSize', 'getDeviceOwner', 'getDeviceType', 'keepUserDeviceBySerial'
+    ])
     routed.forEach(function(operationId) {
       expect(zebrunner[operationId!], operationId).to.be.a('function')
     })

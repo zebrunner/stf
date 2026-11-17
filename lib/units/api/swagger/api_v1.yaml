@@ -2229,6 +2229,40 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       security:
         - accessTokenAuth: []
+  /user/devices/{serial}/keepalive:
+    x-swagger-router-controller: zebrunner
+    post:
+      summary: Keeps the reservation of a device
+      description: >
+        The reservation of a device you use lasts its timeout from now: the timeout counts the time
+        without a message for the device, and an automation session (mcloud-grid) sends none. A
+        device that is no longer yours is answered 403
+      operationId: keepUserDeviceBySerial
+      tags:
+        - user
+      parameters:
+        - name: serial
+          in: path
+          description: Device Serial
+          required: true
+          type: string
+      responses:
+        "200":
+          description: The reservation is kept
+          schema:
+            $ref: "#/definitions/Response"
+        default:
+          description: >
+            Unexpected Error:
+              * 401: Unauthorized => bad credentials
+              * 403: Forbidden => device is not used by the user
+              * 404: Not Found => unknown device
+              * 500: Internal Server Error
+              * 504: Gateway Time-out => device is not responding
+          schema:
+            $ref: "#/definitions/UnexpectedErrorResponse"
+      security:
+        - accessTokenAuth: []
   /devices/{serial}/bookings:
     x-swagger-router-controller: devices
     get:

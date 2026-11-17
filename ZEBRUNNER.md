@@ -157,8 +157,9 @@ Every Android device worker sends its ports to the processor (`DevicePortsMessag
 | `GET /api/v1/devices/{serial}/size` | the display of the device, `{height: 0, width: 0, scale: 0}` when unknown |
 | `GET /api/v1/devices/{serial}/owner` | the owner of the group of the device |
 | `GET /api/v1/devices/{serial}/type` | the type of an iOS device as WebDriverAgent tells it, `{"type": "iPhone"}` (also an iPad) or `{"type": "Apple TV"}`; 404 for an unknown device or a device without a type (Android, or not read yet) |
+| `POST /api/v1/user/devices/{serial}/keepalive` | the reservation of a device the user uses lasts its timeout from now: the timeout of a reservation counts the time without a message for the device, and an automation session sends none, so mcloud-grid keeps the devices of its sessions with it. The device gets the `GroupMessage` of its group again on its channel, which changes nothing but its last activity; `403` when the device is not the one of the user (another owner, absent, released; also for an admin), `504` when the device does not answer in 5 s |
 
-The `size`, `owner` and `type` routes need an access token (`Authorization: Bearer <token>`) as the other routes of the API.
+The `size`, `owner`, `type` and `keepalive` routes need an access token (`Authorization: Bearer <token>`) as the other routes of the API.
 
 The routes of the enrolled device hosts (`/api/v1/nodes/...`, `/api/v1/zebrunner/screen-auth`, `/api/v1/zebrunner/nodes/...`) are described in [Nodes (enrollment)](#nodes-enrollment), `GET /api/v1/zebrunner/hub-auth` in [Grid authentication](#grid-authentication).
 
@@ -174,7 +175,7 @@ stf-proxy of mcloud sends every request of the grid (`/mcloud`) through `auth_re
 | `console` | the console, the devices and the sessions of the grid | an access token or the session cookie | 204, 401 without a credential |
 | `admin` | the other routes of the grid (the metrics, the API of the hub) | an access token or the session cookie of an admin | 204, 401 without a credential, 403 for a user |
 
-An unknown scope is answered 400. The route answers for every WebDriver command, so it keeps the user of a token for 30 s and refuses an unknown token for 5 s without the database (by the sha256 of the token, up to 10000 tokens): a removed token or a changed privilege takes effect within 30 s, a new one within 5 s after a refused try. A token is never logged.
+An unknown scope is answered 400. The route answers for every WebDriver command, so it keeps the user of a token for 5 s and refuses an unknown token for 5 s without the database (by the sha256 of the token, up to 10000 tokens): a removed token (the websocket unit removes them too, the cache does not hear of it), a changed privilege or a new token take effect within 5 s. A token is never logged.
 
 ## Sessions
 

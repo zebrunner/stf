@@ -27,7 +27,8 @@ import type {ApiRequest} from '../../../types/units-api.js'
 
 var log = logger.createLogger('api:controllers:hub-auth')
 
-export var CACHE_TTL_MS = 30 * 1000
+// short: the access tokens are removed by the websocket unit too, the cache does not hear of it
+export var CACHE_TTL_MS = 5 * 1000
 // an unknown token is refused without the database for a while: a client trying tokens costs no lookup each time
 export var REFUSED_TTL_MS = 5 * 1000
 // the tokens come from the requests: the cache does not grow without a limit
