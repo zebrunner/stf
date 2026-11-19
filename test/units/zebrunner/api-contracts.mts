@@ -81,7 +81,8 @@ describe('zebrunner: API contract', function() {
     // the enrolled nodes authenticate with their invite or node token, the auth_request of the grid with
     // the token in Basic or the session cookie: the operations check them themselves
     var nodeOperations = [
-      'enrollNode', 'getNodeSelf', 'getNodeKeys', 'checkNodeToken', 'getHubAuth'
+      'enrollNode', 'getNodeSelf', 'putNodeSelfDevice', 'getNodeKeys', 'checkNodeToken'
+    , 'getHubAuth'
     ]
     var open = Object.values(swagger.paths).flatMap(function(path) {
       return [path.get, path.put, path.post, path.delete]
