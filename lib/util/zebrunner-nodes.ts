@@ -304,18 +304,23 @@ export interface ScreenClient {
   socket: {remoteAddress?: string | undefined}
 }
 
-// screenClientAllowed <request> <token> <serial> <port> [now, ms]: whether the WebSocket of the
-// screen of a device unit takes the request: a valid screen ticket from stf-proxy, or a client of
-// the container itself (the broadcast of the screen, entrypoint.sh of mcloud-device). Without a
-// node token no other client is taken
+// STF_SCREEN_WITHOUT_TICKET=true: the screen WebSocket takes any client, for a standalone STF
+// whose browsers connect to the screen ports themselves (docker-compose.yaml), never for MCloud
+export const SCREEN_WITHOUT_TICKET = 'STF_SCREEN_WITHOUT_TICKET'
+
+// screenClientAllowed <request> <token> <serial> <port> [now, ms] [open]: whether the WebSocket of
+// the screen of a device unit takes the request: a valid screen ticket from stf-proxy, or a client
+// of the container itself (the broadcast of the screen, entrypoint.sh of mcloud-device). Without a
+// node token no other client is taken, unless the screens are open (STF_SCREEN_WITHOUT_TICKET)
 export function screenClientAllowed(
   req: ScreenClient
 , token: unknown
 , serial: string
 , port: number
 , now: number = Date.now()
+, open: boolean = process.env[SCREEN_WITHOUT_TICKET] === 'true'
 ): boolean {
-  if (isLoopback(req.socket.remoteAddress)) {
+  if (open || isLoopback(req.socket.remoteAddress)) {
     return true
   }
   return verifyScreenTicket(token, req.headers[SCREEN_TICKET_HEADER], serial, port, now)
@@ -356,6 +361,7 @@ export default {
 , INVITE_TTL_MINUTES
 , RESERVED_LABELS
 , SCREEN_TICKET_HEADER
+, SCREEN_WITHOUT_TICKET
 , SCREEN_TICKET_TTL_SECONDS
 , deviceBinding
 , generateInvite

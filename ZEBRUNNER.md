@@ -323,6 +323,10 @@ and is valid for 60 seconds (`lib/util/zebrunner-nodes.ts`). The screen WebSocke
 host of the network of the node gets 401, and without `STF_NODE_TOKEN` only the loopback is taken. stf-proxy has to
 pass the ticket before the device units check it: update the head before the nodes.
 
+A standalone STF whose browsers open the screen ports of the provider themselves, with no proxy to pass a ticket
+(`docker-compose.yaml`), sets `STF_SCREEN_WITHOUT_TICKET=true` for the provider: its screens are open to any host that
+reaches the screen ports, as in DeviceFarmer STF, so keep these ports off untrusted networks. Never for MCloud.
+
 ### Diagnostics
 
 `GET /api/v1/nodes/self` answers a node, with its own token, what STF knows of it: the node (label, address, status,

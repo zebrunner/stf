@@ -407,6 +407,14 @@ describe('zebrunner: nodes', function() {
       expect(allowed(client(null, '::ffff:10.0.0.9'))).to.equal(false)
     })
 
+    it('should open the screen to any host with STF_SCREEN_WITHOUT_TICKET only', function() {
+      var req = client(null)
+      expect(zebrunnerNodes.screenClientAllowed(req, null, 'serial1', 7404, Date.now(), true))
+        .to.equal(true)
+      expect(zebrunnerNodes.screenClientAllowed(req, null, 'serial1', 7404, Date.now(), false))
+        .to.equal(false)
+    })
+
     it('should open the screen to no other host without a node token', function() {
       var ticket = ticketAt(Date.now())
       ;[null, '', 'legacy-shared-token'].forEach(function(token) {
