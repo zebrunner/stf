@@ -25,6 +25,7 @@ import adbSyrup from '../../support/adb.js'
 import minicapSyrup from '../../resources/minicap.js'
 import displaySyrup from '../util/display.js'
 import optionsSyrup from './options.js'
+import zebrunnerNodes from '../../../../util/zebrunner-nodes.js'
 
 type SyrupValue<S> = S extends syrup.Syrup<infer T> ? T : never
 type Adb = ReturnType<typeof import('../../../../util/adbutil.js').default>
@@ -503,9 +504,26 @@ export default syrup.serial()
     function createServer() {
       log.info('Starting WebSocket server on port %d', screenOptions.publicPort)
 
+      // Fork (Zebrunner): only the screen ticket of stf-proxy or the container itself, never any
+      // other host of the network of the node (lib/util/zebrunner-nodes.ts)
       var wss = new WebSocketServer({
         port: screenOptions.publicPort
       , perMessageDeflate: false
+      , verifyClient: function(info: {req: import('http').IncomingMessage}) {
+          var allowed = zebrunnerNodes.screenClientAllowed(
+            info.req
+          , process.env.STF_NODE_TOKEN
+          , options.serial
+          , screenOptions.publicPort
+          )
+          if (!allowed) {
+            log.warn(
+              'Refused the screen to %s: no valid screen ticket'
+            , info.req.socket.remoteAddress
+            )
+          }
+          return allowed
+        }
       })
 
       var listeningListener: () => void, errorListener: (err: Error) => void

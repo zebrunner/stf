@@ -3,6 +3,7 @@
 // until iOS killed the processes of the device and the device went offline.
 import http from 'node:http'
 import net from 'node:net'
+import os from 'node:os'
 
 import syrup from '@devicefarmer/stf-syrup'
 import {expect} from 'chai'
@@ -10,6 +11,7 @@ import sinon from 'sinon'
 import * as wsModule from 'ws'
 
 import {importFresh, mockModule} from '../../helpers/module-mock.mts'
+import zebrunnerNodes from '../../../lib/util/zebrunner-nodes.js'
 
 var lib = new URL('../../../lib/', import.meta.url)
 
@@ -90,8 +92,11 @@ describe('zebrunner: iOS screen stream', function() {
   var servers: wsModule.WebSocketServer[] = []
   var unavailable: unknown[] = []
   var stopped = 0
+  var token = zebrunnerNodes.generateNodeToken('node-1')
+  var savedToken = process.env.STF_NODE_TOKEN
 
   before(async function() {
+    process.env.STF_NODE_TOKEN = token
     mjpeg = await fakeMjpeg()
     screenPort = await freePort()
 
@@ -157,6 +162,12 @@ describe('zebrunner: iOS screen stream', function() {
   })
 
   after(async function() {
+    if (typeof savedToken === 'undefined') {
+      delete process.env.STF_NODE_TOKEN
+    }
+    else {
+      process.env.STF_NODE_TOKEN = savedToken
+    }
     servers.forEach(function(server) {
       server.clients.forEach(function(client) {
         client.terminate()
@@ -274,5 +285,45 @@ describe('zebrunner: iOS screen stream', function() {
     finally {
       clock.restore()
     }
+  })
+
+  // the address of this host on a network, not the loopback the container itself connects from
+  function lanAddress(): string | null {
+    var found = Object.values(os.networkInterfaces()).flat().find(function(address) {
+      return address && address.family === 'IPv4' && !address.internal
+    })
+    return found ? found.address : null
+  }
+
+  function outcome(ws: wsModule.WebSocket): Promise<string> {
+    return new Promise(function(resolve) {
+      ws.on('open', function() {
+        ws.close()
+        resolve('open')
+      })
+      ws.on('unexpected-response', function(_req, res) {
+        resolve(String(res.statusCode))
+      })
+      ws.on('error', function(err) {
+        resolve(err.message)
+      })
+    })
+  }
+
+  it('should open the screen to another host with the screen ticket of STF only', async function() {
+    var address = lanAddress()
+    if (!address) {
+      this.skip()
+    }
+    var url = 'ws://' + address + ':' + screenPort
+    expect(await outcome(new wsModule.WebSocket(url))).to.equal('401')
+    var forged = {[zebrunnerNodes.SCREEN_TICKET_HEADER]: 'v1.9999999999.' + 'a'.repeat(64)}
+    expect(await outcome(new wsModule.WebSocket(url, {headers: forged}))).to.equal('401')
+    var other = zebrunnerNodes.screenTicket(zebrunnerNodes.sha256(token), 'udid', screenPort + 1)!
+    var wrongPort = {[zebrunnerNodes.SCREEN_TICKET_HEADER]: other}
+    expect(await outcome(new wsModule.WebSocket(url, {headers: wrongPort}))).to.equal('401')
+    var ticket = zebrunnerNodes.screenTicket(zebrunnerNodes.sha256(token), 'udid', screenPort)!
+    var valid = {[zebrunnerNodes.SCREEN_TICKET_HEADER]: ticket}
+    expect(await outcome(new wsModule.WebSocket(url, {headers: valid}))).to.equal('open')
   })
 })

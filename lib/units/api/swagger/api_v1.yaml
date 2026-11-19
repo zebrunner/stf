@@ -2649,7 +2649,8 @@ paths:
       description: >
         The auth_request of the screens of stf-proxy: 204 only if the user (session cookie or access token) uses the
         device of X-Original-URI (/d/<host>/<serial>/<port>/), or is an admin, and the host and port are the address
-        of the active node the device is bound to and its screen port
+        of the active node the device is bound to and its screen port. The 204 has the screen ticket the node takes
+        (X-MCloud-Screen-Ticket, ZEBRUNNER.md#screens)
       operationId: getScreenAuth
       tags:
         - user
@@ -2662,6 +2663,10 @@ paths:
       responses:
         "204":
           description: Allowed
+          headers:
+            X-MCloud-Screen-Ticket:
+              type: string
+              description: The screen ticket for the node of the device, valid for 60 seconds
         default:
           description: >
             Unexpected Error:

@@ -238,6 +238,89 @@ export function deviceBinding(
   }
 }
 
+// The screen ticket: stf-api gives it to stf-proxy with a screen it allows (GET
+// /zebrunner/screen-auth), stf-proxy passes it to the node in SCREEN_TICKET_HEADER and the
+// WebSocket of the screen on the node takes only a valid one, so the screen port of a device is no
+// screen for the other hosts of its network. v1.<expiry, unix seconds>.<hex HMAC-SHA256(key = raw
+// sha256(node token), screen|v1|<serial>|<port>|<expiry>)>: stf-api has the hash of the token, the
+// node the token
+export const SCREEN_TICKET_HEADER = 'x-mcloud-screen-ticket'
+export const SCREEN_TICKET_TTL_SECONDS = 60
+const SCREEN_TICKET = /^v1\.([0-9]{1,12})\.([0-9a-f]{64})$/
+
+function screenTicketMac(key: Buffer, serial: string, port: number, expiry: number): string {
+  return crypto.createHmac('sha256', key)
+    .update(`screen|v1|${serial}|${port}|${expiry}`)
+    .digest('hex')
+}
+
+// screenTicket <tokenHash> <serial> <port> [now, ms]: the ticket of the screen for the node of the
+// hash, null without a valid hash
+export function screenTicket(
+  tokenHash: unknown
+, serial: string
+, port: number
+, now: number = Date.now()
+): string | null {
+  if (typeof tokenHash !== 'string' || !HASH.test(tokenHash)) {
+    return null
+  }
+  const expiry = Math.floor(now / 1000) + SCREEN_TICKET_TTL_SECONDS
+  return `v1.${expiry}.${screenTicketMac(Buffer.from(tokenHash, 'hex'), serial, port, expiry)}`
+}
+
+// verifyScreenTicket <token> <ticket> <serial> <port> [now, ms]: whether the ticket was made for
+// the screen by STF with the hash of the node token and has not expired
+export function verifyScreenTicket(
+  token: unknown
+, ticket: unknown
+, serial: string
+, port: number
+, now: number = Date.now()
+): boolean {
+  if (typeof token !== 'string' || !tokenLabel(token) || typeof ticket !== 'string') {
+    return false
+  }
+  const match = SCREEN_TICKET.exec(ticket)
+  if (!match) {
+    return false
+  }
+  const expiry = Number(match[1])
+  const seconds = now / 1000
+  if (expiry < seconds || expiry > seconds + 2 * SCREEN_TICKET_TTL_SECONDS) {
+    return false
+  }
+  const key = crypto.createHash('sha256').update(token).digest()
+  return sameHash(screenTicketMac(key, serial, port, expiry), match[2])
+}
+
+function isLoopback(address: unknown): boolean {
+  return typeof address === 'string' &&
+    (/^(::ffff:)?127\./.test(address) || address === '::1')
+}
+
+export interface ScreenClient {
+  headers: Record<string, string | string[] | undefined>
+  socket: {remoteAddress?: string | undefined}
+}
+
+// screenClientAllowed <request> <token> <serial> <port> [now, ms]: whether the WebSocket of the
+// screen of a device unit takes the request: a valid screen ticket from stf-proxy, or a client of
+// the container itself (the broadcast of the screen, entrypoint.sh of mcloud-device). Without a
+// node token no other client is taken
+export function screenClientAllowed(
+  req: ScreenClient
+, token: unknown
+, serial: string
+, port: number
+, now: number = Date.now()
+): boolean {
+  if (isLoopback(req.socket.remoteAddress)) {
+    return true
+  }
+  return verifyScreenTicket(token, req.headers[SCREEN_TICKET_HEADER], serial, port, now)
+}
+
 export interface ScreenTarget {
   host: string
   serial: string
@@ -272,6 +355,8 @@ export default {
   INVITE_MAX_TTL_MINUTES
 , INVITE_TTL_MINUTES
 , RESERVED_LABELS
+, SCREEN_TICKET_HEADER
+, SCREEN_TICKET_TTL_SECONDS
 , deviceBinding
 , generateInvite
 , generateNodeToken
@@ -284,7 +369,10 @@ export default {
 , sameAddress
 , sameHash
 , sameSecret
+, screenClientAllowed
+, screenTicket
 , sha256
 , tokenLabel
 , verifyNodeProof
+, verifyScreenTicket
 }

@@ -343,4 +343,76 @@ describe('zebrunner: nodes', function() {
       })
     })
   })
+
+  describe('screen tickets', function() {
+    var NOW = Date.UTC(2026, 0, 1)
+    var HASH = zebrunnerNodes.sha256(TOKEN)
+    var TTL = zebrunnerNodes.SCREEN_TICKET_TTL_SECONDS * 1000
+
+    function ticketAt(now: number, port = 7404): string {
+      return zebrunnerNodes.screenTicket(HASH, 'serial1', port, now)!
+    }
+
+    function verify(ticket: string, now = NOW, serial = 'serial1', port = 7404, token = TOKEN) {
+      return zebrunnerNodes.verifyScreenTicket(token, ticket, serial, port, now)
+    }
+
+    function client(ticket: string | null, address = '10.0.0.9') {
+      var headers: Record<string, string> = {}
+      if (ticket !== null) {
+        headers[zebrunnerNodes.SCREEN_TICKET_HEADER] = ticket
+      }
+      return {headers: headers, socket: {remoteAddress: address}}
+    }
+
+    function allowed(req: ReturnType<typeof client>, token: string | null = TOKEN) {
+      return zebrunnerNodes.screenClientAllowed(req, token, 'serial1', 7404)
+    }
+
+    it('should take the ticket of STF for the screen of the device only', function() {
+      var ticket = ticketAt(NOW)
+      expect(ticket).to.match(/^v1\.[0-9]+\.[0-9a-f]{64}$/)
+      expect(verify(ticket)).to.equal(true)
+      expect(verify(ticket, NOW, 'serial2')).to.equal(false)
+      expect(verify(ticket, NOW, 'serial1', 7405)).to.equal(false)
+      var other = zebrunnerNodes.generateNodeToken('node-1')
+      expect(verify(ticket, NOW, 'serial1', 7404, other)).to.equal(false)
+    })
+
+    it('should refuse an expired, a far future or a forged ticket', function() {
+      var ticket = ticketAt(NOW)
+      expect(verify(ticket, NOW + TTL)).to.equal(true)
+      expect(verify(ticket, NOW + TTL + 1000)).to.equal(false)
+      expect(verify(ticketAt(NOW + 2 * TTL))).to.equal(false)
+      var parts = ticket.split('.')
+      expect(verify([parts[0], String(Number(parts[1]) + 10), parts[2]].join('.'))).to.equal(false)
+      var forged = ['', 'v1', 'v1.1.' + 'g'.repeat(64), ticket + '0', ticket.toUpperCase()]
+      forged.forEach(function(bad) {
+        expect(verify(bad), bad).to.equal(false)
+      })
+    })
+
+    it('should make no ticket without the hash of a node token', function() {
+      expect(zebrunnerNodes.screenTicket(null, 'serial1', 7404, NOW)).to.equal(null)
+      expect(zebrunnerNodes.screenTicket('x', 'serial1', 7404, NOW)).to.equal(null)
+    })
+
+    it('should open the screen to the ticket of STF and the container itself only', function() {
+      expect(allowed(client(ticketAt(Date.now())))).to.equal(true)
+      expect(allowed(client(null))).to.equal(false)
+      expect(allowed(client('v1.1.' + 'a'.repeat(64)))).to.equal(false)
+      ;['127.0.0.1', '::ffff:127.0.0.1', '::1'].forEach(function(address) {
+        expect(allowed(client(null, address)), address).to.equal(true)
+      })
+      expect(allowed(client(null, '::ffff:10.0.0.9'))).to.equal(false)
+    })
+
+    it('should open the screen to no other host without a node token', function() {
+      var ticket = ticketAt(Date.now())
+      ;[null, '', 'legacy-shared-token'].forEach(function(token) {
+        expect(allowed(client(ticket), token), String(token)).to.equal(false)
+        expect(allowed(client(null, '127.0.0.1'), token)).to.equal(true)
+      })
+    })
+  })
 })

@@ -261,7 +261,7 @@ security handler answers 401 without credentials and 403 to a user.
 | `GET /api/v1/nodes/self` | the node (`Authorization: Bearer <node token>`) | | 200 `{"label": "mac-mini-1", "address": "10.0.0.5", "status": "active", "lastSeenAt": "...", "devices": [{"serial": "R58M...", "platform": "Android", "present": true, "bound": true, "screenPort": 7404, "connectPort": 7405}]}`; 401 without a valid node token, 403 for a revoked node (below) |
 | `POST /api/v1/nodes/verify` | admin (mcloud-grid) | `{"token": "mcn1....", "host": "10.0.0.5"}` | 200 `{"label": "mac-mini-1", "address": "10.0.0.5"}` only for the token of an active node whose address is the host (case-insensitive), else 403; updates lastSeenAt at most once a minute |
 | `GET /api/v1/nodes/relay` | admin (adb relay) | | 200 `{"devices": [{"serial": "R58M...", "label": "mac-mini-1", "address": "10.0.0.5", "connectPort": 7405}]}`: every Android device bound to an active node, present or not (the relay stays static, the node refuses the connections of an absent device); the address is the registered one of the node, never the display URL; the port is the connect port of the device |
-| `GET /api/v1/zebrunner/screen-auth` | the user (session cookie or access token) | header `X-Original-URI: /d/<host>/<serial>/<port>/` | 204, or 401 without credentials, 403 otherwise (below) |
+| `GET /api/v1/zebrunner/screen-auth` | the user (session cookie or access token) | header `X-Original-URI: /d/<host>/<serial>/<port>/` | 204 with the screen ticket in `X-MCloud-Screen-Ticket`, or 401 without credentials, 403 otherwise (below) |
 | `GET /api/v1/zebrunner/nodes/keys` | server units (`x-stf-internal-token: <STF_STORAGE_TOKEN>`) | | 200 `{"allowed": [<keys of the active nodes>], "denied": [<keys of the revoked nodes and the retired keys>]}` |
 | `POST /api/v1/zebrunner/nodes/token` | server units (`x-stf-internal-token: <STF_STORAGE_TOKEN>`) | `{"token": "mcn1...."}` | 200 `{"label": "mac-mini-1"}` for the token of an active node, else 403 |
 
@@ -304,6 +304,24 @@ location = /_screen_auth {
 `GET /api/v1/zebrunner/screen-auth` answers 204 only if the user is signed in, the device of the serial exists and the
 user uses it (or is an admin), the device is bound to an active node, the host is the address of that node and the
 port is the screen port of the device.
+
+With the 204 the API unit sends a screen ticket in `X-MCloud-Screen-Ticket`, which stf-proxy passes to the node:
+
+```
+location ~ ^/d/... {
+  auth_request /_screen_auth;
+  auth_request_set $screen_ticket $upstream_http_x_mcloud_screen_ticket;
+  proxy_set_header X-MCloud-Screen-Ticket $screen_ticket;
+  ...
+}
+```
+
+The ticket is `v1.<expiry, unix seconds>.<hex HMAC-SHA256(key = raw sha256(node token), screen|v1|<serial>|<port>|<expiry>)>`
+and is valid for 60 seconds (`lib/util/zebrunner-nodes.ts`). The screen WebSocket of the device units (`device` and
+`ios-device`) takes a connection only with a valid ticket for its serial and screen port, checked with its
+`STF_NODE_TOKEN`, or from the loopback of its container (the broadcast of the screen of mcloud-device); any other
+host of the network of the node gets 401, and without `STF_NODE_TOKEN` only the loopback is taken. stf-proxy has to
+pass the ticket before the device units check it: update the head before the nodes.
 
 ### Diagnostics
 

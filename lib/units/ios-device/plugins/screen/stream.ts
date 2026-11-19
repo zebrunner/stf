@@ -18,6 +18,7 @@ import soloSyrup from '../solo.js'
 import notifierSyrup from '../devicenotifier.js'
 import wdaClientSyrup from '../wda/WdaClient.js'
 import pushSyrup from '../../support/push.js'
+import zebrunnerNodes from '../../../../util/zebrunner-nodes.js'
 
 const HEARTBEAT_INTERVAL_MS = 30000
 
@@ -39,7 +40,26 @@ export default syrup.serial()
   , _push: unknown
   ) {
     var log = logger.createLogger('device:plugins:screen:stream')
-    var wss = new WebSocketServer({port: options.screenPort})
+    // Fork (Zebrunner): only the screen ticket of stf-proxy or the container itself, never any other
+    // host of the network of the node (lib/util/zebrunner-nodes.ts)
+    var wss = new WebSocketServer({
+      port: options.screenPort
+    , verifyClient: function(info: {req: import('http').IncomingMessage}) {
+        var allowed = zebrunnerNodes.screenClientAllowed(
+          info.req
+        , process.env.STF_NODE_TOKEN
+        , options.serial
+        , options.screenPort
+        )
+        if (!allowed) {
+          log.warn(
+            'Refused the screen to %s: no valid screen ticket'
+          , info.req.socket.remoteAddress
+          )
+        }
+        return allowed
+      }
+    })
     var targetUrl = iosutil.getUri(options.wdaHost, options.mjpegPort || options.connectPort)
 
     wss.on('connection', function(ws: import('ws').WebSocket) {
