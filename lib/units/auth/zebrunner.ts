@@ -5,7 +5,6 @@
 import http from 'http'
 
 import express from 'express'
-import cookieSession from 'cookie-session'
 import bodyParser from 'body-parser'
 import serveStatic from 'serve-static'
 // csurf exports the middleware factory directly up to 1.15.0 and as an ESM
@@ -21,6 +20,7 @@ import pathutil from '../../util/pathutil.js'
 import urlutil from '../../util/urlutil.js'
 import lifecycle from '../../util/lifecycle.js'
 import ratelimit from '../../util/ratelimit.js'
+import zebrunnerSession from '../../util/zebrunner-session.js'
 
 interface ZebrunnerAuthOptions {
   port: number
@@ -119,10 +119,8 @@ export default function(options: ZebrunnerAuthOptions) {
   app.set('strict routing', true)
   app.set('case sensitive routing', true)
 
-  app.use(cookieSession({
-    name: options.ssid
-  , keys: [options.secret]
-  }))
+  // Fork (Zebrunner): HttpOnly, SameSite=Lax and Secure over https, lib/util/zebrunner-session.ts
+  app.use(zebrunnerSession.sessionCookie(options.ssid, options.secret))
   app.use(bodyParser.json())
   app.use(csrf())
   app.use('/static/auth/zebrunner', serveStatic(pathutil.resource('auth/zebrunner')))

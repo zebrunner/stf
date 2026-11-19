@@ -10,7 +10,6 @@ import events from 'events'
 import express from 'express'
 import swaggerExpress from 'autodesk-forks-swagger-express-mw'
 import swaggerUi from '@targetprocess/swagger-tools/middleware/swagger-ui.js'
-import cookieSession from 'cookie-session'
 import Promise from 'bluebird'
 import _ from 'lodash'
 
@@ -21,6 +20,7 @@ import srv from '../../util/srv.js'
 import lifecycle from '../../util/lifecycle.js'
 import wireutil from '../../wire/util.js'
 import type {ApiUnitOptions} from '../../types/units-api.js'
+import zebrunnerSession from '../../util/zebrunner-session.js'
 
 export default function(options: ApiUnitOptions) {
   var log = logger.createLogger('api')
@@ -143,10 +143,8 @@ export default function(options: ApiUnitOptions) {
   })
 
   // TODO: Remove this once frontend is stateless
-  app.use(cookieSession({
-    name: options.ssid
-  , keys: [options.secret]
-  }))
+  // Fork (Zebrunner): HttpOnly, SameSite=Lax and Secure over https, lib/util/zebrunner-session.ts
+  app.use(zebrunnerSession.sessionCookie(options.ssid, options.secret))
 
   // Fork (Zebrunner): sessions expire and end at logout, see lib/util/authsession.ts
   app.use(authsession.middleware())
