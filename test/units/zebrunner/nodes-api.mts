@@ -85,8 +85,12 @@ interface CallOptions {
   nodes?: object | undefined
 }
 
+// the headers the last call answered with
+var replyHeaders: Record<string, string> = {}
+
 // call <route> <options>: the status and the body the route answers with
 function call(route: string, options: CallOptions = {}): Promise<Reply> {
+  replyHeaders = {}
   return new Promise<Reply>(function(resolve) {
     var reply: Reply = {code: 200, body: null}
     var params: Record<string, {value: unknown}> = {}
@@ -105,6 +109,10 @@ function call(route: string, options: CallOptions = {}): Promise<Reply> {
     var res = {
       status: function(code: number) {
         reply.code = code
+        return res
+      }
+    , set: function(name: string, value: string) {
+        replyHeaders[name.toLowerCase()] = value
         return res
       }
     , json: function(body: unknown) {
@@ -607,10 +615,14 @@ describe('zebrunner: node API', function() {
       dbapi.loadNode.withArgs('node-1').resolves(node())
       expect(await call('getScreenAuth', {user: USER, headers: {'x-original-uri': URI}}))
         .to.eql({code: 204, body: null})
+      expect(replyHeaders[zebrunnerNodes.SCREEN_TICKET_HEADER]).to.be.a('string')
+      var ticket = replyHeaders[zebrunnerNodes.SCREEN_TICKET_HEADER]
+      expect(zebrunnerNodes.verifyScreenTicket(TOKEN, ticket, 'serial1', 7404)).to.equal(true)
       expect(await call('getScreenAuth', {
         user: {email: 'other@example.com', privilege: 'user'}
       , headers: {'x-original-uri': URI}
       })).to.eql({code: 403, body: null})
+      expect(replyHeaders).to.eql({})
       expect(await call('getScreenAuth', {user: USER, headers: {'x-original-uri': '/d/x'}}))
         .to.eql({code: 403, body: null})
       expect(await call('getScreenAuth', {user: USER})).to.eql({code: 403, body: null})

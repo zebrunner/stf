@@ -22,6 +22,7 @@ import zebrunnerNodes, {
   INVITE_MAX_TTL_MINUTES
 , INVITE_TTL_MINUTES
 , PUBLIC_KEY
+, SCREEN_TICKET_HEADER
 , type ScreenTarget
 } from '../../../util/zebrunner-nodes.js'
 import {INTERNAL_TOKEN_HEADER} from '../../../util/zebrunner-nodes-client.js'
@@ -436,6 +437,14 @@ function getScreenAuth(req: Request, res: Response) {
       )
       return res.status(403).end()
     }
+    var ticket = zebrunnerNodes.screenTicket(node!.tokenHash, target!.serial, target!.port)
+    if (!ticket) {
+      log.error(
+        'Refused the screen of %s: node "%s" has no token hash', target!.serial, node!.label
+      )
+      return res.status(403).end()
+    }
+    res.set(SCREEN_TICKET_HEADER, ticket)
     return res.status(204).end()
   }
 

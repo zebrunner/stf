@@ -1,7 +1,7 @@
 x-stf: &stf
   image: ${STF_IMAGE:-devicefarmer/stf:latest}
   restart: ${STF_RESTART_POLICY:-unless-stopped}
-  environment:
+  environment: &stf-environment
     TZ: ${TZ:-UTC}
     PORT: 7100
     RETHINKDB_PORT_28015_TCP: tcp://rethinkdb:28015
@@ -157,6 +157,11 @@ services:
         condition: service_started
       groups-engine:
         condition: service_started
+    environment:
+      <<: *stf-environment
+      # the browsers connect to the screen ports of the provider themselves, without a screen ticket of a
+      # proxy (ZEBRUNNER.md#screens): any host that reaches these ports sees the screens
+      STF_SCREEN_WITHOUT_TICKET: "true"
     ports:
       - "7400-7500:7400-7500"
 
