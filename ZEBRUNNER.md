@@ -259,6 +259,7 @@ security handler answers 401 without credentials and 403 to a user.
 | `POST /api/v1/nodes/{label}/revoke` | admin | | 200 `{"success": true}`; 400 for an unknown node |
 | `DELETE /api/v1/nodes/{label}` | admin | | 200 `{"success": true}`; 400 for an unknown or active node |
 | `GET /api/v1/nodes/self` | the node (`Authorization: Bearer <node token>`) | | 200 `{"label": "mac-mini-1", "address": "10.0.0.5", "status": "active", "lastSeenAt": "...", "devices": [{"serial": "R58M...", "platform": "Android", "present": true, "bound": true, "screenPort": 7404, "connectPort": 7405}]}`; 401 without a valid node token, 403 for a revoked node (below) |
+| `PUT /api/v1/nodes/self/devices/{serial}` | the node (`Authorization: Bearer <node token>`) | `{"note": "...", "status": "Unhealthy"}`, either or both, also in `device` | 200 `{"success": true}`; 400 for any other field or status, 401 without a valid node token, 403 for a revoked node, 404 for a device not bound to the node ([Device status of a node](#device-status-of-a-node)) |
 | `POST /api/v1/nodes/verify` | admin (mcloud-grid) | `{"token": "mcn1....", "host": "10.0.0.5"}` | 200 `{"label": "mac-mini-1", "address": "10.0.0.5"}` only for the token of an active node whose address is the host (case-insensitive), else 403; updates lastSeenAt at most once a minute |
 | `GET /api/v1/nodes/relay` | admin (adb relay) | | 200 `{"devices": [{"serial": "R58M...", "label": "mac-mini-1", "address": "10.0.0.5", "connectPort": 7405}]}`: every Android device bound to an active node, present or not (the relay stays static, the node refuses the connections of an absent device); the address is the registered one of the node, never the display URL; the port is the connect port of the device |
 | `GET /api/v1/zebrunner/screen-auth` | the user (session cookie or access token) | header `X-Original-URI: /d/<host>/<serial>/<port>/` | 204, or 401 without credentials, 403 otherwise (below) |
@@ -304,6 +305,13 @@ location = /_screen_auth {
 `GET /api/v1/zebrunner/screen-auth` answers 204 only if the user is signed in, the device of the serial exists and the
 user uses it (or is an admin), the device is bound to an active node, the host is the address of that node and the
 port is the screen port of the device.
+
+### Device status of a node
+
+`PUT /api/v1/nodes/self/devices/{serial}` lets a node, with its own token, mark a device bound to it `Unhealthy` and
+set its note (cut at 2000 characters): Appium of mcloud-agent does it on the errors of the device its next sessions
+would get too (no space left), with the node token of its container (`NODE_REGISTRATION_TOKEN`). Nothing else: no
+other status, no owner, no device of another node, so the nodes need no access token of an admin of STF.
 
 ### Diagnostics
 

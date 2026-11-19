@@ -33,6 +33,8 @@ var dbapi = {
 , loadRelayDevices: sinon.stub()
 , loadNodeDevices: sinon.stub()
 , loadDeviceBySerial: sinon.stub()
+, setDeviceNote: sinon.stub()
+, setDeviceStatusOverride: sinon.stub()
 }
 
 var restoreDb = mockModule(new URL('../../../lib/db/index.js', import.meta.url), {default: {}})
@@ -170,6 +172,7 @@ describe('zebrunner: node API', function() {
     , 'DELETE /nodes/{label}': ['nodes', 'admin']
     , 'POST /nodes/{label}/revoke': ['nodes', 'admin']
     , 'GET /nodes/self': ['nodes']
+    , 'PUT /nodes/self/devices/{serial}': ['nodes']
     , 'GET /zebrunner/screen-auth': ['user']
     , 'GET /zebrunner/nodes/keys': ['nodes']
     , 'POST /zebrunner/nodes/token': ['nodes']
@@ -177,7 +180,8 @@ describe('zebrunner: node API', function() {
     // authenticated by the API unit except the enrollment (an invite), the diagnostics of a node (its
     // token) and the internal routes
     var unauthenticated = [
-      '/nodes/enroll', '/nodes/self', '/zebrunner/nodes/keys', '/zebrunner/nodes/token'
+      '/nodes/enroll', '/nodes/self', '/nodes/self/devices/{serial}', '/zebrunner/nodes/keys'
+    , '/zebrunner/nodes/token'
     ]
     unauthenticated.forEach(function(path) {
       Object.values(swagger.paths[path]!).forEach(function(operation) {
@@ -613,6 +617,83 @@ describe('zebrunner: node API', function() {
       expect(await call('getScreenAuth', {user: null, headers: {'x-original-uri': URI}}))
         .to.eql({code: 401, body: null})
       expect(logged.join('\n')).to.include('Refused the screen /d/10.0.0.5/serial1/7404/ to other@')
+    })
+  })
+
+  describe('PUT /nodes/self/devices/{serial}', function() {
+    function put(body: unknown, options: {token?: string | null, serial?: string} = {}) {
+      var token = typeof options.token === 'undefined' ? TOKEN : options.token
+      return call('putNodeSelfDevice', {
+        user: null
+      , headers: token ? {authorization: 'Bearer ' + token} : {}
+      , params: {serial: options.serial || 'serial1'}
+      , body: body
+      })
+    }
+
+    beforeEach(function() {
+      dbapi.loadNode.withArgs('node-1').resolves(node())
+      dbapi.loadDeviceBySerial.withArgs('serial1')
+        .resolves({serial: 'serial1', node: 'node-1', nodeGeneration: 1})
+      dbapi.loadDeviceBySerial.withArgs('serial2')
+        .resolves({serial: 'serial2', node: 'node-2', nodeGeneration: 1})
+      dbapi.setDeviceNote.resetHistory()
+      dbapi.setDeviceNote.resolves()
+      dbapi.setDeviceStatusOverride.resetHistory()
+      dbapi.setDeviceStatusOverride.resolves()
+    })
+
+    it('should mark a device Unhealthy with a note, as Appium sends it', async function() {
+      expect(await put({device: {status: 'Unhealthy', note: 'no space left on device'}}))
+        .to.eql({code: 200, body: {success: true}})
+      expect(dbapi.setDeviceNote.calledOnceWith('serial1', 'no space left on device'))
+        .to.equal(true)
+      expect(dbapi.setDeviceStatusOverride.calledOnceWith('serial1', 7)).to.equal(true)
+    })
+
+    it('should set a note only, cut at 2000 characters', async function() {
+      expect(await put({note: 'x'.repeat(2500)})).to.eql({code: 200, body: {success: true}})
+      expect(dbapi.setDeviceNote.firstCall.args[1]).to.have.length(2000)
+      expect(dbapi.setDeviceStatusOverride.called).to.equal(false)
+    })
+
+    it('should refuse any other status or field', async function() {
+      var refused = [
+        {status: 'Available'}
+      , {device: {status: 'busy', owner: {name: 'x'}}}
+      , {status: 'Unhealthy', owner: {name: 'x'}}
+      , {note: 5}
+      , {}
+      , null
+      , []
+      ]
+      for (var body of refused) {
+        expect(await put(body), JSON.stringify(body)).to.eql({code: 400, body: {success: false}})
+      }
+      expect(dbapi.setDeviceNote.called).to.equal(false)
+      expect(dbapi.setDeviceStatusOverride.called).to.equal(false)
+    })
+
+    it('should refuse a device of another node or an unbound one with 404', async function() {
+      expect(await put({status: 'Unhealthy'}, {serial: 'serial2'}))
+        .to.eql({code: 404, body: {success: false}})
+      dbapi.loadDeviceBySerial.withArgs('serial1')
+        .resolves({serial: 'serial1', node: 'node-1', nodeGeneration: 0})
+      expect(await put({status: 'Unhealthy'})).to.eql({code: 404, body: {success: false}})
+      expect(await put({status: 'Unhealthy'}, {serial: 'unknown'}))
+        .to.eql({code: 404, body: {success: false}})
+      expect(dbapi.setDeviceStatusOverride.called).to.equal(false)
+    })
+
+    it('should refuse an invalid token with 401 and a revoked node with 403', async function() {
+      expect(await put({status: 'Unhealthy'}, {token: null}))
+        .to.eql({code: 401, body: {success: false}})
+      expect(await put({status: 'Unhealthy'}, {token: zebrunnerNodes.generateNodeToken('node-1')}))
+        .to.eql({code: 401, body: {success: false}})
+      dbapi.loadNode.withArgs('node-1').resolves(node({status: 'revoked'}))
+      expect(await put({status: 'Unhealthy'})).to.eql({code: 403, body: {success: false}})
+      expect(dbapi.setDeviceStatusOverride.called).to.equal(false)
+      expect(logged.join('\n')).to.not.include(TOKEN.split('.')[2])
     })
   })
 
