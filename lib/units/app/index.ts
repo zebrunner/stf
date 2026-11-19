@@ -8,7 +8,6 @@ import url from 'url'
 import fs from 'fs'
 
 import express from 'express'
-import cookieSession from 'cookie-session'
 import bodyParser from 'body-parser'
 import serveFavicon from 'serve-favicon'
 import serveStatic from 'serve-static'
@@ -28,6 +27,7 @@ import browserIconMiddleware from './middleware/browser-icons.js'
 import appstoreIconMiddleware from './middleware/appstore-icons.js'
 
 import markdownServe from 'markdown-serve'
+import zebrunnerSession from '../../util/zebrunner-session.js'
 
 var require = createRequire(import.meta.url)
 var packageJson = require('../../../package.json')
@@ -98,11 +98,8 @@ export default function(options: AppOptions) {
   app.use(serveFavicon(pathutil.resource(
     'common/logo/exports/STF-128.png')))
 
-  app.use(cookieSession({
-    name: options.ssid
-  , keys: [options.secret]
-  , httpOnly: false
-  }))
+  // Fork (Zebrunner): HttpOnly, SameSite=Lax and Secure over https, lib/util/zebrunner-session.ts
+  app.use(zebrunnerSession.sessionCookie(options.ssid, options.secret))
 
   // Fork (Zebrunner): sessions expire and end at logout, see lib/util/authsession.ts
   app.use(authsession.middleware())
