@@ -2578,6 +2578,51 @@ paths:
               * 500: Internal Server Error
           schema:
             $ref: "#/definitions/NodeErrorResponse"
+  /nodes/self/devices/{serial}:
+    x-swagger-router-controller: zebrunner-nodes
+    put:
+      summary: Marks a device of the node of the token Unhealthy
+      description: >
+        A node, with its node token (Authorization: Bearer <node token>), sets the note of a device bound to it
+        and marks it Unhealthy (the errors of the device Appium meets): only note and status Unhealthy, also
+        wrapped in device; the note is cut at 2000 characters
+      operationId: putNodeSelfDevice
+      tags:
+        - nodes
+      consumes:
+        - application/json
+      parameters:
+        - name: Authorization
+          in: header
+          description: "Bearer <node token>"
+          required: false
+          type: string
+        - name: serial
+          in: path
+          description: Device identifier (serial)
+          required: true
+          type: string
+        - name: device
+          in: body
+          description: "{\"note\": \"...\", \"status\": \"Unhealthy\"}, either or both, also in device"
+          required: true
+          schema:
+            type: object
+      responses:
+        "200":
+          description: Updated
+          schema:
+            $ref: "#/definitions/NodeSuccessResponse"
+        default:
+          description: >
+            Unexpected Error:
+              * 400: Bad Request => anything else than a note and the status Unhealthy
+              * 401: Unauthorized => no or invalid node token
+              * 403: Forbidden => revoked node
+              * 404: Not Found => no device of the serial bound to the node
+              * 500: Internal Server Error
+          schema:
+            $ref: "#/definitions/NodeErrorResponse"
   /nodes/{label}:
     x-swagger-router-controller: zebrunner-nodes
     delete:

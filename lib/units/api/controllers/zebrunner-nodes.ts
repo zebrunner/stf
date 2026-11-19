@@ -4,7 +4,8 @@
 * - admin: POST /nodes/invites, GET /nodes, POST /nodes/{label}/revoke, DELETE /nodes/{label},
 *   POST /nodes/verify (mcloud-grid), GET /nodes/relay (adb-relay of mcloud);
 * - no authentication: POST /nodes/enroll, with an invite (stf-proxy rate limits it);
-* - the node token (Authorization: Bearer): GET /nodes/self, the diagnostics of the node;
+* - the node token (Authorization: Bearer): GET /nodes/self, the diagnostics of the node, and PUT
+*   /nodes/self/devices/{serial}, the status Unhealthy and the note of a device of the node;
 * - a signed-in user: GET /zebrunner/screen-auth, the auth_request of the screens of stf-proxy;
 * - the server units (STF_STORAGE_TOKEN): GET /zebrunner/nodes/keys (triproxies),
 *   POST /zebrunner/nodes/token (storage).
@@ -27,6 +28,7 @@ import zebrunnerNodes, {
 import {INTERNAL_TOKEN_HEADER} from '../../../util/zebrunner-nodes-client.js'
 import type {DeviceDocument} from '../../../types/stf.js'
 import type {ApiRequest, NodesOptions} from '../../../types/units-api.js'
+import wire from '../../../wire/index.js'
 
 var log = logger.createLogger('api:controllers:nodes')
 
@@ -469,24 +471,38 @@ function bearerToken(req: Request): string | null {
   return match ? match[1]! : null
 }
 
-// GET /nodes/self: what STF knows of the node of the token, for the diagnostics of the node: 401
-// for a missing or invalid token, 403 for a revoked node
-function getNodeSelf(req: Request, res: Response) {
+// selfNode <req> <res> <what>: the active node of the node token of the request (Authorization:
+// Bearer), null after answering 401 for a missing or invalid token, 403 for a revoked node
+function selfNode(req: Request, res: Response, what: string): Promise<NodeDocument | null> {
   var token = bearerToken(req)
   var label = zebrunnerNodes.tokenLabel(token)
   if (!label) {
-    log.warn('Refused the diagnostics of a node to %s: no node token', req.ip)
-    return fail(res, 401)
+    log.warn('Refused %s of a node to %s: no node token', what, req.ip)
+    fail(res, 401)
+    return Promise.resolve(null)
   }
-  return dbapi.loadNode(label)
+  return Promise.resolve(dbapi.loadNode(label)).then(function(node) {
+    if (!node || !zebrunnerNodes.sameHash(zebrunnerNodes.sha256(token!), node.tokenHash)) {
+      log.warn('Refused %s of node "%s" to %s: invalid token', what, label, req.ip)
+      fail(res, 401)
+      return null
+    }
+    if (node.status !== 'active') {
+      log.warn('Refused %s of the revoked node "%s" to %s', what, label, req.ip)
+      fail(res, 403)
+      return null
+    }
+    return node
+  })
+}
+
+// GET /nodes/self: what STF knows of the node of the token, for the diagnostics of the node: 401
+// for a missing or invalid token, 403 for a revoked node
+function getNodeSelf(req: Request, res: Response) {
+  return selfNode(req, res, 'the diagnostics')
     .then(function(node) {
-      if (!node || !zebrunnerNodes.sameHash(zebrunnerNodes.sha256(token!), node.tokenHash)) {
-        log.warn('Refused the diagnostics of node "%s" to %s: invalid token', label, req.ip)
-        return fail(res, 401)
-      }
-      if (node.status !== 'active') {
-        log.warn('Refused the diagnostics of the revoked node "%s" to %s', label, req.ip)
-        return fail(res, 403)
+      if (!node) {
+        return null
       }
       return dbapi.loadNodeDevices(node.label).then(function(devices) {
         return res.status(200).json({
@@ -510,6 +526,85 @@ function getNodeSelf(req: Request, res: Response) {
     .catch(internalError(res, 'answer the diagnostics of a node'))
 }
 
+// the longest note a node sets on its device, the rest of the message is cut
+export const NODE_NOTE_MAX_LENGTH = 2000
+
+// The update of PUT /nodes/self/devices/{serial}, also wrapped in device (the form of Appium): a
+// note and the status Unhealthy only, null when the body has neither or anything else
+export function nodeDeviceUpdate(payload: unknown): {note?: string, unhealthy: boolean} | null {
+  var fields = payload && typeof payload === 'object' && !Array.isArray(payload) ?
+    payload as Record<string, unknown> :
+    {}
+  if (fields.device && typeof fields.device === 'object' && !Array.isArray(fields.device)) {
+    fields = fields.device as Record<string, unknown>
+  }
+  var update: {note?: string, unhealthy: boolean} = {unhealthy: false}
+  var known = 0
+  if (Object.hasOwn(fields, 'note')) {
+    if (typeof fields.note !== 'string') {
+      return null
+    }
+    update.note = fields.note.slice(0, NODE_NOTE_MAX_LENGTH)
+    known++
+  }
+  if (Object.hasOwn(fields, 'status')) {
+    if (typeof fields.status !== 'string' || fields.status.trim().toLowerCase() !== 'unhealthy') {
+      return null
+    }
+    update.unhealthy = true
+    known++
+  }
+  return known > 0 && known === Object.keys(fields).length ? update : null
+}
+
+// PUT /nodes/self/devices/{serial}: a node, with its token, marks its own device Unhealthy and
+// sets its note (the errors of the device Appium meets, mcloud-agent): 400 for anything else, 404
+// for a device not bound to the node. Instead of an access token of an admin of STF on the nodes
+function putNodeSelfDevice(req: Request, res: Response) {
+  var params = req.swagger.params as unknown as Record<string, {value: unknown} | undefined>
+  var value = params.serial && params.serial.value
+  var serial = typeof value === 'string' ? value : ''
+  return selfNode(req, res, 'a device update')
+    .then(function(node) {
+      if (!node) {
+        return null
+      }
+      var update = nodeDeviceUpdate(req.body)
+      if (!serial || !update) {
+        log.warn(
+          'Refused a device update of node "%s": not a note or the status Unhealthy', node.label
+        )
+        return fail(res, 400)
+      }
+      return dbapi.loadDeviceBySerial(serial).then(function(device) {
+        if (!device || !isBoundTo(device, node)) {
+          log.warn(
+            'Refused the update of device %s to node "%s": not bound to it', serial, node.label
+          )
+          return fail(res, 404)
+        }
+        var writes: PromiseLike<unknown>[] = []
+        if (typeof update!.note === 'string') {
+          writes.push(dbapi.setDeviceNote(serial, update!.note))
+        }
+        if (update!.unhealthy) {
+          writes.push(dbapi.setDeviceStatusOverride(serial, wire.DeviceStatus.UNHEALTHY))
+        }
+        return Promise.all(writes).then(function() {
+          log.info(
+            'Node "%s" updated device %s:%s%s'
+          , node.label
+          , serial
+          , update!.unhealthy ? ' Unhealthy' : ''
+          , typeof update!.note === 'string' ? ' note' : ''
+          )
+          return res.status(200).json({success: true})
+        })
+      })
+    })
+    .catch(internalError(res, 'update a device of a node'))
+}
+
 export {
   checkNodeToken
 , createNodeInvite
@@ -520,6 +615,7 @@ export {
 , getNodeSelf
 , getNodes
 , getScreenAuth
+, putNodeSelfDevice
 , revokeNode
 , verifyNode
 }
