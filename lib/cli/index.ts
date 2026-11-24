@@ -38,6 +38,8 @@ var _argv = yargs(hideBin(process.argv))
   .command(require('./migrate/index.js'))
   // Fork (Zebrunner): a node without an invite, for stf local and the tests
   .command(require('./node-add/index.js'))
+  // Fork (Zebrunner): the access token of the admin without a sign-in, for the setup of mcloud
+  .command(require('./token-add/index.js'))
   .command(require('./notify-hipchat/index.js'))
   .command(require('./notify-slack/index.js'))
   .command(require('./poorxy/index.js'))

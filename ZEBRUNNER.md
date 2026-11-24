@@ -13,6 +13,7 @@ The image `public.ecr.aws/zebrunner/stf` runs the STF units of [mcloud](https://
 | iOS device state in the database, the screen and connect ports of the Android devices | `lib/db/zebrunner.ts`, `lib/units/processor/` |
 | Sign-in through the Zebrunner IAM service | `lib/units/auth/zebrunner.ts`, `lib/cli/auth-zebrunner/`, `res/app/src/entries/auth-zebrunner.tsx` |
 | Device status, size, owner and type routes of the REST API | `lib/units/api/controllers/zebrunner.ts`, `lib/units/api/helpers/device-status.ts` |
+| `stf token-add`: the access token of the admin without a sign-in, for the setup of mcloud, see [Access token of the admin](#access-token-of-the-admin) | `lib/cli/token-add/` |
 | Authentication of the storage routes and SSRF protection of downloads | `lib/util/storageauth.ts`, `lib/util/urlsafety.ts` |
 | The authorization of the grid of mcloud: stf-proxy lets a request of the hub, the console or the admin routes of the grid in for the user of an access token (or of the session cookie for the console), see [Grid authentication](#grid-authentication) | `lib/units/api/controllers/zebrunner-hub-auth.ts` |
 | Enrolled device hosts ("nodes"): one-time invites, per-node tokens, revocation, the CURVE keys of the nodes in the ZAP handler of the triproxies, node tokens in the storage, the node binding of the devices, the screen authorization of stf-proxy and the devices of the adb relay, see [Nodes (enrollment)](#nodes-enrollment) | `lib/util/zebrunner-nodes*.ts`, `lib/db/zebrunner-nodes.ts`, `lib/units/api/controllers/zebrunner-nodes.ts`, `lib/units/processor/zebrunner-nodes.ts` |
@@ -164,6 +165,10 @@ The `size`, `owner`, `type` and `keepalive` routes need an access token (`Author
 The routes of the enrolled device hosts (`/api/v1/nodes/...`, `/api/v1/zebrunner/screen-auth`, `/api/v1/zebrunner/nodes/...`) are described in [Nodes (enrollment)](#nodes-enrollment), `GET /api/v1/zebrunner/hub-auth` in [Grid authentication](#grid-authentication).
 
 The device lists and `GET /api/v1/devices/{serial}` also return `name`, the model of the device, and `screenPort` and `connectPort`, the ports of its worker (Android and iOS, see [Ports of the Android devices](#ports-of-the-android-devices)). The operations tagged `admin` need an admin with the session cookie of the app as with an access token (`lib/units/api/helpers/securityHandlers.ts`; upstream checked the token only).
+
+### Access token of the admin
+
+`stf token-add [--email <email>] [--title <title>] [--secret <secret>]` creates an access token of a user directly in the database, without a sign-in, and prints it as `token=<token>`: `./zebrunner.sh start` of mcloud makes STF_TOKEN (the access token of the admin the grid, the node commands and adb-relay use) with it when STF_TOKEN is empty, after `stf migrate` (which creates the admin), also with the OAuth2 and LDAP sign-ins. The user is `STF_ADMIN_EMAIL` and the secret `SECRET` of the environment by default (the secret of the API unit, the token is a JWT signed with it as the ones of `POST /api/v1/user/accessTokens`), the title is `mcloud`: an earlier token of the user with the title is replaced, the other tokens are kept (Settings, Keys). An unknown user exits with `1`.
 
 ## Grid authentication
 
