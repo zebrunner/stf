@@ -23,6 +23,8 @@ test.describe('STF against a real device', function() {
   test.skip(!SERIAL, 'STF_DEVICE_SERIAL is not set')
 
   let page: Page
+  // Fork (Zebrunner): the auto-rotate setting of the device before the rotation test
+  let autoRotate = ''
 
   test.beforeAll(async function({browser}, testInfo) {
     const context = await browser.newContext({
@@ -278,6 +280,7 @@ test.describe('STF against a real device', function() {
   // the sensors (portrait for the emulator) turned the device back at once
   test('[check:playwright_ui] a rotation from the toolbar stays on the device',
     async function() {
+      autoRotate = (await h.rotationSettings(SERIAL)).split(' ')[0] || ''
       await page.click(h.SEL.landscape)
       await expect.poll(function() {
         return h.rotationSettings(SERIAL)
@@ -297,6 +300,6 @@ test.describe('STF against a real device', function() {
     async function() {
       await expect.poll(function() {
         return h.rotationSettings(SERIAL)
-      }, {message: 'portrait, the sensors free', timeout: 30000}).toBe('1 0')
+      }, {message: 'portrait, auto-rotate as before', timeout: 30000}).toBe(autoRotate + ' 0')
     })
 })

@@ -170,6 +170,7 @@ export interface ServicePlugin extends EventEmitter<ServiceEvents> {
   wake(): void
   rotate(rotation: number): void
   isRotated(): boolean
+  resetRotation(): void
   freezeRotation(rotation: number): void
   thawRotation(): void
   version(): Bluebird<string | null>

@@ -1,8 +1,8 @@
 // Fork (Zebrunner): the rotation of an Android device (#808). STFService thaws an unlocked
 // rotation right after it sets it, so the service plugin always locks the rotation of the user
-// (service.ts) and the group plugin turns the device back to portrait when it is released
-// (group.ts). The agent socket of STFService is a stream here, the requests are decoded with the
-// proto of STFService
+// (service.ts) and the group plugin turns the device back to portrait, with the auto-rotate
+// setting of before, when it is released (group.ts). The agent socket of STFService is a stream
+// here, the requests are decoded with the proto of STFService
 import events from 'node:events'
 import {PassThrough} from 'node:stream'
 
@@ -26,17 +26,13 @@ var apkWire = (protobuf.build(protobuf.load(pathutil.module(
   '@devicefarmer/stfservice-prebuilt/prebuilt/noarch/wire.proto'
 ))) as any).jp.co.cyberagent.stf.proto
 
-function ended() {
-  var stream = new PassThrough()
-  stream.end()
-  return stream
-}
-
-// startService: the service plugin with a device whose agent socket is `agent`; resolves with the
-// plugin and the SetRotationRequest messages the agent got
-async function startService(handlers: Record<number, Handler>) {
+// startService: the service plugin with a device whose agent socket is `agent` and whose
+// auto-rotate setting is `autoRotate`; resolves with the plugin, the SetRotationRequest messages
+// the agent got and the commands of the adb shell
+async function startService(handlers: Record<number, Handler>, autoRotate = '0') {
   var agent = new PassThrough()
   var rotations: Array<{rotation: number, lock: boolean}> = []
+  var commands: string[] = []
   agent.pipe(new ms.DelimitedStream()).on('data', function(data: Buffer) {
     var envelope = apkWire.Envelope.decode(data)
     if (envelope.type === apkWire.MessageType.SET_ROTATION) {
@@ -52,8 +48,16 @@ async function startService(handlers: Record<number, Handler>) {
     }
   )
   var adb = {
-    shell: function() {
-      return Bluebird.resolve(ended())
+    shell: function(serial: string, command: string) {
+      var out = new PassThrough()
+      if (typeof command === 'string' && command.indexOf('settings') === 0) {
+        commands.push(command)
+        if (command === 'settings get system accelerometer_rotation') {
+          out.write(autoRotate + '\n')
+        }
+      }
+      out.end()
+      return Bluebird.resolve(out)
     }
   }
   var router = {
@@ -76,12 +80,12 @@ async function startService(handlers: Record<number, Handler>) {
   , {level: 31}
   , apk
   ) as ServicePlugin
-  return {plugin: plugin, rotations: rotations}
+  return {plugin: plugin, rotations: rotations, commands: commands}
 }
 
 function flush() {
   return new Promise(function(resolve) {
-    setImmediate(resolve)
+    setTimeout(resolve, 20)
   })
 }
 
@@ -105,26 +109,49 @@ describe('Device rotation', function() {
     expect(context.plugin.isRotated()).to.equal(true)
   })
 
-  it('should lock the rotation even when lockRotation is off', async function() {
+  it('should read the auto-rotate setting once and keep the order of the rotations',
+    async function() {
+      var handlers: Record<number, Handler> = {}
+      var context = await startService(handlers)
+
+      context.plugin.rotate(90)
+      context.plugin.rotate(270)
+      context.plugin.rotate(0)
+      await flush()
+
+      expect(context.rotations).to.eql([
+        {rotation: 90, lock: true}
+      , {rotation: 270, lock: true}
+      , {rotation: 0, lock: true}
+      ])
+      expect(context.commands).to.eql(['settings get system accelerometer_rotation'])
+    })
+
+  it('should reset to a locked portrait and turn auto-rotate back on', async function() {
+    this.timeout(5000)
     var handlers: Record<number, Handler> = {}
-    var context = await startService(handlers)
-
-    context.plugin.rotate(270)
-    await flush()
-
-    expect(context.rotations).to.eql([{rotation: 270, lock: true}])
-  })
-
-  it('should unlock the portrait rotation when it is thawed', async function() {
-    var handlers: Record<number, Handler> = {}
-    var context = await startService(handlers)
+    var context = await startService(handlers, '1')
 
     context.plugin.rotate(90)
-    context.plugin.thawRotation()
-    await flush()
+    await context.plugin.resetRotation()
 
-    expect(context.rotations).to.eql([{rotation: 90, lock: true}, {rotation: 0, lock: false}])
+    expect(context.rotations).to.eql([{rotation: 90, lock: true}, {rotation: 0, lock: true}])
+    expect(context.commands).to.eql([
+      'settings get system accelerometer_rotation'
+    , 'settings put system accelerometer_rotation 1'
+    ])
     expect(context.plugin.isRotated()).to.equal(false)
+  })
+
+  it('should reset to a locked portrait when auto-rotate was off', async function() {
+    var handlers: Record<number, Handler> = {}
+    var context = await startService(handlers, '0')
+
+    context.plugin.rotate(90)
+    await context.plugin.resetRotation()
+
+    expect(context.rotations).to.eql([{rotation: 90, lock: true}, {rotation: 0, lock: true}])
+    expect(context.commands).to.eql(['settings get system accelerometer_rotation'])
   })
 })
 
@@ -147,6 +174,7 @@ describe('Device release', function() {
     , releaseWakeLock: sinon.spy()
     , pressKey: sinon.spy()
     , thawRotation: sinon.spy()
+    , resetRotation: sinon.spy()
     , isRotated: sinon.stub().returns(rotated)
     }
     var plugin = group.invoke(
@@ -180,13 +208,15 @@ describe('Device release', function() {
   it('should turn a rotated device back to portrait without the home screen', async function() {
     var servicePlugin = await setup(false, true)
 
-    expect(servicePlugin.thawRotation.calledOnce).to.equal(true)
+    expect(servicePlugin.resetRotation.calledOnce).to.equal(true)
+    expect(servicePlugin.thawRotation.called).to.equal(false)
     expect(servicePlugin.pressKey.called).to.equal(false)
   })
 
   it('should leave a device that was not rotated as it is', async function() {
     var servicePlugin = await setup(false, false)
 
+    expect(servicePlugin.resetRotation.called).to.equal(false)
     expect(servicePlugin.thawRotation.called).to.equal(false)
     expect(servicePlugin.pressKey.called).to.equal(false)
   })
@@ -196,5 +226,14 @@ describe('Device release', function() {
 
     expect(servicePlugin.pressKey.calledWith('home')).to.equal(true)
     expect(servicePlugin.thawRotation.calledOnce).to.equal(true)
+    expect(servicePlugin.resetRotation.called).to.equal(false)
+  })
+
+  it('should reset a rotated device with the screen reset', async function() {
+    var servicePlugin = await setup(true, true)
+
+    expect(servicePlugin.pressKey.calledWith('home')).to.equal(true)
+    expect(servicePlugin.resetRotation.calledOnce).to.equal(true)
+    expect(servicePlugin.thawRotation.called).to.equal(false)
   })
 })
