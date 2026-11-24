@@ -107,10 +107,9 @@ var builder = function(yargs: Argv) {
     , default: 10000
     })
     .option('lock-rotation', {
-      describe: 'Whether to lock rotation when devices are being used. ' +
-        'Otherwise changing device orientation may not always work due to ' +
-        'sensitive sensors quickly or immediately reverting it back to the ' +
-        'physical orientation.'
+      describe: 'Ignored (Fork (Zebrunner)): the rotation of a user is ' +
+        'always locked, and turned back to portrait when the device is ' +
+        'released. Kept for the existing configurations.'
     , type: 'boolean'
     })
     .option('max-port', {

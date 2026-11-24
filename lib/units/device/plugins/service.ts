@@ -433,11 +433,22 @@ export default syrup.serial()
       )
     }
 
+    // Fork (Zebrunner): a rotation of the user is always locked. STFService thaws an unlocked
+    // rotation right after it sets it, so the sensors turned a device standing in a rack back to
+    // portrait at once (#808); the device is turned back to portrait when it is released
+    // (group.ts), lockRotation is ignored
+    var rotated = false
+
     plugin.rotate = function(rotation) {
+      rotated = true
       return runAgentCommand(
         apk.wire.MessageType.SET_ROTATION
-      , new apk.wire.SetRotationRequest(rotation, options.lockRotation || false)
+      , new apk.wire.SetRotationRequest(rotation, true)
       )
+    }
+
+    plugin.isRotated = function() {
+      return rotated
     }
 
     plugin.freezeRotation = function(rotation) {
@@ -448,6 +459,7 @@ export default syrup.serial()
     }
 
     plugin.thawRotation = function() {
+      rotated = false
       return runAgentCommand(
         apk.wire.MessageType.SET_ROTATION
       , new apk.wire.SetRotationRequest(0, false)

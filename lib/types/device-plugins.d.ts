@@ -169,6 +169,7 @@ export interface ServicePlugin extends EventEmitter<ServiceEvents> {
   getDisplay(id: number): Bluebird<DisplayProperties>
   wake(): void
   rotate(rotation: number): void
+  isRotated(): boolean
   freezeRotation(rotation: number): void
   thawRotation(): void
   version(): Bluebird<string | null>

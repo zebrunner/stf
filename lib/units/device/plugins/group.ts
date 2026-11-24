@@ -135,6 +135,12 @@ export default syrup.serial()
         service.pressKey('home')
         service.thawRotation()
       }
+      // Fork (Zebrunner): without the screen reset (the applications of the automated runs stay in
+      // front) the rotation the user locked is still reset, so the next session does not start in
+      // landscape
+      else if (service.isRotated()) {
+        service.thawRotation()
+      }
       service.releaseWakeLock()
     })
 
