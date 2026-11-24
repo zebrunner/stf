@@ -70,6 +70,8 @@ const SEL = {
 , nativeToggle: '.stf-nav-web-native-button label:has-text("Native")'
 , stopUsing: '.stf-vnc-right-buttons button.btn-danger-outline'
 , shellInput: '.stf-shell input.shell-input'
+  // Fork (Zebrunner): the orientation buttons of DeviceToolbar.tsx
+, landscape: '.stf-vnc-right-buttons button[aria-label="Landscape"]'
   // The empty state is a second pre.shell-results, so exclude it or the
   // locator resolves to two elements and strict mode rejects it.
 , shellResults: '.stf-shell pre.shell-results:not(.shell-results-empty)'
@@ -388,6 +390,29 @@ function touchAxisRanges(serial?: string) {
   })
 }
 
+// Fork (Zebrunner): the rotation settings WindowManager keeps, as "<accelerometer_rotation>
+// <user_rotation>": "0 1" is a landscape rotation locked by STF, "1 ..." lets the sensors turn the
+// screen (#808)
+function rotationSettings(serial?: string) {
+  const args = serial ? ['-s', serial] : []
+  return new Promise<string>(function(resolve) {
+    const child = spawn('adb', args.concat([
+      'shell'
+    , 'echo $(settings get system accelerometer_rotation) $(settings get system user_rotation)'
+    ]), {stdio: ['ignore', 'pipe', 'ignore']})
+    let out = ''
+    child.stdout.on('data', function(chunk) {
+      out += chunk.toString()
+    })
+    child.on('error', function() {
+      resolve('')
+    })
+    child.on('close', function() {
+      resolve(out.trim())
+    })
+  })
+}
+
 // Pull the ordered positions out of a `getevent -l` capture. Values are hex.
 // Returns the device that reported the most positions plus its samples, since a
 // capture covers every input device on the box (keyboard, mouse, rotary).
@@ -514,6 +539,7 @@ export {
 , isPermissionProblem
 , isCaptureBroken
 , touchAxisRanges
+, rotationSettings
 , parseAxisRanges
 , describeGesture
 , parseTouchPositions

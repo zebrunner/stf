@@ -23,6 +23,8 @@ test.describe('STF against a real device', function() {
   test.skip(!SERIAL, 'STF_DEVICE_SERIAL is not set')
 
   let page: Page
+  // Fork (Zebrunner): the auto-rotate setting of the device before the rotation test
+  let autoRotate = ''
 
   test.beforeAll(async function({browser}, testInfo) {
     const context = await browser.newContext({
@@ -274,10 +276,30 @@ test.describe('STF against a real device', function() {
         .toHaveText(/\d+/, {timeout: 60000})
     })
 
+  // Fork (Zebrunner): #808, STFService thawed the rotation of the user right after it set it, so
+  // the sensors (portrait for the emulator) turned the device back at once
+  test('[check:playwright_ui] a rotation from the toolbar stays on the device',
+    async function() {
+      autoRotate = (await h.rotationSettings(SERIAL)).split(' ')[0] || ''
+      await page.click(h.SEL.landscape)
+      await expect.poll(function() {
+        return h.rotationSettings(SERIAL)
+      }, {message: 'landscape locked', timeout: 30000}).toBe('0 1')
+      await page.waitForTimeout(3000)
+      expect(await h.rotationSettings(SERIAL), 'still locked 3 s later').toBe('0 1')
+    })
+
   test('[check:playwright_ui] releasing the device returns to the device list',
     async function() {
       await page.click(h.SEL.stopUsing)
       await page.waitForURL(/#\/devices/, {timeout: 60000})
       await expect(page.locator(h.SEL.deviceList)).toBeVisible()
+    })
+
+  test('[check:playwright_ui] a released device is turned back to portrait',
+    async function() {
+      await expect.poll(function() {
+        return h.rotationSettings(SERIAL)
+      }, {message: 'portrait, auto-rotate as before', timeout: 30000}).toBe(autoRotate + ' 0')
     })
 })

@@ -433,11 +433,70 @@ export default syrup.serial()
       )
     }
 
+    // Fork (Zebrunner): a rotation of the user is always locked. STFService thaws an unlocked
+    // rotation right after it sets it, so the sensors turned a device standing in a rack back to
+    // portrait at once (#808); lockRotation is ignored. The auto-rotate setting from before the
+    // first rotation is kept for resetRotation
+    var autoRotate: Promise<string | null> | null = null
+
+    function readAutoRotate() {
+      return adb.shell(options.serial, 'settings get system accelerometer_rotation')
+        .then(streamutil.readAll)
+        .timeout(5000)
+        .then(function(out) {
+          var value = out.toString().trim()
+          return value === '0' || value === '1' ? value : null
+        })
+        .catch(function(err) {
+          log.warn('Unable to read the auto-rotate setting', err)
+          return null
+        })
+    }
+
+    // The rotations wait for the setting to be read, in their order
     plugin.rotate = function(rotation) {
-      return runAgentCommand(
-        apk.wire.MessageType.SET_ROTATION
-      , new apk.wire.SetRotationRequest(rotation, options.lockRotation || false)
-      )
+      if (!autoRotate) {
+        autoRotate = readAutoRotate()
+      }
+      return autoRotate.then(function() {
+        return runAgentCommand(
+          apk.wire.MessageType.SET_ROTATION
+        , new apk.wire.SetRotationRequest(rotation, true)
+        )
+      })
+    }
+
+    plugin.isRotated = function() {
+      return autoRotate !== null
+    }
+
+    // Fork (Zebrunner): portrait and the auto-rotate setting of before the rotations of the user.
+    // A thawRotation left the landscape user rotation (Android writes it before it applies the
+    // portrait freeze), which a device lying flat keeps; auto-rotate is set back once the portrait
+    // freeze is written
+    plugin.resetRotation = function() {
+      var before = autoRotate || Promise.resolve(null)
+      autoRotate = null
+      return before
+        .then(function(restore) {
+          runAgentCommand(
+            apk.wire.MessageType.SET_ROTATION
+          , new apk.wire.SetRotationRequest(0, true)
+          )
+          if (restore !== '1') {
+            return Promise.resolve()
+          }
+          return Promise.delay(1000)
+            .then(function() {
+              return adb.shell(options.serial, 'settings put system accelerometer_rotation 1')
+            })
+            .then(streamutil.readAll)
+            .timeout(5000)
+            .return()
+        })
+        .catch(function(err) {
+          log.warn('Unable to restore the auto-rotate setting', err)
+        })
     }
 
     plugin.freezeRotation = function(rotation) {

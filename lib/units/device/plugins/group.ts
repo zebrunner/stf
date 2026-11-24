@@ -133,6 +133,14 @@ export default syrup.serial()
     plugin.on('leave', function() {
       if (options.screenReset) {
         service.pressKey('home')
+      }
+      // Fork (Zebrunner): a rotated device is turned back to portrait, also without the screen
+      // reset (the applications of the automated runs stay in front), so the next session does not
+      // start in landscape
+      if (service.isRotated()) {
+        service.resetRotation()
+      }
+      else if (options.screenReset) {
         service.thawRotation()
       }
       service.releaseWakeLock()
