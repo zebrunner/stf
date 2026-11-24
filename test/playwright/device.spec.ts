@@ -302,4 +302,35 @@ test.describe('STF against a real device', function() {
         return h.rotationSettings(SERIAL)
       }, {message: 'portrait, auto-rotate as before', timeout: 30000}).toBe(autoRotate + ' 0')
     })
+
+  // Fork (Zebrunner): #1031, the user opens the device a test of the user (the grid, through the
+  // REST API) holds: the application of the test stays in front, nothing presses Home
+  test('[check:playwright_ui] opening a device a test holds keeps its application in front',
+    async function() {
+      const claim = await page.request.post('/api/v1/user/devices', {
+        data: {serial: SERIAL, timeout: 600000}
+      })
+      expect(claim.status(), 'the device claimed through the API').toBe(200)
+      try {
+        await h.adbShell(SERIAL, 'am start -W -a android.settings.SETTINGS')
+        await expect.poll(function() {
+          return h.focusedWindow(SERIAL)
+        }, {message: 'Settings in front', timeout: 30000}).toContain('com.android.settings')
+
+        await page.goto('/#/control/' + SERIAL)
+        await expect(page.locator(h.SEL.screen)).toBeVisible({timeout: 60000})
+        await expect(
+          page.locator(h.SEL.stopUsing)
+        , 'the page joined the device of the test'
+        ).toBeVisible({timeout: 90000})
+        await page.waitForTimeout(5000)
+
+        expect(await h.focusedWindow(SERIAL), 'Settings still in front')
+          .toContain('com.android.settings')
+      }
+      finally {
+        await page.request.delete('/api/v1/user/devices/' + SERIAL)
+        await page.goto('/#/devices')
+      }
+    })
 })
