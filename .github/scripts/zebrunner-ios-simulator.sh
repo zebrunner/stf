@@ -37,7 +37,8 @@ runtime() {
 
 # iphone <runtime>: the newest iPhone type the runtime supports, by the iOS version it came with.
 # Not the iPhone Duo of Xcode 27.1 when the runtime has another iPhone: XCTest fails to background
-# the runner of WDA on it ("Failed to background test runner") on every launch
+# the runner of WDA on it ("Failed to background test runner") on every launch (#1083: the image had
+# an iOS 27.1 runtime with the Duo only, the iOS 27.2 one of 2026-11-25 has all the iPhones)
 iphone() {
   local types
   types=$(xcrun simctl list devicetypes -j)

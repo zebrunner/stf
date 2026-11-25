@@ -44,11 +44,30 @@ function withJob(jobs: Job[], name: string, job: Partial<Job>): Job[] {
 }
 
 describe('zebrunner: CI iOS rerun', function() {
-  var optional = optionalLegs()
+  // iOS 27 was optional when the fixtures ran (#1083)
+  var optional = ['ios / iOS 27']
 
   it('should take the optional legs from .github/zebrunner-ci.json', function() {
-    expect(optional).to.include('ios / iOS 27')
-    expect(optional).not.to.include('ios / iOS 18')
+    var cwd = process.cwd()
+    var dir = fs.mkdtempSync(path.join(os.tmpdir(), 'stf-zebrunner-rerun-'))
+    fs.mkdirSync(path.join(dir, '.github'))
+    var settings = {ios: {include: [
+      {ios: '18', runner: 'macos-15'}
+    , {ios: '27', runner: 'xcode-27', optional: 'a reason'}
+    ]}}
+    fs.writeFileSync(path.join(dir, '.github', 'zebrunner-ci.json'), JSON.stringify(settings))
+    process.chdir(dir)
+    try {
+      expect(optionalLegs()).to.eql(['ios / iOS 27'])
+    }
+    finally {
+      process.chdir(cwd)
+      fs.rmSync(dir, {recursive: true, force: true})
+    }
+  })
+
+  it('should have no optional iOS leg in the settings of the repository', function() {
+    expect(optionalLegs()).to.eql([])
   })
 
   it('should find the iOS legs no runner took', function() {
@@ -155,9 +174,15 @@ describe('zebrunner: CI iOS rerun', function() {
       fs.rmSync(dir, {recursive: true, force: true})
     })
 
-    // gh of PATH answers from the fixture and records its calls
-    function command(id: string, run: Partial<Run>, env: Record<string, string> = {}) {
+    // gh of PATH answers from the fixture and records its calls; the script reads the optional legs
+    // of the settings of the repository, which have none now
+    function command(
+      id: string, run: Partial<Run>, env: Record<string, string> = {}, jobs?: (jobs: Job[]) => Job[]
+    ) {
       var data = fixture(id, run)
+      if (jobs) {
+        data.jobs = jobs(data.jobs)
+      }
       fs.writeFileSync(path.join(dir, 'run.json'), JSON.stringify(
         Object.assign({workflow_id: 1}, data.run)))
       fs.writeFileSync(path.join(dir, 'jobs.json'), data.jobs.map(function(job) {
@@ -191,8 +216,13 @@ describe('zebrunner: CI iOS rerun', function() {
       }
     }
 
+    // DISPATCH with the iOS 27 leg passing, as a run of the required iOS 27 that only lost runners
+    function passing27(jobs: Job[]) {
+      return withJob(jobs, 'ios / iOS 27', {conclusion: 'success'})
+    }
+
     it('should run the failed jobs of the run again', function() {
-      var {result, calls} = command(DISPATCH, {})
+      var {result, calls} = command(DISPATCH, {}, {}, passing27)
       expect(result.status, result.stderr).to.equal(0)
       expect(result.stdout).to.include('running the failed jobs again')
       expect(calls).to.include('run rerun ' + DISPATCH + ' --failed -R zebrunner/stf')
@@ -200,7 +230,7 @@ describe('zebrunner: CI iOS rerun', function() {
     })
 
     it('should only decide on a dry run', function() {
-      var {result, calls} = command(DISPATCH, {}, {DRY_RUN: '1'})
+      var {result, calls} = command(DISPATCH, {}, {DRY_RUN: '1'}, passing27)
       expect(result.status, result.stderr).to.equal(0)
       expect(result.stdout).to.include('running the failed jobs again')
       expect(calls.join('\n')).not.to.include('rerun')
@@ -211,6 +241,13 @@ describe('zebrunner: CI iOS rerun', function() {
       expect(result.status, result.stderr).to.equal(0)
       expect(result.stdout).to.include('attempt 2 already started')
       expect(calls).to.have.length(1)
+    })
+
+    it('should not run a run again in which the required iOS 27 failed', function() {
+      var {result, calls} = command(DISPATCH, {})
+      expect(result.status, result.stderr).to.equal(0)
+      expect(result.stdout).to.include('ios / iOS 27')
+      expect(calls.join('\n')).not.to.include('rerun')
     })
 
     it('should not run a green run again', function() {
