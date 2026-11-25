@@ -390,6 +390,40 @@ function touchAxisRanges(serial?: string) {
   })
 }
 
+// Fork (Zebrunner): the output of a command of the adb shell, '' when adb fails
+function adbShell(serial: string | undefined, command: string) {
+  const args = serial ? ['-s', serial] : []
+  return new Promise<string>(function(resolve) {
+    const child = spawn('adb', args.concat(['shell', command]), {
+      stdio: ['ignore', 'pipe', 'ignore']
+    })
+    let out = ''
+    child.stdout.on('data', function(chunk) {
+      out += chunk.toString()
+    })
+    child.on('error', function() {
+      resolve('')
+    })
+    child.on('close', function() {
+      resolve(out)
+    })
+  })
+}
+
+// Fork (Zebrunner): the activity in front (mFocusedApp of WindowManager), e.g.
+// "ActivityRecord{242794363 u0 com.android.settings/.homepage.SettingsHomepageActivity t9}".
+// dumpsys has one per display, and the virtual display of the screen stream (minicap mirrors the
+// screen to it on Android 16+) has none ("null"), so the first one that is not null is taken
+async function focusedApp(serial?: string) {
+  const out = await adbShell(serial, 'dumpsys window')
+  const apps = Array.from(out.matchAll(/mFocusedApp=(.*)/g), function(match) {
+    return match[1]!.trim()
+  })
+  return apps.find(function(app) {
+    return app !== 'null'
+  }) || apps.join(' ')
+}
+
 // Fork (Zebrunner): the rotation settings WindowManager keeps, as "<accelerometer_rotation>
 // <user_rotation>": "0 1" is a landscape rotation locked by STF, "1 ..." lets the sensors turn the
 // screen (#808)
@@ -540,6 +574,8 @@ export {
 , isCaptureBroken
 , touchAxisRanges
 , rotationSettings
+, adbShell
+, focusedApp
 , parseAxisRanges
 , describeGesture
 , parseTouchPositions
