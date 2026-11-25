@@ -411,13 +411,17 @@ function adbShell(serial: string | undefined, command: string) {
 }
 
 // Fork (Zebrunner): the activity in front (mFocusedApp of WindowManager), e.g.
-// "ActivityRecord{242794363 u0 com.android.settings/.homepage.SettingsHomepageActivity t9}". The
-// focused window (mCurrentFocus) is not used: Android 16+ answers null for it now and then while
-// the same activity stays in front
+// "ActivityRecord{242794363 u0 com.android.settings/.homepage.SettingsHomepageActivity t9}".
+// dumpsys has one per display, and the virtual display of the screen stream (minicap mirrors the
+// screen to it on Android 16+) has none ("null"), so the first one that is not null is taken
 async function focusedApp(serial?: string) {
   const out = await adbShell(serial, 'dumpsys window')
-  const match = /mFocusedApp=(.*)/.exec(out)
-  return match ? match[1]!.trim() : ''
+  const apps = Array.from(out.matchAll(/mFocusedApp=(.*)/g), function(match) {
+    return match[1]!.trim()
+  })
+  return apps.find(function(app) {
+    return app !== 'null'
+  }) || apps.join(' ')
 }
 
 // Fork (Zebrunner): the rotation settings WindowManager keeps, as "<accelerometer_rotation>
