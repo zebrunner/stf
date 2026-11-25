@@ -314,7 +314,7 @@ test.describe('STF against a real device', function() {
       try {
         await h.adbShell(SERIAL, 'am start -W -a android.settings.SETTINGS')
         await expect.poll(function() {
-          return h.focusedWindow(SERIAL)
+          return h.focusedApp(SERIAL)
         }, {message: 'Settings in front', timeout: 30000}).toContain('com.android.settings')
 
         await page.goto('/#/control/' + SERIAL)
@@ -325,7 +325,7 @@ test.describe('STF against a real device', function() {
         ).toBeVisible({timeout: 90000})
         await page.waitForTimeout(5000)
 
-        expect(await h.focusedWindow(SERIAL), 'Settings still in front')
+        expect(await h.focusedApp(SERIAL), 'Settings still in front')
           .toContain('com.android.settings')
       }
       finally {

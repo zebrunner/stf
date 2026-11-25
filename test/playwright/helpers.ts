@@ -410,11 +410,13 @@ function adbShell(serial: string | undefined, command: string) {
   })
 }
 
-// Fork (Zebrunner): the window that has the focus (mCurrentFocus of WindowManager), e.g.
-// "Window{4f1c2b1 u0 com.android.settings/com.android.settings.Settings}"
-async function focusedWindow(serial?: string) {
+// Fork (Zebrunner): the activity in front (mFocusedApp of WindowManager), e.g.
+// "ActivityRecord{242794363 u0 com.android.settings/.homepage.SettingsHomepageActivity t9}". The
+// focused window (mCurrentFocus) is not used: Android 16+ answers null for it now and then while
+// the same activity stays in front
+async function focusedApp(serial?: string) {
   const out = await adbShell(serial, 'dumpsys window')
-  const match = /mCurrentFocus=(.*)/.exec(out)
+  const match = /mFocusedApp=(.*)/.exec(out)
   return match ? match[1]!.trim() : ''
 }
 
@@ -569,7 +571,7 @@ export {
 , touchAxisRanges
 , rotationSettings
 , adbShell
-, focusedWindow
+, focusedApp
 , parseAxisRanges
 , describeGesture
 , parseTouchPositions
