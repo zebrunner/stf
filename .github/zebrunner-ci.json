@@ -38,11 +38,7 @@
       {"ios": "17", "runner": "macos-15", "xcode": "16.4", "download": "17.5"},
       {"ios": "18", "runner": "macos-15", "xcode": "16.4"},
       {"ios": "26", "runner": "macos-26", "xcode": "26.6"},
-      {
-        "ios": "27",
-        "runner": "xcode-27",
-        "optional": "TODO make it required again (#1083). The iOS 27.1 runtime of the xcode-27 image has only the iPhone Duo, on which XCTest fails to start WebDriverAgent."
-      }
+      {"ios": "27", "runner": "xcode-27"}
     ],
     "paths": [
       "lib/units/ios-device/**",

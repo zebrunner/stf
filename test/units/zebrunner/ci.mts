@@ -26,6 +26,23 @@ interface Leg {
 
 var matrix = JSON.parse(fs.readFileSync('.github/android-matrix.json', 'utf8')) as {include: Leg[]}
 
+// withSettings <settings> <test>: runs the test with the settings as .github/zebrunner-ci.json,
+// in a directory of its own, instead of the settings of the repository
+function withSettings(settings: object, test: () => void) {
+  var cwd = process.cwd()
+  var dir = fs.mkdtempSync(path.join(os.tmpdir(), 'stf-zebrunner-ci-'))
+  fs.mkdirSync(path.join(dir, '.github'))
+  fs.writeFileSync(path.join(dir, '.github', 'zebrunner-ci.json'), JSON.stringify(settings))
+  process.chdir(dir)
+  try {
+    test()
+  }
+  finally {
+    process.chdir(cwd)
+    fs.rmSync(dir, {recursive: true, force: true})
+  }
+}
+
 describe('zebrunner: CI', function() {
   it('should test Android 12 (API 31) and later only', function() {
     var legs = androidLegs(matrix.include, 'full')
@@ -125,10 +142,23 @@ describe('zebrunner: CI', function() {
       })).to.eql(['15', '16', '17', '18', '26', '27'])
     })
 
-    it('should leave the oldest and the preview iOS to the full matrix', function() {
+    it('should leave all but the two newest iOS to the full matrix', function() {
       expect(iosLegs('quick').map(function(leg) {
         return leg.ios
-      })).to.eql(['18', '26'])
+      })).to.eql(['26', '27'])
+    })
+
+    it('should leave an optional iOS to the full matrix', function() {
+      withSettings({ios: {include: [
+        {ios: '18', runner: 'macos-15'}
+      , {ios: '26', runner: 'macos-26'}
+      , {ios: '27', runner: 'xcode-27', optional: 'a reason'}
+      ]}}, function() {
+        expect(iosLegs('quick').map(function(leg) {
+          return leg.ios
+        })).to.eql(['18', '26'])
+        expect(iosLegs('full').length).to.equal(3)
+      })
     })
 
     it('should match the globs of ios.paths', function() {
@@ -315,20 +345,36 @@ describe('zebrunner: CI', function() {
       expect(report.lines[5]).to.match(/^\| :white_check_mark: \| 26 \|/)
     })
 
-    // iOS 27 is optional in .github/zebrunner-ci.json
     it('should show a failing optional leg without counting it', function() {
+      withSettings({ios: {include: [
+        {ios: '15', runner: 'macos-15'}
+      , {ios: '26', runner: 'macos-26'}
+      , {ios: '27', runner: 'xcode-27', optional: 'the runtime is broken (#1083)'}
+      ]}}, function() {
+        var report = iosReport([
+          {id: 'ios-27', label: 'iOS 27', group: 'ios', status: 'fail', ios: '27', checks: {}}
+        , {id: 'ios-26', label: 'iOS 26', group: 'ios', status: 'pass', ios: '26', checks: {}}
+        , {id: 'ios-15', label: 'iOS 15', group: 'ios', status: 'fail', ios: '15', checks: {}}
+        ])
+        expect(report.failed).to.equal(1)
+        expect(report.summary).to.equal('3 iOS versions (1 passing, 1 optional failing)')
+        expect(report.lines[4]).to.match(/^\| :x: \| 15 \|/)
+        expect(report.lines[6]).to.match(/^\| :warning: \| 27 \|/)
+        expect(report.lines.join('\n')).to.match(
+          /iOS 27 is optional, it does not fail the report: the runtime is broken \(#1083\)/
+        )
+        expect(iosMissing({}).length).to.equal(iosLegs().length)
+      })
+    })
+
+    it('should count a failing iOS 27, which is required', function() {
       var report = iosReport([
         {id: 'ios-27', label: 'iOS 27', group: 'ios', status: 'fail', ios: '27', checks: {}}
       , {id: 'ios-26', label: 'iOS 26', group: 'ios', status: 'pass', ios: '26', checks: {}}
-      , {id: 'ios-15', label: 'iOS 15', group: 'ios', status: 'fail', ios: '15', checks: {}}
       ])
       expect(report.failed).to.equal(1)
-      expect(report.summary).to.equal('3 iOS versions (1 passing, 1 optional failing)')
-      expect(report.lines[4]).to.match(/^\| :x: \| 15 \|/)
-      expect(report.lines[6]).to.match(/^\| :warning: \| 27 \|/)
-      expect(report.lines.join('\n'))
-        .to.match(/iOS 27 is optional, it does not fail the report: .*#1083/)
-      expect(iosMissing({}).length).to.equal(iosLegs().length)
+      expect(report.summary).to.equal('2 iOS versions (1 passing)')
+      expect(report.lines[5]).to.match(/^\| :x: \| 27 \|/)
     })
 
     it('should use the selected profile for missing-verdict coverage in the report', function() {
