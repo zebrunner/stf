@@ -257,6 +257,12 @@ export default function(options: S3StorageOptions & StorageSecurityOptions) {
     , Bucket: options.bucket
     })))
       .then(function(data) {
+        // Security: force download + sandbox so an uploaded blob can never
+        // execute as script on the MCloud origin (see storage/temp.ts).
+        res.set('Content-Disposition',
+          'attachment; filename="' + path.basename(req.params.name) + '"')
+        res.set('X-Content-Type-Options', 'nosniff')
+        res.set('Content-Security-Policy', "default-src 'none'; sandbox")
         if (data.ContentType) {
           res.set('Content-Type', data.ContentType)
         }

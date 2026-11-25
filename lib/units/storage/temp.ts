@@ -206,10 +206,17 @@ export default function(options: TempStorageOptions & StorageSecurityOptions) {
   app.get('/s/blob/:id/:name', function(req, res) {
     var file = storage.retrieve(req.params.id)
     if (file) {
-      if (typeof req.query.download !== 'undefined') {
-        res.set('Content-Disposition',
-          'attachment; filename="' + path.basename(file.name as string) + '"')
-      }
+      // Security: /s/blob serves arbitrary user-uploaded content from the MCloud
+      // origin. Serving it inline allows stored XSS: an uploaded text/html blob
+      // opened by another user (e.g. an admin) runs on the MCloud origin and can
+      // mint and exfiltrate that user's access token. Always force a download,
+      // forbid MIME sniffing, and sandbox the response so an uploaded blob can
+      // never execute as script on the origin. The former inline mode (no
+      // ?download) is removed; blobs are downloaded, never rendered.
+      res.set('Content-Disposition',
+        'attachment; filename="' + path.basename(file.name as string) + '"')
+      res.set('X-Content-Type-Options', 'nosniff')
+      res.set('Content-Security-Policy', "default-src 'none'; sandbox")
       res.set('Content-Type', file.type as string)
       res.sendFile(file.path)
     }
