@@ -25,11 +25,13 @@ var dbapi = {
 , loadNodes: sinon.stub()
 , loadNodeByAddress: sinon.stub()
 , loadNodeByPublicKey: sinon.stub()
+, loadNodeByWgPublicKey: sinon.stub()
 , enrollNode: sinon.stub()
 , revokeNode: sinon.stub()
 , deleteNode: sinon.stub()
 , touchNode: sinon.stub()
 , loadNodeKeys: sinon.stub()
+, loadWireguardPeers: sinon.stub()
 , loadRelayDevices: sinon.stub()
 , loadNodeDevices: sinon.stub()
 , loadDeviceBySerial: sinon.stub()
@@ -61,6 +63,16 @@ var OPTIONS = {
 , serverPublicKey: 'f'.repeat(64)
 , internalToken: INTERNAL
 }
+// the WireGuard tunnel of the nodes (--nodes-wg-*)
+var WG_KEY = Buffer.alloc(32, 7).toString('base64')
+var HEAD_WG_KEY = Buffer.alloc(32, 9).toString('base64')
+var WIREGUARD = {
+  endpoint: 'mcloud.example.com:51820'
+, publicKey: HEAD_WG_KEY
+, serverAddress: '10.234.0.1'
+, network: '10.234.0.0/24'
+}
+var WG_OPTIONS = Object.assign({}, OPTIONS, {wireguard: WIREGUARD})
 
 function node(fields: Partial<NodeDocument> = {}): NodeDocument {
   return Object.assign({
@@ -183,13 +195,14 @@ describe('zebrunner: node API', function() {
     , 'PUT /nodes/self/devices/{serial}': ['nodes']
     , 'GET /zebrunner/screen-auth': ['user']
     , 'GET /zebrunner/nodes/keys': ['nodes']
+    , 'GET /zebrunner/nodes/wireguard': ['nodes']
     , 'POST /zebrunner/nodes/token': ['nodes']
     })
     // authenticated by the API unit except the enrollment (an invite), the diagnostics of a node (its
     // token) and the internal routes
     var unauthenticated = [
       '/nodes/enroll', '/nodes/self', '/nodes/self/devices/{serial}', '/zebrunner/nodes/keys'
-    , '/zebrunner/nodes/token'
+    , '/zebrunner/nodes/wireguard', '/zebrunner/nodes/token'
     ]
     unauthenticated.forEach(function(path) {
       Object.values(swagger.paths[path]!).forEach(function(operation) {
@@ -262,6 +275,48 @@ describe('zebrunner: node API', function() {
       expect((await call('createNodeInvite', {
         body: {label: 'node-1', address: '10.0.0.5'}
       })).code).to.equal(201)
+    })
+
+    describe('with the WireGuard tunnel', function() {
+      function invite(address: string, nodes: object = WG_OPTIONS) {
+        return call('createNodeInvite', {body: {label: 'node-1', address: address}, nodes: nodes})
+      }
+
+      it('should invite a node at an address of the network of the tunnel', async function() {
+        var reply = await invite('10.234.0.2')
+        expect(reply.code).to.equal(201)
+        expect(reply.body).to.include({label: 'node-1', address: '10.234.0.2'})
+        expect((await invite('10.234.0.254')).code).to.equal(201)
+      })
+
+      var outside = [
+        ['an address outside the network', '10.0.0.5']
+      , ['a host name', 'node-1.lan']
+      , ['the address of the head', '10.234.0.1']
+      , ['the address of the network', '10.234.0.0']
+      , ['the broadcast address', '10.234.0.255']
+      , ['an address of the next network', '10.234.1.2']
+      ]
+
+      outside.forEach(function([what, address]) {
+        it(`should refuse ${what} with a generic error`, async function() {
+          expect(await invite(address!)).to.eql({code: 400, body: {success: false}})
+          expect(dbapi.createNodeInvite.called).to.equal(false)
+          expect(logged.join('\n')).to.include('WireGuard network 10.234.0.0/24')
+        })
+      })
+
+      it('should take any address without the tunnel', async function() {
+        expect((await invite('10.0.0.5', OPTIONS)).code).to.equal(201)
+      })
+
+      it('should not invite with invalid options of the tunnel', async function() {
+        var broken = Object.assign({}, OPTIONS, {
+          wireguard: Object.assign({}, WIREGUARD, {network: ''})
+        })
+        expect(await invite('10.234.0.2', broken)).to.eql({code: 500, body: {success: false}})
+        expect(logged.join('\n')).to.include('missing: --nodes-wg-network')
+      })
     })
 
     it('should not invite without the settings of the enrollment', async function() {
@@ -397,6 +452,107 @@ describe('zebrunner: node API', function() {
       expect(dbapi.consumeNodeInvite.called).to.equal(false)
     })
 
+    it('should ignore a WireGuard key without the tunnel', async function() {
+      var reply = await enroll(Object.assign({wgPublicKey: WG_KEY}, ENROLL))
+      expect(reply.code).to.equal(200)
+      expect(reply.body).to.not.have.property('wireguard')
+      expect(dbapi.enrollNode.firstCall.args[0]).to.not.have.property('wgPublicKey')
+      expect(dbapi.loadNodeByWgPublicKey.called).to.equal(false)
+      // and an invalid one
+      expect((await enroll(Object.assign({wgPublicKey: 7}, ENROLL))).code).to.equal(200)
+    })
+
+    describe('with the WireGuard tunnel', function() {
+      var WG_ENROLL = Object.assign({wgPublicKey: WG_KEY}, ENROLL)
+
+      beforeEach(function() {
+        var wgInvite = Object.assign({}, invite, {address: '10.234.0.2'})
+        dbapi.loadNodeInvite.resolves(wgInvite)
+        dbapi.consumeNodeInvite.resolves(Object.assign({}, wgInvite, {usedAt: new Date()}))
+      })
+
+      function wgEnroll(body: object = WG_ENROLL, nodes: object = WG_OPTIONS) {
+        return call('enrollNode', {body: body, user: null, nodes: nodes})
+      }
+
+      it('should store the WireGuard key and give the settings of the tunnel', async function() {
+        var reply = await wgEnroll()
+        expect(reply.code).to.equal(200)
+        var body = reply.body as {nodeToken: string}
+        expect(body).to.eql({
+          nodeToken: body.nodeToken
+        , label: 'node-1'
+        , address: '10.234.0.2'
+        , serverPublicKey: 'f'.repeat(64)
+        , stfUrl: 'https://mcloud.example.com'
+        , endpoints: OPTIONS.endpoints
+        , wireguard: {
+            endpoint: 'mcloud.example.com:51820'
+          , publicKey: HEAD_WG_KEY
+          , serverAddress: '10.234.0.1'
+          , address: '10.234.0.2'
+          , network: '10.234.0.0/24'
+          , persistentKeepalive: 25
+          }
+        })
+        expect(dbapi.loadNodeByWgPublicKey.calledOnceWith(WG_KEY)).to.equal(true)
+        expect(dbapi.enrollNode.firstCall.args[0]).to.eql({
+          label: 'node-1'
+        , address: '10.234.0.2'
+        , publicKey: KEY
+        , tokenHash: zebrunnerNodes.sha256(body.nodeToken)
+        , wgPublicKey: WG_KEY
+        })
+        expect(logged.join('\n')).to.not.include(body.nodeToken.split('.')[2])
+      })
+
+      var withoutKey: Array<[string, object]> = [
+        ['no WireGuard key', ENROLL]
+      , ['an empty WireGuard key', Object.assign({}, ENROLL, {wgPublicKey: ''})]
+      , ['a WireGuard key of 31 bytes'
+        , Object.assign({}, ENROLL, {wgPublicKey: Buffer.alloc(31, 7).toString('base64')})]
+      , ['a WireGuard key in hex', Object.assign({}, ENROLL, {wgPublicKey: KEY})]
+      , ['a WireGuard key that is not a string', Object.assign({}, ENROLL, {wgPublicKey: [WG_KEY]})]
+      ]
+
+      withoutKey.forEach(function([what, body]) {
+        it(`should refuse ${what}: the node needs a new mcloud-agent`, async function() {
+          expect(await wgEnroll(body)).to.eql({code: 403, body: {success: false}})
+          expect(dbapi.loadNodeInvite.called).to.equal(false)
+          expect(dbapi.enrollNode.called).to.equal(false)
+          expect(logged.join('\n')).to.include('the head needs WireGuard: update mcloud-agent')
+        })
+      })
+
+      it('should refuse the WireGuard key of another node', async function() {
+        dbapi.loadNodeByWgPublicKey.resolves(node({label: 'node-2', wgPublicKey: WG_KEY}))
+        expect(await wgEnroll()).to.eql({code: 403, body: {success: false}})
+        expect(dbapi.consumeNodeInvite.called).to.equal(false)
+        expect(dbapi.enrollNode.called).to.equal(false)
+        expect(logged.join('\n')).to.include('the WireGuard key is the key of node "node-2"')
+      })
+
+      it('should re-enroll a node with its own WireGuard key', async function() {
+        dbapi.loadNodeByWgPublicKey.resolves(node({wgPublicKey: WG_KEY}))
+        expect((await wgEnroll()).code).to.equal(200)
+      })
+
+      it('should refuse an invite outside the network of the tunnel', async function() {
+        dbapi.loadNodeInvite.resolves(invite)
+        expect(await wgEnroll()).to.eql({code: 403, body: {success: false}})
+        expect(dbapi.consumeNodeInvite.called).to.equal(false)
+      })
+
+      it('should not enroll with invalid options of the tunnel', async function() {
+        var broken = Object.assign({}, OPTIONS, {
+          wireguard: Object.assign({}, WIREGUARD, {publicKey: 'not-a-key'})
+        })
+        expect(await wgEnroll(WG_ENROLL, broken)).to.eql({code: 500, body: {success: false}})
+        expect(logged.join('\n')).to.include('--nodes-wg-public-key')
+        expect(logged.join('\n')).to.not.include('not-a-key')
+      })
+    })
+
     it('should check and enroll one node at a time', async function() {
       var order: string[] = []
       var release: () => void = function() {}
@@ -435,11 +591,30 @@ describe('zebrunner: node API', function() {
         label: 'node-1'
       , address: '10.0.0.5'
       , publicKey: KEY
+      , wgPublicKey: null
+      , wireguard: false
       , status: 'active'
       , createdAt: '2026-01-01T00:00:00.000Z'
       , revokedAt: null
       , lastSeenAt: '2026-02-01T00:00:00.000Z'
       }]}})
+    })
+
+    it('should show the WireGuard key of a node, which is public', async function() {
+      dbapi.loadNodes.resolves([
+        node({address: '10.234.0.2', wgPublicKey: WG_KEY})
+      , node({label: 'node-2', address: '10.234.0.3', status: 'revoked', wgPublicKey: null})
+      ])
+      var nodes = ((await call('getNodes')).body as {nodes: object[]}).nodes
+      expect(nodes[0]).to.include({
+        label: 'node-1', address: '10.234.0.2', wgPublicKey: WG_KEY, wireguard: true
+      , status: 'active'
+      })
+      expect(nodes[1]).to.include({
+        label: 'node-2', address: '10.234.0.3', wgPublicKey: null, wireguard: false
+      , status: 'revoked'
+      })
+      expect(nodes[0]).to.not.have.property('tokenHash')
     })
 
     it('should revoke a node', async function() {
@@ -516,6 +691,25 @@ describe('zebrunner: node API', function() {
     beforeEach(function() {
       dbapi.loadNode.withArgs('node-1').resolves(node())
       dbapi.loadNodeKeys.resolves({allowed: [KEY], denied: []})
+      dbapi.loadWireguardPeers.resolves([
+        {label: 'node-1', publicKey: WG_KEY, address: '10.234.0.2'}
+      ])
+    })
+
+    it('should answer the WireGuard peers for the server units', async function() {
+      var headers = {'x-stf-internal-token': INTERNAL}
+      expect(await call('getNodeWireguard', {headers: headers, user: null})).to.eql({
+        code: 200
+      , body: {peers: [{label: 'node-1', publicKey: WG_KEY, address: '10.234.0.2'}]}
+      })
+    })
+
+    it('should answer a generic error when the peers cannot be read', async function() {
+      dbapi.loadWireguardPeers.rejects(new Error('database down'))
+      expect(await call('getNodeWireguard', {
+        headers: {'x-stf-internal-token': INTERNAL}
+      , user: null
+      })).to.eql({code: 500, body: {success: false}})
     })
 
     it('should answer the keys and check the tokens for the server units', async function() {
@@ -544,7 +738,9 @@ describe('zebrunner: node API', function() {
         var options = {headers: headers, user: null, body: {token: TOKEN}, nodes: nodes}
         expect(await call('getNodeKeys', options)).to.eql({code: 403, body: {success: false}})
         expect(await call('checkNodeToken', options)).to.eql({code: 403, body: {success: false}})
+        expect(await call('getNodeWireguard', options)).to.eql({code: 403, body: {success: false}})
         expect(dbapi.loadNodeKeys.called).to.equal(false)
+        expect(dbapi.loadWireguardPeers.called).to.equal(false)
       })
     })
   })

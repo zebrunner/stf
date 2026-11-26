@@ -28,6 +28,8 @@ export interface NodeDocument {
   generation: number
   // the keys of the previous enrollments of the node, refused by the triproxies
   retiredKeys?: string[]
+  // the WireGuard public key of the node (base64), only with the tunnel of the nodes
+  wgPublicKey?: string | null
 }
 
 export interface NodeInviteDocument {
@@ -43,6 +45,13 @@ export interface NodeInviteDocument {
 export interface NodeKeys {
   allowed: string[]
   denied: string[]
+}
+
+// A peer of the WireGuard interface of the head: an active node with a WireGuard key
+export interface WireguardPeer {
+  label: string
+  publicKey: string
+  address: string
 }
 
 export interface NodeDevice {
@@ -95,13 +104,16 @@ export interface NodesDbApi {
   loadNodes(): Promise<NodeDocument[]>
   loadNodeByAddress(address: string): Promise<NodeDocument | null>
   loadNodeByPublicKey(publicKey: string): Promise<NodeDocument | null>
+  loadNodeByWgPublicKey(wgPublicKey: string): Promise<NodeDocument | null>
   enrollNode(
-    fields: Pick<NodeDocument, 'label' | 'address' | 'publicKey' | 'tokenHash'>
+    fields: Pick<NodeDocument, 'label' | 'address' | 'publicKey' | 'tokenHash'> &
+      {wgPublicKey?: string}
   ): Promise<NodeDocument>
   revokeNode(label: string): Promise<boolean>
   deleteNode(label: string): Promise<boolean>
   touchNode(label: string, intervalMs: number): Promise<void>
   loadNodeKeys(): Promise<NodeKeys>
+  loadWireguardPeers(): Promise<WireguardPeer[]>
   loadRelayDevices(): Promise<RelayDevice[]>
   loadNodeDevices(label: string): Promise<NodeDevice[]>
   rejectDeviceRegistration(serial: string, claim: string | null): Promise<r.WriteResult>
@@ -117,9 +129,27 @@ export function isBoundTo(
     node.generation === device.nodeGeneration)
 }
 
+// wireguardPeers <nodes>: the peers of the head, the active nodes with a WireGuard key: a revoked
+// node is left out, so the head drops it at once
+export function wireguardPeers(nodes: NodeDocument[]): WireguardPeer[] {
+  return nodes
+    .filter(function(node) {
+      return node.status === 'active' && typeof node.wgPublicKey === 'string' &&
+        Boolean(node.wgPublicKey)
+    })
+    .map(function(node) {
+      return {label: node.label, publicKey: node.wgPublicKey!, address: node.address}
+    })
+}
+
 // The last <count> items of an array expression
 function lastOf(array: r.Expression<unknown[]>, count: number) {
   return (array as unknown as {slice(start: number): r.Expression<unknown[]>}).slice(-count)
+}
+
+// The document without the field (r.Expression has no typing of without)
+function withoutField(row: NodeRow, field: string): NodeRow {
+  return (row as unknown as {without(name: string): NodeRow}).without(field)
 }
 
 function toArray<T>(cursor: unknown): Promise<T[]> {
@@ -204,15 +234,30 @@ export default function extendNodesDbApi(dbapi: DbApi, db: Db) {
       })
   }
 
+  // The node of a WireGuard key (case-sensitive base64)
+  dbapi.loadNodeByWgPublicKey = function(wgPublicKey) {
+    return db.run(r.table('nodes').filter(function(node) {
+      return node('wgPublicKey').default(null).eq(wgPublicKey)
+    }))
+      .then(function(cursor) {
+        return toArray<NodeDocument>(cursor)
+      })
+      .then(function(nodes) {
+        return nodes[0] || null
+      })
+  }
+
   // Creates the node, or replaces the key, the token and the address of an existing one
-  // (re-enrollment, rotation): the old token and key stop working at once
+  // (re-enrollment, rotation): the old token and key stop working at once. The WireGuard key is
+  // replaced too: a re-enrollment without one (the tunnel is off) removes it
   dbapi.enrollNode = function(fields) {
     var publicKey = fields.publicKey.toLowerCase()
     var address = fields.address.toLowerCase()
+    var wireguard = fields.wgPublicKey ? {wgPublicKey: fields.wgPublicKey} : {}
     return db.run(r.table('nodes').get<NodeDocument>(fields.label).replace(function(old: NodeRow) {
       return r.branch(
         old.eq(null)
-      , {
+      , Object.assign({
           label: fields.label
         , address: address
         , publicKey: publicKey
@@ -223,8 +268,8 @@ export default function extendNodesDbApi(dbapi: DbApi, db: Db) {
         , lastSeenAt: null
         , generation: 1
         , retiredKeys: []
-        }
-      , old.merge({
+        }, wireguard)
+      , withoutField(old, 'wgPublicKey').merge(Object.assign({
           address: address
         , publicKey: publicKey
         , tokenHash: fields.tokenHash
@@ -236,7 +281,7 @@ export default function extendNodesDbApi(dbapi: DbApi, db: Db) {
             .filter(function(key: r.Expression<string>) {
               return key.ne(publicKey)
             }), RETIRED_KEYS)
-        })
+        }, wireguard))
       )
     }, {returnChanges: 'always'} as unknown as r.UpdateOptions))
       .then(function(stats) {
@@ -317,6 +362,10 @@ export default function extendNodesDbApi(dbapi: DbApi, db: Db) {
       })
       return {allowed: allowed, denied: Array.from(new Set(denied))}
     })
+  }
+
+  dbapi.loadWireguardPeers = function() {
+    return dbapi.loadNodes().then(wireguardPeers)
   }
 
   // Every Android device bound to an active node, present or not (the relay stays static: the node

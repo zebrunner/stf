@@ -41,6 +41,10 @@ function key() {
   return crypto.randomBytes(32).toString('hex')
 }
 
+function wgKey() {
+  return crypto.randomBytes(32).toString('base64')
+}
+
 (address ? describe : describe.skip)('zebrunner: nodes with RethinkDB', function() {
   this.timeout(30000)
 
@@ -171,6 +175,64 @@ function key() {
       expect(node.generation).to.equal(3)
       expect(node.retiredKeys).to.eql([second])
       expect(await dbapi.loadNodeKeys()).to.eql({allowed: [first], denied: [second]})
+    })
+
+    it('should keep the WireGuard key of a node, replaced on re-enrollment', async function() {
+      var first = 'xTIBA5rboUvnH4htodjb6e697QjLERt1NAB4mZqp8Dg='
+      var node = await dbapi.enrollNode({
+        label: 'node-1', address: '10.234.0.2', publicKey: key(), tokenHash: 'a'.repeat(64)
+      , wgPublicKey: first
+      })
+      expect(node.wgPublicKey).to.equal(first)
+      expect((await dbapi.loadNodeByWgPublicKey(first))!.label).to.equal('node-1')
+      // base64 is case-sensitive
+      expect(await dbapi.loadNodeByWgPublicKey(first.toLowerCase())).to.equal(null)
+
+      var second = wgKey()
+      node = await dbapi.enrollNode({
+        label: 'node-1', address: '10.234.0.2', publicKey: key(), tokenHash: 'b'.repeat(64)
+      , wgPublicKey: second
+      })
+      expect(node).to.include({wgPublicKey: second, generation: 2})
+      expect(await dbapi.loadNodeByWgPublicKey(first)).to.equal(null)
+
+      // a re-enrollment without the tunnel removes it
+      node = await dbapi.enrollNode({
+        label: 'node-1', address: '10.234.0.2', publicKey: key(), tokenHash: 'c'.repeat(64)
+      })
+      expect(node).to.not.have.property('wgPublicKey')
+      expect(node.generation).to.equal(3)
+      expect(await dbapi.loadNodeByWgPublicKey(second)).to.equal(null)
+
+      // and a node enrolled without it has none
+      node = await dbapi.enrollNode({
+        label: 'node-2', address: '10.0.0.7', publicKey: key(), tokenHash: 'd'.repeat(64)
+      })
+      expect(node).to.not.have.property('wgPublicKey')
+    })
+
+    it('should give the active nodes with a WireGuard key as peers', async function() {
+      var keys: [string, string, string] = [wgKey(), wgKey(), wgKey()]
+      await dbapi.enrollNode({
+        label: 'node-b', address: '10.234.0.3', publicKey: key(), tokenHash: 'a'.repeat(64)
+      , wgPublicKey: keys[1]
+      })
+      await dbapi.enrollNode({
+        label: 'node-a', address: '10.234.0.2', publicKey: key(), tokenHash: 'b'.repeat(64)
+      , wgPublicKey: keys[0]
+      })
+      await dbapi.enrollNode({
+        label: 'node-c', address: '10.234.0.4', publicKey: key(), tokenHash: 'c'.repeat(64)
+      , wgPublicKey: keys[2]
+      })
+      await dbapi.enrollNode({
+        label: 'node-d', address: '10.0.0.5', publicKey: key(), tokenHash: 'd'.repeat(64)
+      })
+      await dbapi.revokeNode('node-c')
+      expect(await dbapi.loadWireguardPeers()).to.eql([
+        {label: 'node-a', publicKey: keys[0], address: '10.234.0.2'}
+      , {label: 'node-b', publicKey: keys[1], address: '10.234.0.3'}
+      ])
     })
 
     it('should revoke a node: no invites, no bound devices, its key refused', async function() {
@@ -339,8 +401,73 @@ function key() {
     })
   })
 
-  // the stf api command in a process of its own: the swagger runner of the unit requires its
-  // controllers and security handlers, which the other tests of this process load with mocks
+  // startApi <args> <onOutput>: the stf api command in a process of its own, with the arguments
+  // added: the swagger runner of the unit requires its controllers and security handlers, which
+  // the other tests of this process load with mocks
+  async function startApi(args: string[], onOutput: (chunk: string) => void) {
+    var port = await freePort()
+    var env: Record<string, string> = {}
+    Object.entries(process.env).forEach(function([name, value]) {
+      if (!/^(STF_|RETHINKDB_|SECRET$)/.test(name) && typeof value === 'string') {
+        env[name] = value
+      }
+    })
+    Object.assign(env, {
+      RETHINKDB_PORT_28015_TCP: address!
+    , RETHINKDB_ENV_DATABASE: database
+    , SECRET: SECRET
+    , STF_STORAGE_TOKEN: INTERNAL
+    , STF_URL: 'https://mcloud.example.com'
+    , STF_ZMQ_CURVE_SERVER_PUBLIC_KEY: 'f'.repeat(64)
+    , STF_ZMQ_CURVE_SECRET_KEY: zmqcurve.generateKeyPair().secretKey
+    })
+    var output = ''
+    var started = spawn(process.execPath, [
+      fileURLToPath(new URL('../../../lib/cli/index.js', import.meta.url))
+    , 'api'
+    , '--port', String(port)
+    , '--connect-push', 'tcp://127.0.0.1:1', '--connect-sub', 'tcp://127.0.0.1:1'
+    , '--connect-push-dev', 'tcp://127.0.0.1:1', '--connect-sub-dev', 'tcp://127.0.0.1:1'
+    , '--nodes-connect-sub', 'tcp://10.0.0.1:7250'
+    , '--nodes-connect-push', 'tcp://10.0.0.1:7270'
+    , '--nodes-connect-app-dealer', 'tcp://10.0.0.1:7160'
+    , '--nodes-connect-dev-dealer', 'tcp://10.0.0.1:7260'
+    ].concat(args), {env: env, stdio: ['ignore', 'pipe', 'pipe']})
+    started.stdout!.on('data', function(chunk) {
+      output += chunk
+      onOutput(String(chunk))
+    })
+    started.stderr!.on('data', function(chunk) {
+      output += chunk
+      onOutput(String(chunk))
+    })
+    var origin = `http://127.0.0.1:${port}`
+    // swagger registers its routes once it read the file
+    for (var i = 0; i < 100; i++) {
+      var res = await fetch(origin + '/api/v1/nodes').catch(function() {
+        return null
+      })
+      if (res && res.status !== 404) {
+        return {origin: origin, child: started}
+      }
+      await new Promise(function(resolve) {
+        setTimeout(resolve, 100)
+      })
+    }
+    started.kill('SIGKILL')
+    throw new Error('The API unit did not start:\n' + output)
+  }
+
+  async function stopApi(started: ChildProcess | undefined) {
+    if (started && started.exitCode === null) {
+      var exited = new Promise(function(resolve) {
+        started.once('exit', resolve)
+      })
+      started.kill('SIGKILL')
+      await exited
+    }
+  }
+
   describe('API unit', function() {
     var api: {origin: string}
      , child: ChildProcess
@@ -350,63 +477,15 @@ function key() {
     var secrets = new Set<string>()
 
     before(async function() {
-      var port = await freePort()
-      var env: Record<string, string> = {}
-      Object.entries(process.env).forEach(function([name, value]) {
-        if (!/^(STF_|RETHINKDB_|SECRET$)/.test(name) && typeof value === 'string') {
-          env[name] = value
-        }
-      })
-      Object.assign(env, {
-        RETHINKDB_PORT_28015_TCP: address!
-      , RETHINKDB_ENV_DATABASE: database
-      , SECRET: SECRET
-      , STF_STORAGE_TOKEN: INTERNAL
-      , STF_URL: 'https://mcloud.example.com'
-      , STF_ZMQ_CURVE_SERVER_PUBLIC_KEY: 'f'.repeat(64)
-      , STF_ZMQ_CURVE_SECRET_KEY: zmqcurve.generateKeyPair().secretKey
-      })
-      child = spawn(process.execPath, [
-        fileURLToPath(new URL('../../../lib/cli/index.js', import.meta.url))
-      , 'api'
-      , '--port', String(port)
-      , '--connect-push', 'tcp://127.0.0.1:1', '--connect-sub', 'tcp://127.0.0.1:1'
-      , '--connect-push-dev', 'tcp://127.0.0.1:1', '--connect-sub-dev', 'tcp://127.0.0.1:1'
-      , '--nodes-connect-sub', 'tcp://10.0.0.1:7250'
-      , '--nodes-connect-push', 'tcp://10.0.0.1:7270'
-      , '--nodes-connect-app-dealer', 'tcp://10.0.0.1:7160'
-      , '--nodes-connect-dev-dealer', 'tcp://10.0.0.1:7260'
-      ], {env: env, stdio: ['ignore', 'pipe', 'pipe']})
-      child.stdout!.on('data', function(chunk) {
+      var started = await startApi([], function(chunk) {
         output += chunk
       })
-      child.stderr!.on('data', function(chunk) {
-        output += chunk
-      })
-      api = {origin: `http://127.0.0.1:${port}`}
-      // swagger registers its routes once it read the file
-      for (var i = 0; i < 100; i++) {
-        var res = await fetch(api.origin + '/api/v1/nodes').catch(function() {
-          return null
-        })
-        if (res && res.status !== 404) {
-          return
-        }
-        await new Promise(function(resolve) {
-          setTimeout(resolve, 100)
-        })
-      }
-      throw new Error('The API unit did not start:\n' + output)
+      api = started
+      child = started.child
     })
 
     after(async function() {
-      if (child && child.exitCode === null) {
-        var exited = new Promise(function(resolve) {
-          child.once('exit', resolve)
-        })
-        child.kill('SIGKILL')
-        await exited
-      }
+      await stopApi(child)
     })
 
     beforeEach(async function() {
@@ -591,8 +670,10 @@ function key() {
       , revokedAt: null
       })
       expect(list.nodes[0]).to.have.all.keys(
-        'label', 'address', 'publicKey', 'status', 'createdAt', 'revokedAt', 'lastSeenAt'
+        'label', 'address', 'publicKey', 'wgPublicKey', 'wireguard', 'status', 'createdAt'
+      , 'revokedAt', 'lastSeenAt'
       )
+      expect(list.nodes[0]).to.include({wgPublicKey: null, wireguard: false})
       expect((list.nodes[0] as {lastSeenAt: string}).lastSeenAt).to.be.a('string')
 
       expect(await (await call('GET', '/nodes/relay', {as: ADMIN})).json()).to.eql({
@@ -707,6 +788,23 @@ function key() {
       })).status).to.equal(400)
     })
 
+    it('should ignore a WireGuard key without the tunnel', async function() {
+      var created = await (await call('POST', '/nodes/invites', {
+        as: ADMIN
+      , body: {label: 'node-1', address: 'node-1.lan'}
+      })).json() as {invite: string}
+      var res = await call('POST', '/nodes/enroll', {
+        body: {invite: created.invite, label: 'node-1', publicKey: key(), wgPublicKey: wgKey()}
+      })
+      expect(res.status).to.equal(200)
+      expect(await res.json()).to.not.have.property('wireguard')
+      expect(await dbapi.loadNode('node-1')).to.not.have.property('wgPublicKey')
+      expect(await (await call('GET', '/zebrunner/nodes/wireguard', {
+        headers: {'x-stf-internal-token': INTERNAL}
+      })).json()).to.eql({peers: []})
+      expect((await call('GET', '/zebrunner/nodes/wireguard')).status).to.equal(403)
+    })
+
     it('should not have logged an invite or a node token', async function() {
       await new Promise(function(resolve) {
         setTimeout(resolve, 200)
@@ -715,6 +813,117 @@ function key() {
       expect(output).to.include('enrolled')
       secrets.forEach(function(secret) {
         expect(output).to.not.include(secret.startsWith('mcn1.') ? secret.split('.')[2] : secret)
+      })
+    })
+
+    describe('with the WireGuard tunnel', function() {
+      var HEAD_KEY = wgKey()
+      var plain: {origin: string}
+       , tunnel: ChildProcess | undefined
+      var tunnelOutput = ''
+
+      before(async function() {
+        plain = api
+        var started = await startApi([
+          '--nodes-wg-endpoint', 'mcloud.example.com:51820'
+        , '--nodes-wg-public-key', HEAD_KEY
+        , '--nodes-wg-server-address', '10.234.0.1'
+        , '--nodes-wg-network', '10.234.0.0/24'
+        ], function(chunk) {
+          tunnelOutput += chunk
+        })
+        tunnel = started.child
+        api = started
+      })
+
+      after(async function() {
+        api = plain
+        await stopApi(tunnel)
+      })
+
+      async function wgInvite(label: string, nodeAddress: string) {
+        var res = await call('POST', '/nodes/invites', {
+          as: ADMIN
+        , body: {label: label, address: nodeAddress}
+        })
+        return {status: res.status, body: await res.json() as {invite: string}}
+      }
+
+      it('should enroll a node with its WireGuard key and make it a peer', async function() {
+        var nodeKey = wgKey()
+        var created = await wgInvite('node-1', '10.234.0.2')
+        expect(created.status).to.equal(201)
+        var res = await call('POST', '/nodes/enroll', {
+          body: {
+            invite: created.body.invite, label: 'node-1', publicKey: key(), wgPublicKey: nodeKey
+          }
+        })
+        expect(res.status).to.equal(200)
+        var body = await res.json() as {nodeToken: string, wireguard: object}
+        expect(body).to.include({label: 'node-1', address: '10.234.0.2'})
+        expect(body.wireguard).to.eql({
+          endpoint: 'mcloud.example.com:51820'
+        , publicKey: HEAD_KEY
+        , serverAddress: '10.234.0.1'
+        , address: '10.234.0.2'
+        , network: '10.234.0.0/24'
+        , persistentKeepalive: 25
+        })
+        var list = await (await call('GET', '/nodes', {as: ADMIN})).json() as {nodes: object[]}
+        expect(list.nodes[0]).to.include({
+          label: 'node-1', address: '10.234.0.2', wgPublicKey: nodeKey, wireguard: true
+        , status: 'active'
+        })
+        var internal = {headers: {'x-stf-internal-token': INTERNAL}}
+        expect(await (await call('GET', '/zebrunner/nodes/wireguard', internal)).json()).to.eql({
+          peers: [{label: 'node-1', publicKey: nodeKey, address: '10.234.0.2'}]
+        })
+        expect((await call('GET', '/zebrunner/nodes/wireguard', {
+          headers: {'x-stf-internal-token': body.nodeToken}
+        })).status).to.equal(403)
+
+        // the key of node-1 is refused to another node, the invite stays unused
+        var other = await wgInvite('node-2', '10.234.0.3')
+        var refused = await call('POST', '/nodes/enroll', {
+          body: {invite: other.body.invite, label: 'node-2', publicKey: key(), wgPublicKey: nodeKey}
+        })
+        expect(refused.status).to.equal(403)
+        expect(await refused.json()).to.eql({success: false})
+        // a node without a WireGuard key (an old mcloud-agent) too
+        expect((await call('POST', '/nodes/enroll', {
+          body: {invite: other.body.invite, label: 'node-2', publicKey: key()}
+        })).status).to.equal(403)
+        expect((await call('POST', '/nodes/enroll', {
+          body: {invite: other.body.invite, label: 'node-2', publicKey: key(), wgPublicKey: wgKey()}
+        })).status).to.equal(200)
+
+        // a revoked node is no peer any more
+        expect((await call('POST', '/nodes/node-1/revoke', {as: ADMIN})).status).to.equal(200)
+        var peers = await (await call('GET', '/zebrunner/nodes/wireguard', internal)).json() as
+          {peers: Array<{label: string}>}
+        expect(peers.peers.map(function(peer) {
+          return peer.label
+        })).to.eql(['node-2'])
+      })
+
+      it('should invite at the addresses of the network of the tunnel only', async function() {
+        expect((await wgInvite('node-1', '10.0.0.5')).status).to.equal(400)
+        expect((await wgInvite('node-1', 'node-1.lan')).status).to.equal(400)
+        expect((await wgInvite('node-1', '10.234.0.1')).status).to.equal(400)
+        expect((await wgInvite('node-1', '10.234.0.255')).status).to.equal(400)
+        expect((await wgInvite('node-1', '10.234.0.9')).status).to.equal(201)
+      })
+
+      it('should log why an old node is refused, never a secret', async function() {
+        await new Promise(function(resolve) {
+          setTimeout(resolve, 200)
+        })
+        expect(tunnelOutput).to.include('the head needs WireGuard: update mcloud-agent')
+        expect(tunnelOutput).to.include('the WireGuard key is the key of node "node-1"')
+        secrets.forEach(function(secret) {
+          expect(tunnelOutput)
+            .to.not.include(secret.startsWith('mcn1.') ? secret.split('.')[2] : secret)
+        })
       })
     })
   })

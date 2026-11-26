@@ -5,7 +5,7 @@ import {expect} from 'chai'
 
 import zebrunnerNodes from '../../../lib/util/zebrunner-nodes.js'
 import processorNodes, {type Registration} from '../../../lib/units/processor/zebrunner-nodes.js'
-import type {NodeDocument} from '../../../lib/db/zebrunner-nodes.js'
+import {type NodeDocument, wireguardPeers} from '../../../lib/db/zebrunner-nodes.js'
 
 var TOKEN = zebrunnerNodes.generateNodeToken('node-1')
 
@@ -130,6 +130,130 @@ describe('zebrunner: nodes', function() {
       expect(zebrunnerNodes.normalizeAddress('169.254.169.254', loopback)).to.equal(null)
       expect(zebrunnerNodes.normalizeAddress('metadata', loopback)).to.equal(null)
       expect(zebrunnerNodes.normalizeAddress('223.255.255.255')).to.equal('223.255.255.255')
+    })
+  })
+
+  describe('WireGuard tunnel', function() {
+    var KEY = Buffer.alloc(32, 7).toString('base64')
+    var OPTIONS = {
+      endpoint: 'MCloud.example.com:51820'
+    , publicKey: KEY
+    , serverAddress: '10.234.0.1'
+    , network: '10.234.0.0/24'
+    }
+
+    it('should take the WireGuard keys of `wg pubkey` only', function() {
+      expect(zebrunnerNodes.isWgPublicKey(KEY)).to.equal(true)
+      expect(zebrunnerNodes.isWgPublicKey('xTIBA5rboUvnH4htodjb6e697QjLERt1NAB4mZqp8Dg='))
+        .to.equal(true)
+      ;[
+        '', KEY.slice(0, -1), KEY + '=', KEY.slice(1), Buffer.alloc(31).toString('base64')
+      , Buffer.alloc(33).toString('base64'), Buffer.alloc(32).toString('base64url')
+      , 'xTIBA5rboUvnH4htodjb6e697QjLERt1NAB4mZqp8Dh=', 'a'.repeat(64), null, 5
+      ].forEach(function(value) {
+        expect(zebrunnerNodes.isWgPublicKey(value), String(value)).to.equal(false)
+      })
+    })
+
+    it('should read IPv4 networks without host bits', function() {
+      expect(zebrunnerNodes.parseCidr('10.234.0.0/24'))
+        .to.eql({network: 0x0aea0000, prefix: 24, cidr: '10.234.0.0/24'})
+      expect(zebrunnerNodes.parseCidr('0.0.0.0/0')).to.include({network: 0, prefix: 0})
+      expect(zebrunnerNodes.parseCidr('255.255.255.255/32')).to.include({network: 0xffffffff})
+      ;[
+        '10.234.0.1/24', '10.234.0.0', '10.234.0.0/33', '10.234.0.0/024', '10.234.0/24'
+      , '010.234.0.0/24', '10.234.0.256/24', ' 10.234.0.0/24', 'fd00::/64', '', null
+      ].forEach(function(value) {
+        expect(zebrunnerNodes.parseCidr(value), String(value)).to.equal(null)
+      })
+    })
+
+    it('should tell the addresses in a network and its hosts', function() {
+      expect(zebrunnerNodes.inCidr('10.234.0.7', '10.234.0.0/24')).to.equal(true)
+      expect(zebrunnerNodes.inCidr('10.234.0.0', '10.234.0.0/24')).to.equal(true)
+      expect(zebrunnerNodes.inCidr('10.234.1.7', '10.234.0.0/24')).to.equal(false)
+      expect(zebrunnerNodes.inCidr('10.233.0.7', '10.233.0.0/16')).to.equal(true)
+      expect(zebrunnerNodes.inCidr('200.1.2.3', '128.0.0.0/1')).to.equal(true)
+      expect(zebrunnerNodes.inCidr('127.1.2.3', '128.0.0.0/1')).to.equal(false)
+      expect(zebrunnerNodes.inCidr('node.lan', '10.234.0.0/24')).to.equal(false)
+      expect(zebrunnerNodes.inCidr('10.234.0.7', 'bad')).to.equal(false)
+      expect(zebrunnerNodes.isHostOf('10.234.0.1', '10.234.0.0/24')).to.equal(true)
+      expect(zebrunnerNodes.isHostOf('10.234.0.254', '10.234.0.0/24')).to.equal(true)
+      expect(zebrunnerNodes.isHostOf('10.234.0.0', '10.234.0.0/24')).to.equal(false)
+      expect(zebrunnerNodes.isHostOf('10.234.0.255', '10.234.0.0/24')).to.equal(false)
+      expect(zebrunnerNodes.isHostOf('10.234.0.1', '10.234.0.0/31')).to.equal(true)
+    })
+
+    it('should be off without any of the options', function() {
+      expect(zebrunnerNodes.wireguardSettings(null)).to.eql({settings: null, error: null})
+      expect(zebrunnerNodes.wireguardSettings({})).to.eql({settings: null, error: null})
+      expect(zebrunnerNodes.wireguardSettings({endpoint: '', publicKey: null}))
+        .to.eql({settings: null, error: null})
+    })
+
+    it('should take all the options of the tunnel', function() {
+      expect(zebrunnerNodes.wireguardSettings(OPTIONS)).to.eql({
+        settings: {
+          endpoint: 'mcloud.example.com:51820'
+        , publicKey: KEY
+        , serverAddress: '10.234.0.1'
+        , network: '10.234.0.0/24'
+        }
+      , error: null
+      })
+      ;['203.0.113.7:51820', '[2001:db8::1]:51820', 'localhost:1'].forEach(function(endpoint) {
+        var options = Object.assign({}, OPTIONS, {endpoint: endpoint})
+        expect(zebrunnerNodes.wireguardSettings(options).error, endpoint).to.equal(null)
+      })
+    })
+
+    it('should refuse a part of the options, naming the missing ones', function() {
+      var result = zebrunnerNodes.wireguardSettings({endpoint: OPTIONS.endpoint, publicKey: KEY})
+      expect(result.settings).to.equal(null)
+      expect(result.error).to.include('missing: --nodes-wg-server-address, --nodes-wg-network')
+    })
+
+    var invalid: Array<[string, object, string]> = [
+      ['an endpoint without a port', {endpoint: 'mcloud.example.com'}, '--nodes-wg-endpoint']
+    , ['an endpoint with port 0', {endpoint: 'mcloud.example.com:0'}, '--nodes-wg-endpoint']
+    , ['an endpoint URL', {endpoint: 'udp://mcloud.example.com:51820'}, '--nodes-wg-endpoint']
+    , ['a key in hex', {publicKey: 'a'.repeat(64)}, '--nodes-wg-public-key']
+    , ['a network with host bits', {network: '10.234.0.1/24'}, '--nodes-wg-network']
+    , ['a network of one address', {network: '10.234.0.1/32'}, '--nodes-wg-network']
+    , ['a network too large', {network: '10.0.0.0/7'}, '--nodes-wg-network']
+    , ['a head outside the network', {serverAddress: '10.234.1.1'}, '--nodes-wg-server-address']
+    , ['a head at the network address', {serverAddress: '10.234.0.0'}, '--nodes-wg-server-address']
+    , ['a head that is a host name', {serverAddress: 'head.lan'}, '--nodes-wg-server-address']
+    ]
+
+    invalid.forEach(function([what, fields, option]) {
+      it(`should refuse ${what}`, function() {
+        var result = zebrunnerNodes.wireguardSettings(Object.assign({}, OPTIONS, fields))
+        expect(result.settings).to.equal(null)
+        expect(result.error).to.include(option)
+        Object.values(fields).forEach(function(value) {
+          expect(result.error).to.not.include(value)
+        })
+      })
+    })
+
+    it('should give the nodes the hosts of the network but the head', function() {
+      var settings = zebrunnerNodes.wireguardSettings(OPTIONS).settings!
+      expect(zebrunnerNodes.isWgNodeAddress('10.234.0.2', settings)).to.equal(true)
+      ;['10.234.0.1', '10.234.0.0', '10.234.0.255', '10.0.0.5', 'node.lan', null]
+        .forEach(function(address) {
+          expect(zebrunnerNodes.isWgNodeAddress(address, settings), String(address))
+            .to.equal(false)
+        })
+    })
+
+    it('should give the head the active nodes with a WireGuard key as its peers', function() {
+      expect(wireguardPeers([
+        node({label: 'a', address: '10.234.0.2', wgPublicKey: KEY})
+      , node({label: 'b', address: '10.234.0.3', wgPublicKey: KEY, status: 'revoked'})
+      , node({label: 'c', address: '10.234.0.4'})
+      , node({label: 'd', address: '10.234.0.5', wgPublicKey: null})
+      ])).to.eql([{label: 'a', publicKey: KEY, address: '10.234.0.2'}])
     })
   })
 

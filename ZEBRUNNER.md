@@ -16,7 +16,7 @@ The image `public.ecr.aws/zebrunner/stf` runs the STF units of [mcloud](https://
 | `stf token-add`: the access token of the admin without a sign-in, for the setup of mcloud, see [Access token of the admin](#access-token-of-the-admin) | `lib/cli/token-add/` |
 | Authentication of the storage routes and SSRF protection of downloads | `lib/util/storageauth.ts`, `lib/util/urlsafety.ts` |
 | The authorization of the grid of mcloud: stf-proxy lets a request of the hub, the console or the admin routes of the grid in for the user of an access token (or of the session cookie for the console), see [Grid authentication](#grid-authentication) | `lib/units/api/controllers/zebrunner-hub-auth.ts` |
-| Enrolled device hosts ("nodes"): one-time invites, per-node tokens, revocation, the CURVE keys of the nodes in the ZAP handler of the triproxies, node tokens in the storage, the node binding of the devices, the screen authorization of stf-proxy and the devices of the adb relay, see [Nodes (enrollment)](#nodes-enrollment) | `lib/util/zebrunner-nodes*.ts`, `lib/db/zebrunner-nodes.ts`, `lib/units/api/controllers/zebrunner-nodes.ts`, `lib/units/processor/zebrunner-nodes.ts` |
+| Enrolled device hosts ("nodes"): one-time invites, per-node tokens, revocation, the CURVE keys of the nodes in the ZAP handler of the triproxies, node tokens in the storage, the node binding of the devices, the screen authorization of stf-proxy, the devices of the adb relay and the opt-in WireGuard tunnel of the nodes (their addresses, keys and the peers of the head), see [Nodes (enrollment)](#nodes-enrollment) | `lib/util/zebrunner-nodes*.ts`, `lib/db/zebrunner-nodes.ts`, `lib/units/api/controllers/zebrunner-nodes.ts`, `lib/units/processor/zebrunner-nodes.ts` |
 | One provider per device container: fixed VNC port, fixed connect port (`STF_PROVIDER_CONNECT_PORT`), `UNHEALTHY` and exit when the device cannot be provided or the processor does not ack its registration, see [ZeroMQ](#zeromq) | `lib/cli/provider/`, `lib/units/provider/` |
 | `.ipa` manifests (Info.plist) in the apk storage plugin | `lib/units/storage/plugins/apk/task/` |
 | The WebSocket sends the commands of a user (input, shell, install, remote ADB, files, ...) to the devices the user uses only (an admin: to any device), the invitations to the devices of the groups of the user, and subscribes the client to the channels of its transactions only: the channel of a device is `base64(sha1(serial))`, so any user controlled any device. A released device gets no command later than 2 s after it | `lib/units/websocket/zebrunner-channels.ts`, `lib/db/zebrunner.ts` |
@@ -122,6 +122,7 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 | `STF_NODES_API_URL` | | Base URL of the API unit (`http://stf-api:3000` in mcloud) for the triproxies and the storage units: the triproxies read the CURVE keys of the enrolled nodes from it, the storage units check node tokens with it. Needs `STF_STORAGE_TOKEN` |
 | `STF_NODE_TOKEN` | | The node token of the enrolled node (`mcn1.<label>.<secret>`) for its device containers, required: the provider and the `ios-device` unit prove the registration of their devices with it and send it to the storage (`x-stf-internal-token`) |
 | `STF_API_NODES_STF_URL`, `STF_API_NODES_CONNECT_SUB`, `STF_API_NODES_CONNECT_PUSH`, `STF_API_NODES_CONNECT_APP_DEALER`, `STF_API_NODES_CONNECT_DEV_DEALER` | `STF_URL` (the URL) | `--nodes-stf-url`, `--nodes-connect-*` of the API unit: what `POST /api/v1/nodes/enroll` gives a node, the public URL of STF and the triproxy endpoints the nodes reach (`tcp://<AGENTS_ADDRESS>:7250`, `:7270`, `:7160`, `:7260` in mcloud; a node uses the first two only, the triproxies refuse the keys of the nodes on the dealers). Without them the invites and enrollments fail (logged) |
+| `STF_API_NODES_WG_ENDPOINT`, `STF_API_NODES_WG_PUBLIC_KEY`, `STF_API_NODES_WG_SERVER_ADDRESS`, `STF_API_NODES_WG_NETWORK` | | `--nodes-wg-endpoint` (`<host>:<port>`, the public UDP endpoint of the head), `--nodes-wg-public-key` (the WireGuard public key of the head), `--nodes-wg-server-address` (the WireGuard address of the head, a host of the network) and `--nodes-wg-network` (IPv4 CIDR, /8 to /30, e.g. `10.234.0.0/24`) of the API unit: the opt-in WireGuard tunnel of the nodes, see [WireGuard tunnel](#wireguard-tunnel). All of them or none: without them the tunnel is off and nothing changes, a part of them or an invalid one stops the unit at the start |
 | `STF_STORAGE_TEMP_DOWNLOAD_ALLOW` | | Private network (CIDR or address) users may install apps from by URL, e.g. an artifact server; `--download-allow` can be repeated |
 | `STF_FORWARD_ALLOW` | | Device units (provider): the networks (CIDR or address, separated by commas or spaces) the port forwards of the users may reach besides the public addresses, e.g. the LAN of the users. Without it a forward to a private, loopback, link-local or metadata address (checked again when connecting, also for host names) fails: a user cannot reach the services, the docker networks or the LAN of the node through it |
 | `SSID` | `ssid` | Name of the session cookie of the app unit |
@@ -243,10 +244,12 @@ is accepted there). It takes the token from `STF_NODE_TOKEN`, or prints a new on
 | label | `^[a-z0-9][a-z0-9-]{0,39}$`, unique; `enroll`, `invites`, `relay`, `self` and `verify` are reserved (static paths of `/api/v1/nodes`) | `nodes.label` (primary key) |
 | node token | `mcn1.<label>.<secret>`, 32 random bytes in base64url, shown once | `sha256(token)` hex only (`nodes.tokenHash`) |
 | invite | `mci1.<secret>`, 32 random bytes in base64url, shown once; 60 minutes by default, at most 1440; single use; bound to the label and the address; a new invite of a label invalidates the unused ones of the label | `sha256(invite)` hex only (`node_invites.hash`) |
-| address | an IPv4 address or a host name, lower case; no scheme, port, path or IPv6; not loopback (`127/8`, `localhost`), `0/8`, link-local or metadata (`169.254/16`, `metadata.google.internal`, ...), multicast or reserved (`224/3`); unique among the nodes | `nodes.address` |
+| address | an IPv4 address or a host name, lower case; no scheme, port, path or IPv6; not loopback (`127/8`, `localhost`), `0/8`, link-local or metadata (`169.254/16`, `metadata.google.internal`, ...), multicast or reserved (`224/3`); unique among the nodes. With the [WireGuard tunnel](#wireguard-tunnel): an IPv4 address of a host of its network, not the head | `nodes.address` |
+| WireGuard key | only with the [WireGuard tunnel](#wireguard-tunnel): the public key of the node, base64 of 32 bytes (`wg pubkey`), `^[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=$`; unique among the nodes; public | `nodes.wgPublicKey` |
 
 The tables are `nodes` {label, address, publicKey, tokenHash, status (`active`, `revoked`), createdAt, revokedAt,
-lastSeenAt, generation (+1 on every re-enrollment), retiredKeys (the keys of the previous enrollments)} and
+lastSeenAt, generation (+1 on every re-enrollment), retiredKeys (the keys of the previous enrollments), wgPublicKey (only
+with the WireGuard tunnel)} and
 `node_invites` {hash, label, address, expiresAt, usedAt, createdBy, createdAt}, created by `stf migrate`
 (`lib/db/tables.ts`); a device document gets `node`, `nodeGeneration` and `nodeClaim` (the node its last registration
 claimed, valid or not, for the diagnostics).
@@ -261,8 +264,8 @@ security handler answers 401 without credentials and 403 to a user.
 | Route | Who | Request | Answer |
 | --- | --- | --- | --- |
 | `POST /api/v1/nodes/invites` | admin | `{"label": "mac-mini-1", "address": "10.0.0.5", "ttlMinutes": 60}` | 201 `{"invite": "mci1....", "label": "mac-mini-1", "address": "10.0.0.5", "expiresAt": "2026-11-09T18:00:00.000Z"}` |
-| `POST /api/v1/nodes/enroll` | anyone with an invite | `{"invite": "mci1....", "label": "mac-mini-1", "publicKey": "<64 hex>"}` | 200 `{"nodeToken": "mcn1.mac-mini-1....", "label": "mac-mini-1", "address": "10.0.0.5", "serverPublicKey": "<64 hex>", "stfUrl": "https://mcloud.example.com", "endpoints": {"sub": "tcp://10.0.0.1:7250", "push": "tcp://10.0.0.1:7270", "appDealer": "tcp://10.0.0.1:7160", "devDealer": "tcp://10.0.0.1:7260"}}` |
-| `GET /api/v1/nodes` | admin | | 200 `{"nodes": [{"label", "address", "publicKey", "status", "createdAt", "revokedAt", "lastSeenAt"}]}` |
+| `POST /api/v1/nodes/enroll` | anyone with an invite | `{"invite": "mci1....", "label": "mac-mini-1", "publicKey": "<64 hex>", "wgPublicKey": "<base64>"}` (`wgPublicKey`: [WireGuard tunnel](#wireguard-tunnel)) | 200 `{"nodeToken": "mcn1.mac-mini-1....", "label": "mac-mini-1", "address": "10.0.0.5", "serverPublicKey": "<64 hex>", "stfUrl": "https://mcloud.example.com", "endpoints": {"sub": "tcp://10.0.0.1:7250", "push": "tcp://10.0.0.1:7270", "appDealer": "tcp://10.0.0.1:7160", "devDealer": "tcp://10.0.0.1:7260"}}`, with the WireGuard tunnel also `"wireguard": {...}` |
+| `GET /api/v1/nodes` | admin | | 200 `{"nodes": [{"label", "address", "publicKey", "wgPublicKey", "wireguard", "status", "createdAt", "revokedAt", "lastSeenAt"}]}`; `wgPublicKey` is the WireGuard key of the node or null, `wireguard` whether it has one |
 | `POST /api/v1/nodes/{label}/revoke` | admin | | 200 `{"success": true}`; 400 for an unknown node |
 | `DELETE /api/v1/nodes/{label}` | admin | | 200 `{"success": true}`; 400 for an unknown or active node |
 | `GET /api/v1/nodes/self` | the node (`Authorization: Bearer <node token>`) | | 200 `{"label": "mac-mini-1", "address": "10.0.0.5", "status": "active", "lastSeenAt": "...", "devices": [{"serial": "R58M...", "platform": "Android", "present": true, "bound": true, "screenPort": 7404, "connectPort": 7405}]}`; 401 without a valid node token, 403 for a revoked node (below) |
@@ -271,6 +274,7 @@ security handler answers 401 without credentials and 403 to a user.
 | `GET /api/v1/nodes/relay` | admin (adb relay) | | 200 `{"devices": [{"serial": "R58M...", "label": "mac-mini-1", "address": "10.0.0.5", "connectPort": 7405}]}`: every Android device bound to an active node, present or not (the relay stays static, the node refuses the connections of an absent device); the address is the registered one of the node, never the display URL; the port is the connect port of the device |
 | `GET /api/v1/zebrunner/screen-auth` | the user (session cookie or access token) | header `X-Original-URI: /d/<host>/<serial>/<port>/` | 204 with the screen ticket in `X-MCloud-Screen-Ticket`, or 401 without credentials, 403 otherwise (below) |
 | `GET /api/v1/zebrunner/nodes/keys` | server units (`x-stf-internal-token: <STF_STORAGE_TOKEN>`) | | 200 `{"allowed": [<keys of the active nodes>], "denied": [<keys of the revoked nodes and the retired keys>]}` |
+| `GET /api/v1/zebrunner/nodes/wireguard` | server units (`x-stf-internal-token: <STF_STORAGE_TOKEN>`) | | 200 `{"peers": [{"label": "mac-mini-1", "publicKey": "<WireGuard key of the node>", "address": "10.234.0.2"}]}`: the active nodes with a WireGuard key, the peers of the head ([WireGuard tunnel](#wireguard-tunnel)) |
 | `POST /api/v1/zebrunner/nodes/token` | server units (`x-stf-internal-token: <STF_STORAGE_TOKEN>`) | `{"token": "mcn1...."}` | 200 `{"label": "mac-mini-1"}` for the token of an active node, else 403 |
 
 The enrollment checks the shape of the request first (no database), then looks the invite up by its hash; only the
@@ -280,6 +284,31 @@ unexpired, of the label), so of concurrent enrollments with one invite exactly o
 replaces the address, the key and the token hash and increments the generation: the old token and key stop working at
 once (the old key is kept in `retiredKeys`, refused by the triproxies). The invites and the enrollments of an API unit
 run one at a time, which keeps the address and the key unique: mcloud runs one API unit.
+
+### WireGuard tunnel
+
+Opt-in (`NODES_WIREGUARD=true` of mcloud): the traffic between the head and its nodes (ZeroMQ, the grid, the screens,
+the relay) goes through a WireGuard tunnel, the head and the nodes publish their ports on their WireGuard address only.
+The devices to the MDM, the users to STF and the nodes to `STF_URL` stay on the public network. STF only enrolls the
+nodes into it; mcloud runs the interface of the head (`mcloud`) and mcloud-agent the ones of the nodes. It is on when
+the API unit has the four options `--nodes-wg-*` (`STF_API_NODES_WG_*`, [Configuration](#configuration)); without them
+nothing of this applies and the routes answer as before (`wgPublicKey` of an enrollment is ignored and not stored).
+
+- The address of a node is its WireGuard address: an invite takes only an IPv4 address of a host of
+  `--nodes-wg-network`, neither its network nor broadcast address nor the head (400 otherwise), and the enrollment
+  refuses an older invite of another address (403). mcloud allocates the addresses (`./zebrunner.sh node-invite`),
+  the head is the first host of the network. All the checks of the address (the provider host, the screens, the relay,
+  the grid) stay as they are.
+- The enrollment needs `wgPublicKey` (403, logged `the head needs WireGuard: update mcloud-agent`, without a valid
+  one), unique among the nodes of the other labels (403, like the CURVE key, the invite stays unused). It is stored in
+  `nodes.wgPublicKey`; a re-enrollment replaces it (and one without the tunnel removes it). The answer has, besides the
+  usual fields:
+  `"wireguard": {"endpoint": "mcloud.example.com:51820", "publicKey": "<key of the head>", "serverAddress":
+  "10.234.0.1", "address": "10.234.0.2", "network": "10.234.0.0/24", "persistentKeepalive": 25}`
+  (`address` is the address of the node).
+- The head reads its peers from `GET /api/v1/zebrunner/nodes/wireguard` (internal token, stf-proxy refuses
+  `/api/v1/zebrunner/nodes*` from outside) or from `wgPublicKey` of the admin `GET /api/v1/nodes`: the active nodes
+  with a WireGuard key, `AllowedIPs = <address>/32` each. A revoked node is left out, so the head drops it at once.
 
 ### Device binding
 
@@ -403,7 +432,8 @@ grid (4446) and stf-proxy (`STF_PORT`) on it. The ports of the devices must not 
   it cannot bind devices to another node or address, nor take or clear the binding of a device of another active
   node. The other messages of a device (ready, presence, status, remote connect) carry no proof of the node yet.
 - The LAN traffic to the grid (Appium of the nodes) is plain HTTP: a node token can be sniffed there, but it is bound
-  to the address of its node for the grid, the device binding and the relay.
+  to the address of its node for the grid, the device binding and the relay. The opt-in
+  [WireGuard tunnel](#wireguard-tunnel) encrypts it.
 - The uniqueness of the address and key is kept by the API unit serializing the enrollments: several API units could
   race on two different invites with the same address (one invite is still used once).
 - A processor makes ready only the devices whose last registration it bound, or whose binding the database has: with

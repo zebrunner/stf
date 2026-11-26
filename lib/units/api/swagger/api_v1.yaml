@@ -2433,7 +2433,9 @@ paths:
         Creates a single-use invite of the node of the label at the address (IPv4 address or host name, not loopback,
         link-local, multicast or the address of another node), valid for ttlMinutes (1..1440, 60 by default). It
         invalidates the other unused invites of the label. An invite of the label of an enrolled node re-enrolls it
-        (rotation of its token and key). The invite is shown once
+        (rotation of its token and key). The invite is shown once. With the WireGuard tunnel of the nodes
+        (--nodes-wg-*) the address is the address of the node in the tunnel: an IPv4 address of a host of the
+        network of the tunnel, not the head
       operationId: createNodeInvite
       tags:
         - nodes
@@ -2453,7 +2455,8 @@ paths:
         default:
           description: >
             Unexpected Error:
-              * 400: Bad Request => invalid label, address or ttlMinutes, or the address of another node
+              * 400: Bad Request => invalid label, address or ttlMinutes, the address of another node, or an address
+                outside the WireGuard network of the nodes
               * 401: Unauthorized => bad credentials
               * 403: Forbidden => privileged operation (admin)
               * 500: Internal Server Error
@@ -2467,14 +2470,16 @@ paths:
       summary: Enrolls a node
       description: >
         Enrolls the node of an invite with its CURVE public key and returns its node token (shown once) and what it
-        needs to connect. No authentication: the invite is the credential (stf-proxy rate limits the route)
+        needs to connect. No authentication: the invite is the credential (stf-proxy rate limits the route). With
+        the WireGuard tunnel of the nodes (--nodes-wg-*) the node also gives its WireGuard public key (wgPublicKey,
+        required, unique) and gets the settings of the tunnel (wireguard); without it wgPublicKey is ignored
       operationId: enrollNode
       tags:
         - nodes
       parameters:
         - name: body
           in: body
-          description: "{invite, label, publicKey}"
+          description: "{invite, label, publicKey, wgPublicKey?}"
           required: false
           schema:
             $ref: "#/definitions/NodeEnrollPayload"
@@ -2487,7 +2492,7 @@ paths:
           description: >
             Unexpected Error:
               * 400: Bad Request => malformed request
-              * 403: Forbidden => invalid invite, label or key
+              * 403: Forbidden => invalid invite, label or key, or no valid WireGuard key with the tunnel
               * 500: Internal Server Error
           schema:
             $ref: "#/definitions/NodeErrorResponse"
@@ -2770,6 +2775,35 @@ paths:
           description: The keys
           schema:
             $ref: "#/definitions/NodeKeysResponse"
+        default:
+          description: >
+            Unexpected Error:
+              * 403: Forbidden => not a server unit
+              * 500: Internal Server Error
+          schema:
+            $ref: "#/definitions/NodeErrorResponse"
+  /zebrunner/nodes/wireguard:
+    x-swagger-router-controller: zebrunner-nodes
+    get:
+      summary: Gets the WireGuard peers of the head
+      description: >
+        The active nodes with a WireGuard key (a revoked node is left out), the peers of the WireGuard interface of
+        the head (ZEBRUNNER.md#wireguard-tunnel); only for the server units (x-stf-internal-token with
+        STF_STORAGE_TOKEN)
+      operationId: getNodeWireguard
+      tags:
+        - nodes
+      parameters:
+        - name: x-stf-internal-token
+          in: header
+          description: STF_STORAGE_TOKEN
+          required: false
+          type: string
+      responses:
+        "200":
+          description: The peers
+          schema:
+            $ref: "#/definitions/NodeWireguardResponse"
         default:
           description: >
             Unexpected Error:
@@ -3212,6 +3246,12 @@ definitions:
         type: string
       publicKey:
         type: string
+      wgPublicKey:
+        type: string
+        description: The WireGuard public key of the node, null without the tunnel
+      wireguard:
+        type: boolean
+        description: Whether the node has a WireGuard key
       status:
         type: string
         enum:
@@ -3250,7 +3290,9 @@ definitions:
       expiresAt:
         type: string
   NodeEnrollPayload:
-    description: "invite: mci1.<secret>; label: the label of the invite; publicKey: the CURVE public key, 64 hex"
+    description: >
+      invite: mci1.<secret>; label: the label of the invite; publicKey: the CURVE public key, 64 hex; wgPublicKey:
+      the WireGuard public key, base64 of 32 bytes (required with the WireGuard tunnel, else ignored)
     type: object
   NodeEnrollResponse:
     required:
@@ -3280,6 +3322,33 @@ definitions:
             type: string
           devDealer:
             type: string
+      wireguard:
+        description: The settings of the WireGuard tunnel, only with the tunnel (--nodes-wg-*)
+        required:
+          - endpoint
+          - publicKey
+          - serverAddress
+          - address
+          - network
+          - persistentKeepalive
+        properties:
+          endpoint:
+            type: string
+            description: host:port, the public UDP endpoint of the head
+          publicKey:
+            type: string
+            description: The WireGuard public key of the head
+          serverAddress:
+            type: string
+            description: The WireGuard address of the head
+          address:
+            type: string
+            description: The WireGuard address of the node, its address
+          network:
+            type: string
+            description: The network of the tunnel (CIDR)
+          persistentKeepalive:
+            type: integer
   NodeVerifyPayload:
     description: "token: mcn1.<label>.<secret>; host: the host of the node URL"
     type: object
@@ -3352,6 +3421,26 @@ definitions:
         type: array
         items:
           type: string
+  NodeWireguardResponse:
+    required:
+      - peers
+    properties:
+      peers:
+        type: array
+        items:
+          required:
+            - label
+            - publicKey
+            - address
+          properties:
+            label:
+              type: string
+            publicKey:
+              type: string
+              description: The WireGuard public key of the node
+            address:
+              type: string
+              description: The WireGuard address of the node, its address
   NodeTokenPayload:
     description: "token: mcn1.<label>.<secret>"
     type: object
