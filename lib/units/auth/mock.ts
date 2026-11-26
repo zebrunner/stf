@@ -2,6 +2,7 @@
 * Copyright © 2019-2024 contains code contributed by Orange SA, authors: Denis Barbaron - Licensed under the Apache license 2.0
 **/
 
+import crypto from 'crypto'
 import http from 'http'
 
 import express from 'express'
@@ -14,6 +15,7 @@ var csrf = csurf.default || (csurf as unknown as typeof csurf.default)
 import Promise from 'bluebird'
 import * as basicAuth from 'basic-auth'
 
+import apiutil from '../../util/apiutil.js'
 import logger from '../../util/logger.js'
 import requtil from '../../util/requtil.js'
 import jwtutil from '../../util/jwtutil.js'
@@ -37,12 +39,48 @@ interface MockAuthOptions {
       username?: string
       password?: string
     }
+    // Fork (Zebrunner): the credentials an admin of STF signs in with, see adminSignIn below
+    adminBasicAuth?: {
+      username?: string
+      password?: string
+    }
   }
+}
+
+// Fork (Zebrunner): a comparison of a credential in constant time, the digests make the lengths equal
+function same(given: string, expected: string | undefined) {
+  if (!expected) {
+    return false
+  }
+  return crypto.timingSafeEqual(
+    crypto.createHash('sha256').update(given).digest()
+  , crypto.createHash('sha256').update(expected).digest()
+  )
+}
+
+function credentials(req: express.Request) {
+  var header = req.headers.authorization
+  return header ? basicAuth.parse(header) : null
 }
 
 export default function(options: MockAuthOptions) {
   var log = logger.createLogger('auth-mock')
   var app = express()
+
+  // Fork (Zebrunner): with the admin credentials set, an admin of STF signs in with them only. The mock sign-in takes
+  // any name and email behind the credentials of the users, so without them whoever has those credentials and knows
+  // the name and the email of an admin (GET /auth/contact tells the ones of the root group) signs in as the admin
+  var adminAuth = options.mock.adminBasicAuth || {}
+  var adminSignIn = Boolean(adminAuth.username && adminAuth.password)
+  function isAdminCredentials(user: ReturnType<typeof credentials>) {
+    return Boolean(user && user.name && user.pass &&
+      same(user.name, adminAuth.username) && same(user.pass, adminAuth.password))
+  }
+  if (options.mock.useBasicAuth && !adminSignIn) {
+    log.warn('The admin credentials of the mock sign-in are not set ' +
+      '(--admin-basic-auth-username and --admin-basic-auth-password): whoever has the ' +
+      'credentials of the users may sign in as an admin of STF')
+  }
   var server = Promise.promisifyAll(http.createServer(app))
 
   lifecycle.observe(function() {
@@ -64,15 +102,15 @@ export default function(options: MockAuthOptions) {
       return res.sendStatus(401)
     }
 
-    var header = req.headers.authorization
-    var user = header ? basicAuth.parse(header) : null
+    var user = credentials(req)
 
     if (!user || !user.name || !user.pass) {
       return unauthorized(res)
     }
 
-    if (user.name === options.mock.basicAuth.username &&
-        user.pass === options.mock.basicAuth.password) {
+    // Fork (Zebrunner): in constant time, the admin credentials too
+    if ((same(user.name, options.mock.basicAuth.username) &&
+        same(user.pass, options.mock.basicAuth.password)) || isAdminCredentials(user)) {
       return next()
     }
     else {
@@ -145,6 +183,19 @@ export default function(options: MockAuthOptions) {
               return Promise.reject('InvalidCredentialsError')
             }
             return isValidCredential
+          })
+          // Fork (Zebrunner): an admin of STF with the admin credentials only, the same answer as a wrong name
+          .then(function() {
+            if (!adminSignIn || isAdminCredentials(credentials(req))) {
+              return null
+            }
+            return dbapi.loadUser(req.body.email).then(function(user) {
+              if (user && user.privilege === apiutil.ADMIN) {
+                log.warn('Refused the admin "%s" to the credentials of the users', req.body.email)
+                return Promise.reject('InvalidCredentialsError')
+              }
+              return null
+            })
           })
           .then(function() {
             log.info('Authenticated "%s"', req.body.email)
