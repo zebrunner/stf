@@ -33,6 +33,7 @@ export default function(options: IosDeviceOptions) {
         .dependency(require('./plugins/devicelog.js').default)
         .dependency(require('./plugins/screen/stream.js').default)
         .dependency(require('./plugins/install.js').default)
+        .dependency(require('./plugins/cleanup.js').default)
         .dependency(require('./plugins/reboot.js').default)
         .dependency(require('./plugins/clipboard.js').default)
         .dependency(require('./plugins/shell.js').default)

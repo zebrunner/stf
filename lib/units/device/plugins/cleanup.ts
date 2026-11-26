@@ -7,6 +7,7 @@ import Promise from 'bluebird'
 import _ from 'lodash'
 
 import logger from '../../../util/logger.js'
+import {keepMatcher} from '../../../util/zebrunner-cleanup.js'
 import util from 'util'
 import type {
   Adb
@@ -128,6 +129,9 @@ export default syrup.serial()
         })
     }
 
+    // Fork (Zebrunner): the helpers of the farm installed after the start, --cleanup-keep-packages
+    var keep = keepMatcher(options.cleanupKeepPackages)
+
     return listPackages()
       .then(function(initialPackages) {
         initialPackages.push(stfservice.pkg)
@@ -136,6 +140,9 @@ export default syrup.serial()
           return listPackages()
             .then(function(currentPackages) {
               var remove = _.difference(currentPackages, initialPackages)
+                .filter(function(pkg) {
+                  return !keep(pkg)
+                })
               return Promise.map(remove, uninstallPackage)
             })
         }
