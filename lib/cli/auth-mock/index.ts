@@ -18,6 +18,15 @@ var builder = function(yargs: Argv) {
     , type: 'string'
     , demand: true
     })
+    .option('admin-basic-auth-password', {
+      describe: 'Fork (Zebrunner): the basic auth password an admin of STF signs in with; ' +
+        'with the username set, the credentials of the users sign in as no admin.'
+    , type: 'string'
+    })
+    .option('admin-basic-auth-username', {
+      describe: 'Fork (Zebrunner): the basic auth username an admin of STF signs in with.'
+    , type: 'string'
+    })
     .option('basic-auth-password', {
       describe: 'Basic auth password (if enabled).'
     , type: 'string'
@@ -72,6 +81,10 @@ var handler = function(argv: CommandArgv<typeof builder>) {
     , basicAuth: {
         username: argv.basicAuthUsername
       , password: argv.basicAuthPassword
+      }
+    , adminBasicAuth: {
+        username: argv.adminBasicAuthUsername
+      , password: argv.adminBasicAuthPassword
       }
     }
   })
