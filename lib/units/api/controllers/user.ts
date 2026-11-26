@@ -486,8 +486,10 @@ function getAccessTokens(req: ApiRequest, res: Response) {
     >(cursor.toArray, {context: cursor})().then(function(tokens) {
       const tokenList: Partial<AccessTokenDocument>[] = []
 
+      // Fork (Zebrunner): the id of a token is its secret, given once by its creation: a list (of the user, or of an
+      // admin for a user) gives the titles only, so a stolen session or a leaked answer gives no permanent token
       tokens.forEach(function(token) {
-        tokenList.push(apiutil.publishAccessToken(token))
+        tokenList.push(_.omit(apiutil.publishAccessToken(token), 'id'))
       })
       apiutil.respond(res, 200, 'Access Tokens Information', {tokens: tokenList})
     })
