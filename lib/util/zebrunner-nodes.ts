@@ -9,7 +9,8 @@
 * - address: the host the server connects to (STF_PROVIDER_HOST of the node), an IPv4 address or a
 *   host name;
 * - node proof: the HMAC-SHA256 of the registration of a device, keyed with the raw sha256 of the
-*   node token.
+*   node token;
+* - WireGuard key (the opt-in tunnel of the nodes): base64 of 32 bytes, as `wg pubkey` prints it.
 *
 * Secrets are compared through their hashes in constant time; none of them is ever logged.
 **/
@@ -153,6 +154,186 @@ export function normalizeAddress(
 
 export function sameAddress(a: unknown, b: unknown): boolean {
   return typeof a === 'string' && typeof b === 'string' && a.toLowerCase() === b.toLowerCase()
+}
+
+// The opt-in WireGuard tunnel between the head and its nodes (ZEBRUNNER.md#wireguard-tunnel): a
+// key is the base64 of 32 bytes (`wg genkey`, `wg pubkey`)
+export const WG_PUBLIC_KEY = /^[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=$/
+// the nodes are behind NAT: they keep their side of the tunnel open
+export const WG_PERSISTENT_KEEPALIVE = 25
+
+export function isWgPublicKey(value: unknown): value is string {
+  return typeof value === 'string' && WG_PUBLIC_KEY.test(value)
+}
+
+// The number of a dotted IPv4 address (no leading zeros), null for anything else
+function ipv4Number(value: unknown): number | null {
+  if (typeof value !== 'string') {
+    return null
+  }
+  const match = IPV4.exec(value)
+  if (!match) {
+    return null
+  }
+  const parts = match.slice(1)
+  if (parts.some(function(part) {
+    return (part.length > 1 && part.startsWith('0')) || Number(part) > 255
+  })) {
+    return null
+  }
+  return parts.reduce(function(number, part) {
+    return number * 256 + Number(part)
+  }, 0)
+}
+
+export interface Cidr {
+  // the address of the network and its prefix length
+  network: number
+  prefix: number
+  cidr: string
+}
+
+function maskOf(prefix: number): number {
+  return prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0
+}
+
+// parseCidr <value>: an IPv4 network `a.b.c.d/n`, null for anything else or a network with host
+// bits set (10.234.0.1/24)
+export function parseCidr(value: unknown): Cidr | null {
+  if (typeof value !== 'string') {
+    return null
+  }
+  const match = /^([0-9.]+)\/([0-9]{1,2})$/.exec(value)
+  if (!match || (match[2]!.length > 1 && match[2]!.startsWith('0'))) {
+    return null
+  }
+  const network = ipv4Number(match[1])
+  const prefix = Number(match[2])
+  if (network === null || prefix > 32 || ((network & ~maskOf(prefix)) >>> 0) !== 0) {
+    return null
+  }
+  return {network: network, prefix: prefix, cidr: value}
+}
+
+// inCidr <address> <cidr>: whether an IPv4 address is in the network
+export function inCidr(address: unknown, cidr: Cidr | string): boolean {
+  const network = typeof cidr === 'string' ? parseCidr(cidr) : cidr
+  const number = ipv4Number(address)
+  if (!network || number === null) {
+    return false
+  }
+  return ((number & maskOf(network.prefix)) >>> 0) === network.network
+}
+
+// isHostOf <address> <cidr>: whether an IPv4 address is a host of the network: in it, and neither
+// the address of the network nor its broadcast address (but in a /31 or /32)
+export function isHostOf(address: unknown, cidr: Cidr | string): boolean {
+  const network = typeof cidr === 'string' ? parseCidr(cidr) : cidr
+  if (!network || !inCidr(address, network)) {
+    return false
+  }
+  if (network.prefix >= 31) {
+    return true
+  }
+  const number = ipv4Number(address)!
+  const broadcast = (network.network | ~maskOf(network.prefix)) >>> 0
+  return number !== network.network && number !== broadcast
+}
+
+// The options of the tunnel of the API unit, --nodes-wg-*
+export interface WireguardOptions {
+  endpoint?: string | null | undefined
+  publicKey?: string | null | undefined
+  serverAddress?: string | null | undefined
+  network?: string | null | undefined
+}
+
+// What the head tells an enrolling node of the tunnel
+export interface WireguardSettings {
+  // host:port, the public UDP endpoint of the head
+  endpoint: string
+  // the WireGuard public key of the head
+  publicKey: string
+  // the WireGuard address of the head
+  serverAddress: string
+  // the network of the tunnel, the address of every node is in it
+  network: string
+}
+
+const WG_OPTIONS: Array<[keyof WireguardOptions, string]> = [
+  ['endpoint', '--nodes-wg-endpoint']
+, ['publicKey', '--nodes-wg-public-key']
+, ['serverAddress', '--nodes-wg-server-address']
+, ['network', '--nodes-wg-network']
+]
+
+function isEndpoint(value: string): boolean {
+  const match = /^(.+):([0-9]{1,5})$/.exec(value)
+  if (!match) {
+    return false
+  }
+  const port = Number(match[2])
+  const host = match[1]!
+  return port >= 1 && port <= 65535 &&
+    (Boolean(normalizeAddress(host, {loopback: true})) || /^\[[0-9a-fA-F:.]+\]$/.test(host))
+}
+
+// wireguardSettings <options>: the tunnel of the nodes: settings null and no error when none of the
+// options is set (off), else all of them valid, or the error (it never has the values)
+export function wireguardSettings(
+  options: WireguardOptions | null | undefined
+): {settings: WireguardSettings | null, error: string | null} {
+  const given = options || {}
+  const set = WG_OPTIONS.filter(function([field]) {
+    return Boolean(given[field])
+  })
+  if (!set.length) {
+    return {settings: null, error: null}
+  }
+  const missing = WG_OPTIONS.filter(function([field]) {
+    return !given[field]
+  })
+  if (missing.length) {
+    return {
+      settings: null
+    , error: 'the WireGuard tunnel of the nodes needs all of the options --nodes-wg-*, missing: ' +
+        missing.map(function([, name]) {
+          return name
+        }).join(', ')
+    }
+  }
+  const network = parseCidr(given.network)
+  let invalid: string | null = null
+  if (!isEndpoint(given.endpoint!)) {
+    invalid = '--nodes-wg-endpoint is not <host>:<port>'
+  }
+  else if (!isWgPublicKey(given.publicKey)) {
+    invalid = '--nodes-wg-public-key is not a WireGuard key (base64 of 32 bytes)'
+  }
+  else if (!network || network.prefix < 8 || network.prefix > 30) {
+    invalid = '--nodes-wg-network is not an IPv4 network <address>/<8..30>'
+  }
+  else if (!isHostOf(given.serverAddress, network)) {
+    invalid = '--nodes-wg-server-address is not an IPv4 address of a host of --nodes-wg-network'
+  }
+  if (invalid) {
+    return {settings: null, error: invalid}
+  }
+  return {
+    settings: {
+      endpoint: given.endpoint!.toLowerCase()
+    , publicKey: given.publicKey!
+    , serverAddress: given.serverAddress!
+    , network: network!.cidr
+    }
+  , error: null
+  }
+}
+
+// isWgNodeAddress <address> <settings>: whether an address can be the address of a node in the
+// tunnel: a host of its network, not the head
+export function isWgNodeAddress(address: unknown, settings: WireguardSettings): boolean {
+  return isHostOf(address, settings.network) && address !== settings.serverAddress
 }
 
 export interface ProofFields {
@@ -370,13 +551,19 @@ export default {
 , SCREEN_TICKET_HEADER
 , SCREEN_WITHOUT_TICKET
 , SCREEN_TICKET_TTL_SECONDS
+, WG_PERSISTENT_KEEPALIVE
 , deviceBinding
 , generateInvite
 , generateNodeToken
+, inCidr
+, isHostOf
 , isInvite
 , isLabel
+, isWgNodeAddress
+, isWgPublicKey
 , nodeProof
 , normalizeAddress
+, parseCidr
 , parseScreenUri
 , proofMessage
 , sameAddress
@@ -389,4 +576,5 @@ export default {
 , tokenLabel
 , verifyNodeProof
 , verifyScreenTicket
+, wireguardSettings
 }

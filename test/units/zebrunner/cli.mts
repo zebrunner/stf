@@ -198,7 +198,13 @@ describe('zebrunner: CLI', function() {
     })
 
     it('should give the API unit the settings of the nodes', function() {
-      var argv = parse(api, apiArgs.concat(['--nodes-stf-url', 'https://stf']), {SECRET: 'secret'})
+      var argv = parse(api, apiArgs.concat([
+        '--nodes-stf-url', 'https://stf'
+      , '--nodes-wg-endpoint', 'mcloud.example.com:51820'
+      , '--nodes-wg-public-key', Buffer.alloc(32, 7).toString('base64')
+      , '--nodes-wg-server-address', '10.234.0.1'
+      , '--nodes-wg-network', '10.234.0.0/24'
+      ]), {SECRET: 'secret'})
       var options: Record<string, any> = {}
       var restore = mockModule(new URL('../../../lib/units/api/index.js', import.meta.url), {
         default: function(unitOptions: Record<string, unknown>) {
@@ -222,6 +228,48 @@ describe('zebrunner: CLI', function() {
       expect(options.nodes.stfUrl).to.equal('https://stf')
       expect(options.nodes).to.not.have.property('agentHosts')
       expect(options.nodes.internalToken).to.equal('internal')
+      expect(options.nodes.wireguard).to.eql({
+        endpoint: 'mcloud.example.com:51820'
+      , publicKey: Buffer.alloc(32, 7).toString('base64')
+      , serverAddress: '10.234.0.1'
+      , network: '10.234.0.0/24'
+      })
+    })
+
+    // Fork (Zebrunner): the opt-in WireGuard tunnel of the nodes
+    var WG_KEY = Buffer.alloc(32, 7).toString('base64')
+
+    it('should take the options of the WireGuard tunnel of the nodes', function() {
+      var argv = parse(api, apiArgs.concat([
+        '--nodes-wg-endpoint', 'mcloud.example.com:51820'
+      , '--nodes-wg-public-key', WG_KEY
+      ]), {
+        SECRET: 'secret'
+      , STF_API_NODES_WG_SERVER_ADDRESS: '10.234.0.1'
+      , STF_API_NODES_WG_NETWORK: '10.234.0.0/24'
+      })
+      expect(argv).to.include({
+        nodesWgEndpoint: 'mcloud.example.com:51820'
+      , nodesWgPublicKey: WG_KEY
+      , nodesWgServerAddress: '10.234.0.1'
+      , nodesWgNetwork: '10.234.0.0/24'
+      })
+    })
+
+    it('should start without the tunnel, but not with a part or invalid options of it', function() {
+      expect(parse(api, apiArgs, {SECRET: 'secret'})).to.not.have.property('nodesWgEndpoint')
+      expect(function() {
+        parse(api, apiArgs.concat(['--nodes-wg-public-key', WG_KEY]), {SECRET: 'secret'})
+      }).to.throw(/missing: --nodes-wg-endpoint, --nodes-wg-server-address, --nodes-wg-network/)
+      expect(function() {
+        parse(api, apiArgs, {
+          SECRET: 'secret'
+        , STF_API_NODES_WG_ENDPOINT: 'mcloud.example.com:51820'
+        , STF_API_NODES_WG_PUBLIC_KEY: WG_KEY
+        , STF_API_NODES_WG_SERVER_ADDRESS: '10.234.1.1'
+        , STF_API_NODES_WG_NETWORK: '10.234.0.0/24'
+        })
+      }).to.throw(/--nodes-wg-server-address/)
     })
   })
 

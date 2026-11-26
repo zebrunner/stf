@@ -128,6 +128,13 @@ export interface NodesOptions {
   serverPublicKey?: string | undefined
   // STF_STORAGE_TOKEN: the token of the server units for the internal node routes
   internalToken?: string | undefined
+  // --nodes-wg-*: the opt-in WireGuard tunnel of the nodes, off without them
+  wireguard?: {
+    endpoint?: string | null | undefined
+    publicKey?: string | null | undefined
+    serverAddress?: string | null | undefined
+    network?: string | null | undefined
+  }
 }
 
 export interface ApiUnitOptions {

@@ -82,7 +82,7 @@ describe('zebrunner: API contract', function() {
     // the token in Basic or the session cookie: the operations check them themselves
     var nodeOperations = [
       'enrollNode', 'getNodeSelf', 'putNodeSelfDevice', 'getNodeKeys', 'checkNodeToken'
-    , 'getHubAuth'
+    , 'getNodeWireguard', 'getHubAuth'
     ]
     var open = Object.values(swagger.paths).flatMap(function(path) {
       return [path.get, path.put, path.post, path.delete]
@@ -99,6 +99,20 @@ describe('zebrunner: API contract', function() {
     expect(swagger.paths['/user/accessTokens/{id}']!.delete!.operationId).to.equal(
       'deleteAccessToken'
     )
+  })
+
+  // Fork (Zebrunner): the opt-in WireGuard tunnel of the nodes (ZEBRUNNER.md#wireguard-tunnel)
+  it('should document the WireGuard tunnel of the nodes', function() {
+    var peers = swagger.paths['/zebrunner/nodes/wireguard']!.get!
+    expect(peers.operationId).to.equal('getNodeWireguard')
+    expect(peers.responses!['200']!.schema!.$ref).to.equal('#/definitions/NodeWireguardResponse')
+    expect(swagger.definitions.NodeWireguardResponse!.required).to.eql(['peers'])
+    var enroll = swagger.definitions.NodeEnrollResponse!.properties! as Record<string, Definition>
+    expect(enroll.wireguard!.required).to.eql([
+      'endpoint', 'publicKey', 'serverAddress', 'address', 'network', 'persistentKeepalive'
+    ])
+    expect(swagger.definitions.NodeEnrollResponse!.required).to.not.include('wireguard')
+    expect(swagger.definitions.Node!.properties).to.include.keys('wgPublicKey', 'wireguard')
   })
 
   it('should answer the type of a device as {type}', function() {

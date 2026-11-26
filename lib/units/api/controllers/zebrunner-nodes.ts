@@ -8,7 +8,10 @@
 *   /nodes/self/devices/{serial}, the status Unhealthy and the note of a device of the node;
 * - a signed-in user: GET /zebrunner/screen-auth, the auth_request of the screens of stf-proxy;
 * - the server units (STF_STORAGE_TOKEN): GET /zebrunner/nodes/keys (triproxies),
-*   POST /zebrunner/nodes/token (storage).
+*   POST /zebrunner/nodes/token (storage), GET /zebrunner/nodes/wireguard (the WireGuard of mcloud).
+* The opt-in WireGuard tunnel of the nodes (--nodes-wg-*, ZEBRUNNER.md#wireguard-tunnel): the
+* address of a node is its address in the tunnel, the enrollment takes its WireGuard key and gives
+* it the settings of the tunnel. Without the options nothing of it applies.
 * Every error is a generic {"success": false}, the reason is logged; no secret is ever logged.
 **/
 
@@ -23,6 +26,7 @@ import zebrunnerNodes, {
 , INVITE_TTL_MINUTES
 , PUBLIC_KEY
 , SCREEN_TICKET_HEADER
+, WG_PERSISTENT_KEEPALIVE
 , type ScreenTarget
 } from '../../../util/zebrunner-nodes.js'
 import {INTERNAL_TOKEN_HEADER} from '../../../util/zebrunner-nodes-client.js'
@@ -80,8 +84,15 @@ function enrollmentSettings(options: NodesOptions) {
     log.error('The enrollment of nodes needs the options of the API unit: %s', missing.join(', '))
     return null
   }
+  var tunnel = zebrunnerNodes.wireguardSettings(options.wireguard)
+  if (tunnel.error) {
+    log.error('The enrollment of nodes: %s', tunnel.error)
+    return null
+  }
   return {
-    serverPublicKey: options.serverPublicKey || null
+    // the WireGuard tunnel of the nodes, null when it is off
+    wireguard: tunnel.settings
+  , serverPublicKey: options.serverPublicKey || null
   , stfUrl: options.stfUrl!
   , endpoints: {
       sub: endpoints.sub!
@@ -115,8 +126,20 @@ function createNodeInvite(req: Request, res: Response) {
     log.warn('Refused an invite of %s: invalid label, address or ttlMinutes', req.user.email)
     return fail(res, 400)
   }
-  if (!enrollmentSettings(nodesOptions(req))) {
+  var settings = enrollmentSettings(nodesOptions(req))
+  if (!settings) {
     return fail(res, 500)
+  }
+  if (settings.wireguard && !zebrunnerNodes.isWgNodeAddress(address, settings.wireguard)) {
+    log.warn(
+      'Refused an invite of node "%s" by %s: "%s" is not an address of a node in the WireGuard ' +
+        'network %s'
+    , label
+    , req.user.email
+    , address
+    , settings.wireguard.network
+    )
+    return fail(res, 400)
   }
 
   return serialized(function() {
@@ -176,10 +199,18 @@ function enrollNode(req: Request, res: Response) {
   }
   var key = publicKey.toLowerCase()
   var hash = zebrunnerNodes.sha256(invite)
+  var wireguard = settings.wireguard
+  var wgPublicKey = fields.wgPublicKey
 
   function refuse(reason: string) {
     log.warn('Refused the enrollment of node "%s" from %s: %s', label, req.ip, reason)
     return fail(res, 403)
+  }
+
+  // with the tunnel the node needs a WireGuard key; without it the key is ignored
+  if (wireguard && !zebrunnerNodes.isWgPublicKey(wgPublicKey)) {
+    return refuse('no valid WireGuard key (wgPublicKey), the head needs WireGuard: update ' +
+      'mcloud-agent')
   }
 
   // one lookup by the hash before anything else; only the holders of an invite get further
@@ -189,26 +220,42 @@ function enrollNode(req: Request, res: Response) {
         found.label !== label) {
         return refuse('unknown, used or expired invite, or an invite of another label')
       }
+      if (wireguard && !zebrunnerNodes.isWgNodeAddress(found.address, wireguard)) {
+        return refuse(
+          `the address of the invite is not in the WireGuard network ${wireguard.network}`
+        )
+      }
       return serialized(function() {
-        return Promise.all([dbapi.loadNodeByPublicKey(key), dbapi.loadNodeByAddress(found.address)])
-          .then(function([keyNode, addressNode]) {
+        return Promise.all([
+          dbapi.loadNodeByPublicKey(key)
+        , dbapi.loadNodeByAddress(found.address)
+        , wireguard ? dbapi.loadNodeByWgPublicKey(wgPublicKey as string) : null
+        ])
+          .then(function([keyNode, addressNode, wgNode]) {
             if (keyNode && keyNode.label !== label) {
               return refuse(`the key is the key of node "${keyNode.label}"`)
             }
             if (addressNode && addressNode.label !== label) {
               return refuse(`the address is the address of node "${addressNode.label}"`)
             }
+            if (wgNode && wgNode.label !== label) {
+              return refuse(`the WireGuard key is the key of node "${wgNode.label}"`)
+            }
             return dbapi.consumeNodeInvite(hash, label as string).then(function(consumed) {
               if (!consumed) {
                 return refuse('the invite was used or expired meanwhile')
               }
               var token = zebrunnerNodes.generateNodeToken(label as string)
-              return dbapi.enrollNode({
+              var enrollment: Parameters<typeof dbapi.enrollNode>[0] = {
                 label: label as string
               , address: consumed.address
               , publicKey: key
               , tokenHash: zebrunnerNodes.sha256(token)
-              })
+              }
+              if (wireguard) {
+                enrollment.wgPublicKey = wgPublicKey as string
+              }
+              return dbapi.enrollNode(enrollment)
                 .then(function(node) {
                   log.important(
                     'Node "%s" at "%s" enrolled from %s (generation %d, key %s)'
@@ -218,14 +265,31 @@ function enrollNode(req: Request, res: Response) {
                   , node.generation
                   , node.publicKey
                   )
-                  return res.status(200).json({
+                  var answer: Record<string, unknown> = {
                     nodeToken: token
                   , label: node.label
                   , address: node.address
                   , serverPublicKey: settings!.serverPublicKey
                   , stfUrl: settings!.stfUrl
                   , endpoints: settings!.endpoints
-                  })
+                  }
+                  if (wireguard) {
+                    log.important(
+                      'Node "%s" is a peer of the WireGuard tunnel at "%s" (key %s)'
+                    , node.label
+                    , node.address
+                    , node.wgPublicKey
+                    )
+                    answer.wireguard = {
+                      endpoint: wireguard.endpoint
+                    , publicKey: wireguard.publicKey
+                    , serverAddress: wireguard.serverAddress
+                    , address: node.address
+                    , network: wireguard.network
+                    , persistentKeepalive: WG_PERSISTENT_KEEPALIVE
+                    }
+                  }
+                  return res.status(200).json(answer)
                 })
             })
           })
@@ -239,6 +303,9 @@ function nodeView(node: NodeDocument) {
     label: node.label
   , address: node.address
   , publicKey: node.publicKey
+    // the WireGuard key of the node (public), null without the tunnel
+  , wgPublicKey: node.wgPublicKey || null
+  , wireguard: Boolean(node.wgPublicKey)
   , status: node.status
   , createdAt: iso(node.createdAt)
   , revokedAt: iso(node.revokedAt)
@@ -367,6 +434,18 @@ function getNodeKeys(req: Request, res: Response) {
       return res.status(200).json(keys)
     })
     .catch(internalError(res, 'list the keys of the nodes'))
+}
+
+// The peers of the WireGuard interface of the head: the active nodes with a WireGuard key
+function getNodeWireguard(req: Request, res: Response) {
+  if (!internalCaller(req, res)) {
+    return null
+  }
+  return dbapi.loadWireguardPeers()
+    .then(function(peers) {
+      return res.status(200).json({peers: peers})
+    })
+    .catch(internalError(res, 'list the WireGuard peers of the nodes'))
 }
 
 function checkNodeToken(req: Request, res: Response) {
@@ -613,6 +692,7 @@ export {
 , getNodeKeys
 , getNodeRelay
 , getNodeSelf
+, getNodeWireguard
 , getNodes
 , getScreenAuth
 , putNodeSelfDevice

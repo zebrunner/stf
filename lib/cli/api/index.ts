@@ -12,6 +12,19 @@ var command = 'api'
 
 var describe = 'Start an API unit.'
 
+// Fork (Zebrunner): the --nodes-wg-* options of the WireGuard tunnel of the nodes
+function wireguardOptions(argv: Record<string, unknown>) {
+  function value(name: string) {
+    return typeof argv[name] === 'string' ? argv[name] as string : null
+  }
+  return {
+    endpoint: value('nodesWgEndpoint')
+  , publicKey: value('nodesWgPublicKey')
+  , serverAddress: value('nodesWgServerAddress')
+  , network: value('nodesWgNetwork')
+  }
+}
+
 var builder = function(yargs: Argv) {
   return yargs
     .env('STF_API')
@@ -83,6 +96,33 @@ var builder = function(yargs: Argv) {
       describe: 'The ZeroMQ DEALER endpoint of the device side the enrolled nodes connect to.'
     , type: 'string'
     })
+    // Fork (Zebrunner): the opt-in WireGuard tunnel of the nodes, all of them or none (off)
+    .option('nodes-wg-endpoint', {
+      describe: 'The public UDP endpoint (host:port) of the WireGuard tunnel of the nodes.'
+    , type: 'string'
+    })
+    .option('nodes-wg-public-key', {
+      describe: 'The WireGuard public key of the head.'
+    , type: 'string'
+    })
+    .option('nodes-wg-server-address', {
+      describe: 'The WireGuard address (IPv4) of the head.'
+    , type: 'string'
+    })
+    .option('nodes-wg-network', {
+      describe: 'The network (IPv4 CIDR) of the WireGuard tunnel: the addresses of the nodes are ' +
+        'in it.'
+    , type: 'string'
+    })
+    .check(function(argv) {
+      var zebrunnerNodes: typeof import('../../util/zebrunner-nodes.js') =
+        require('../../util/zebrunner-nodes.js')
+      var error = zebrunnerNodes.wireguardSettings(wireguardOptions(argv)).error
+      if (error) {
+        throw new Error(`Invalid options: ${error}`)
+      }
+      return true
+    })
     .epilog('Each option can be be overwritten with an environment variable ' +
       'by converting the option to uppercase, replacing dashes with ' +
       'underscores and prefixing it with `STF_API_` (e.g. ' +
@@ -111,6 +151,7 @@ var handler = function(argv: CommandArgv<typeof builder>) {
       }
     , serverPublicKey: process.env.STF_ZMQ_CURVE_SERVER_PUBLIC_KEY
     , internalToken: process.env.STF_STORAGE_TOKEN
+    , wireguard: wireguardOptions(argv)
     }
   })
 }
