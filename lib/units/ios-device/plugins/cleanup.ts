@@ -1,7 +1,7 @@
 // Fork (Zebrunner): the cleanup of an iOS device between its uses, as the one of Android
 // (lib/units/device/plugins/cleanup.ts): the apps of the user the device has when the unit starts first stay, the ones
 // installed since (by the user of the device, a test) are uninstalled with go-ios when the device is released, but
-// WebDriverAgent (any *.xctrunner, the automation of the device) and the ones of --cleanup-keep-packages
+// WebDriverAgent (the *.xctrunner of --cleanup-keep-packages, else any *.xctrunner) and the ones of --cleanup-keep-packages
 // (lib/util/zebrunner-cleanup.ts). On with --cleanup (the default), --no-cleanup turns it off.
 //
 // The cleanup never stops the unit: when go-ios cannot list the apps at the start (a simulator, whose apps are of
@@ -11,7 +11,7 @@ import syrup from '@devicefarmer/stf-syrup'
 import Promise from 'bluebird'
 
 import logger from '../../../util/logger.js'
-import {keepMatcher, keptBaseline} from '../../../util/zebrunner-cleanup.js'
+import {keepMatcher, keptBaseline, keptWebDriverAgents} from '../../../util/zebrunner-cleanup.js'
 import type {IosDeviceOptions, IosGroupPlugin} from '../../../types/ios-device.js'
 import groupSyrup from './group.js'
 import {execGoIos} from './util/goios.js'
@@ -70,8 +70,11 @@ export default syrup.serial()
     group.on('join', function() {
       uses += 1
     })
+    // WebDriverAgent of the device by its exact bundle id when the keep list has one, else any *.xctrunner: an app
+    // of a user named *.xctrunner is no WebDriverAgent
+    var exactWda = keptWebDriverAgents(options.cleanupKeepPackages).length > 0
     function farmApp(id: string) {
-      return id.endsWith('.xctrunner') || keep(id)
+      return keep(id) || (!exactWda && id.endsWith('.xctrunner'))
     }
 
     function listApps() {

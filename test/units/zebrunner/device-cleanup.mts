@@ -14,6 +14,7 @@ import {
 , baselineFile
 , keepMatcher
 , keptBaseline
+, keptWebDriverAgents
 } from '../../../lib/util/zebrunner-cleanup.js'
 import {parseApps} from '../../../lib/units/ios-device/plugins/cleanup.js'
 import {importFresh, mockModule} from '../../helpers/module-mock.mts'
@@ -77,6 +78,14 @@ describe('zebrunner: the cleanup of a device', function() {
       expect(keep('io.appium.uiautomator2.server.test')).to.equal(true)
       expect(keep('com.hmdm.launcher')).to.equal(true)
       expect(keep('io.appium.uiautomator2')).to.equal(false)
+    })
+
+    it('should find the exact WebDriverAgent of the keep list', function() {
+      expect(keptWebDriverAgents(['io.appium.settings, com.example.WDA.xctrunner'])).to.deep.equal([
+        'com.example.WDA.xctrunner'
+      ])
+      expect(keptWebDriverAgents(['com.example.*', '*.xctrunner'])).to.deep.equal([])
+      expect(keptWebDriverAgents()).to.deep.equal([])
     })
 
     it('should keep nothing without patterns', function() {
@@ -240,6 +249,15 @@ describe('zebrunner: the cleanup of a device', function() {
       , 'com.kept.tool'
       , 'com.other.WebDriverAgentRunner.xctrunner'
       ])
+    })
+
+    it('should keep only the WebDriverAgent of the keep list when it has one', async function() {
+      var wda = 'com.example.WebDriverAgentRunner.xctrunner'
+      setApps([wda])
+      var {plugin} = await load({cleanup: true, cleanupKeepPackages: [wda]})
+      expect(await plugin.removeApps()).to.deep.equal([])
+      setApps([wda, 'com.user.disguised.xctrunner'])
+      expect(await plugin.removeApps()).to.deep.equal(['com.user.disguised.xctrunner'])
     })
 
     it('should keep the apps of the first start over a restart of the unit', async function() {
