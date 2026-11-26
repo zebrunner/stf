@@ -6,6 +6,7 @@ import net from 'node:net'
 
 import {expect} from 'chai'
 import express from 'express'
+import * as zmqNative from 'zeromq'
 import zmq from 'zeromq/v5-compat.js'
 
 import storageauth from '../../../lib/util/storageauth.js'
@@ -251,6 +252,46 @@ describe('zebrunner: node keys and tokens of the server units', function() {
       socket('push', client(enrolled)).connect(endpoint).send('enrolled again')
       await delay(1000)
       expect(received.sort()).to.deep.equal(['enrolled', 'units'])
+    })
+
+    it('should keep the nodes out of the DEALER sockets of the server units', async function() {
+      api.keys = {allowed: [enrolled.publicKey], denied: []}
+      var endpoint = `tcp://127.0.0.1:${await freePort()}`
+      var received: string[] = []
+      var dealer = socket('dealer', zmqcurve.config({
+        STF_ZMQ_CURVE_SERVER_SECRET_KEY: server.secretKey
+      , STF_ZMQ_CURVE_SECRET_KEY: units.secretKey
+      , STF_NODES_API_URL: api.origin
+      , STF_STORAGE_TOKEN: INTERNAL
+      }))
+      dealer.on('message', function(message: Buffer) {
+        received.push(message.toString())
+      })
+      dealer.bindSync(endpoint)
+      // the first read of the keys
+      await delay(300)
+      expect(zmqcurve.nodeKeysPending()).to.equal(false)
+
+      socket('dealer', client(units)).connect(endpoint).send('units')
+      socket('dealer', client(enrolled)).connect(endpoint).send('enrolled')
+      await delay(1000)
+      expect(received).to.deep.equal(['units'])
+    })
+
+    it('should let the nodes in on the PUB and PULL sockets only', function() {
+      var kinds: Array<[zmqNative.Socket, boolean]> = [
+        [new zmqNative.Publisher(), true]
+      , [new zmqNative.XPublisher(), true]
+      , [new zmqNative.Pull(), true]
+      , [new zmqNative.Dealer(), false]
+      , [new zmqNative.Router(), false]
+      , [new zmqNative.Push(), false]
+      , [new zmqNative.Subscriber(), false]
+      ]
+      kinds.forEach(function([sock, nodes]) {
+        expect(zmqcurve.acceptsNodes(sock), sock.constructor.name).to.equal(nodes)
+        sock.close()
+      })
     })
   })
 
