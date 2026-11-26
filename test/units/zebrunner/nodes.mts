@@ -422,5 +422,13 @@ describe('zebrunner: nodes', function() {
         expect(allowed(client(null, '127.0.0.1'), token)).to.equal(true)
       })
     })
+
+    it('should tell the screens of the users from the one of the container', function() {
+      expect(zebrunnerNodes.screenClientOfUser(client(null, '10.0.0.9'))).to.equal(true)
+      expect(zebrunnerNodes.screenClientOfUser(client(null, '::ffff:10.0.0.9'))).to.equal(true)
+      ;['127.0.0.1', '::ffff:127.0.0.1', '::1'].forEach(function(address) {
+        expect(zebrunnerNodes.screenClientOfUser(client(null, address)), address).to.equal(false)
+      })
+    })
   })
 })

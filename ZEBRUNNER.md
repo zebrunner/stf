@@ -327,7 +327,9 @@ The ticket is `v1.<expiry, unix seconds>.<hex HMAC-SHA256(key = raw sha256(node 
 and is valid for 60 seconds (`lib/util/zebrunner-nodes.ts`). The screen WebSocket of the device units (`device` and
 `ios-device`) takes a connection only with a valid ticket for its serial and screen port, checked with its
 `STF_NODE_TOKEN`, or from the loopback of its container (the broadcast of the screen of mcloud-device); any other
-host of the network of the node gets 401, and without `STF_NODE_TOKEN` only the loopback is taken. stf-proxy has to
+host of the network of the node gets 401, and without `STF_NODE_TOKEN` only the loopback is taken. The ticket is
+checked once, when the socket opens: the device units close every screen socket but the loopback ones when the user
+leaves the device (release, timeout, kick), so a screen never outlives the use it was opened for. stf-proxy has to
 pass the ticket before the device units check it: update the head before the nodes.
 
 A standalone STF whose browsers open the screen ports of the provider themselves, with no proxy to pass a ticket

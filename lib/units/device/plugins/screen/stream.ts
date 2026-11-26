@@ -25,6 +25,7 @@ import adbSyrup from '../../support/adb.js'
 import minicapSyrup from '../../resources/minicap.js'
 import displaySyrup from '../util/display.js'
 import optionsSyrup from './options.js'
+import groupSyrup from '../group.js'
 import zebrunnerNodes from '../../../../util/zebrunner-nodes.js'
 
 type SyrupValue<S> = S extends syrup.Syrup<infer T> ? T : never
@@ -65,12 +66,14 @@ export default syrup.serial()
   .dependency(minicapSyrup)
   .dependency(displaySyrup)
   .dependency(optionsSyrup)
+  .dependency(groupSyrup)
   .define(function(
     options: ScreenStreamOptions
   , adb: Adb
   , minicap: Minicap
   , display: Display
   , screenOptions: ScreenOptions
+  , group: import('events').EventEmitter
   ) {
     var log = logger.createLogger('device:plugins:screen:stream')
     log.info('ScreenGrabber option set to %s', options.screenGrabber)
@@ -600,9 +603,19 @@ export default syrup.serial()
           lifecycle.fatal()
         })
 
-        wss.on('connection', function(ws) {
+        wss.on('connection', function(ws, req) {
           var id = uuid.v4()
           var pingTimer: NodeJS.Timeout
+
+          // Fork (Zebrunner): the screen of a user ends when the user leaves the device, the ticket
+          // admitted that user only (lib/util/zebrunner-nodes.ts)
+          function leaveListener() {
+            log.info('Closing the screen of client "%s": the user left the device', id)
+            ws.close()
+          }
+          if (zebrunnerNodes.screenClientOfUser(req)) {
+            group.on('leave', leaveListener)
+          }
 
           function send(message: string | Buffer, options?: {binary: boolean}) {
             return new Promise<void>(function(resolve, reject) {
@@ -679,11 +692,13 @@ export default syrup.serial()
           ws.on('close', function() {
             clearInterval(pingTimer)
             broadcastSet.remove(id)
+            group.removeListener('leave', leaveListener)
           })
 
           ws.on('error', function() {
             clearInterval(pingTimer)
             broadcastSet.remove(id)
+            group.removeListener('leave', leaveListener)
           })
         })
 

@@ -326,6 +326,13 @@ export function screenClientAllowed(
   return verifyScreenTicket(token, req.headers[SCREEN_TICKET_HEADER], serial, port, now)
 }
 
+// screenClientOfUser <request>: whether a client of the screen WebSocket is the screen of a user (a
+// ticket of stf-proxy, or any client of an open screen), not the container itself: the device unit
+// closes such a client when the user leaves the device, as the ticket admits a user once only
+export function screenClientOfUser(req: {socket: {remoteAddress?: string | undefined}}): boolean {
+  return !isLoopback(req.socket.remoteAddress)
+}
+
 export interface ScreenTarget {
   host: string
   serial: string
@@ -376,6 +383,7 @@ export default {
 , sameHash
 , sameSecret
 , screenClientAllowed
+, screenClientOfUser
 , screenTicket
 , sha256
 , tokenLabel

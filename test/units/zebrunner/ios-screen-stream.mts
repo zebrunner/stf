@@ -1,6 +1,7 @@
 // Fork (Zebrunner): the screen stream of the ios-device unit, lib/units/ios-device/plugins/screen/stream.ts.
 // The MJPEG request to WDA outlived the socket of the browser, WDA queued every frame for it and grew
 // until iOS killed the processes of the device and the device went offline.
+import {EventEmitter} from 'node:events'
 import http from 'node:http'
 import net from 'node:net'
 import os from 'node:os'
@@ -92,6 +93,8 @@ describe('zebrunner: iOS screen stream', function() {
   var servers: wsModule.WebSocketServer[] = []
   var unavailable: unknown[] = []
   var stopped = 0
+  // the group plugin of the device: the test emits its leave
+  var group = new EventEmitter()
   var token = zebrunnerNodes.generateNodeToken('node-1')
   var savedToken = process.env.STF_NODE_TOKEN
 
@@ -137,6 +140,11 @@ describe('zebrunner: iOS screen stream', function() {
               return Promise.resolve()
             }
           }
+        })
+      })
+    , mockModule(module('units/ios-device/plugins/group.js'), {
+        default: syrup.serial().define(function() {
+          return group
         })
       })
     , mockModule(module('units/ios-device/support/push.js'), {
@@ -325,5 +333,49 @@ describe('zebrunner: iOS screen stream', function() {
     var ticket = zebrunnerNodes.screenTicket(zebrunnerNodes.sha256(token), 'udid', screenPort)!
     var valid = {[zebrunnerNodes.SCREEN_TICKET_HEADER]: ticket}
     expect(await outcome(new wsModule.WebSocket(url, {headers: valid}))).to.equal('open')
+  })
+  it('should close the screen of a user when the user leaves the device', async function() {
+    var address = lanAddress()
+    if (!address) {
+      this.skip()
+    }
+    var ticket = zebrunnerNodes.screenTicket(zebrunnerNodes.sha256(token), 'udid', screenPort)!
+    var ws = new wsModule.WebSocket('ws://' + address + ':' + screenPort, {
+      headers: {[zebrunnerNodes.SCREEN_TICKET_HEADER]: ticket}
+    })
+    var frames = 0
+    ws.on('message', function() {
+      frames++
+    })
+    await until(function() {
+      return frames > 0
+    })
+    expect(group.listenerCount('leave')).to.equal(1)
+
+    group.emit('leave', {})
+    await until(function() {
+      return ws.readyState === wsModule.WebSocket.CLOSED && mjpeg.open === 0
+    })
+    expect(group.listenerCount('leave')).to.equal(0)
+  })
+
+  it('should keep the screen of the container itself when the user leaves', async function() {
+    var ws = connect()
+    var frames = 0
+    ws.on('message', function() {
+      frames++
+    })
+    await until(function() {
+      return frames > 0
+    })
+    expect(group.listenerCount('leave')).to.equal(0)
+    group.emit('leave', {})
+    await sleep(300)
+    expect(ws.readyState).to.equal(wsModule.WebSocket.OPEN)
+
+    ws.close()
+    await until(function() {
+      return mjpeg.open === 0
+    })
   })
 })
