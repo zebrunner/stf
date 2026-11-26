@@ -1632,7 +1632,7 @@ paths:
     x-swagger-router-controller: user
     get:
       summary: Gets your access tokens
-      description: Gets your access tokens; note that all fields are returned in reponse including the 'id' one 
+      description: Gets your access tokens, their titles; the id of a token (its secret) is given once, by its creation
       operationId: getAccessTokens
       tags:
         - user
