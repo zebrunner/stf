@@ -307,10 +307,15 @@ test.describe('STF against a real device', function() {
   // REST API) holds: the application of the test stays in front, nothing presses Home
   test('[check:playwright_ui] opening a device a test holds keeps its application in front',
     async function() {
-      const claim = await page.request.post('/api/v1/user/devices', {
-        data: {serial: SERIAL, timeout: 600000}
-      })
-      expect(claim.status(), 'the device claimed through the API').toBe(200)
+      // the release of the previous test ends on the device a moment later (its leave, the
+      // cleanup): until then the device is still in use and the claim fails, so it is tried again
+      await expect.poll(async function() {
+        const claim = await page.request.post('/api/v1/user/devices', {
+          data: {serial: SERIAL, timeout: 600000}
+        })
+        return claim.status()
+      }, {message: 'the device claimed through the API', timeout: 60000, intervals: [1000]})
+        .toBe(200)
       try {
         await h.adbShell(SERIAL, 'am start -W -a android.settings.SETTINGS')
         await expect.poll(function() {
