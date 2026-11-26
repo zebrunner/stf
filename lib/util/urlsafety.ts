@@ -150,9 +150,9 @@ function assertSafeUrl(rawUrl: string, allowList?: net.BlockList) {
     })
 }
 
-// The options of @cypress/request that keep the checks of assertSafeUrl for the connection
-function requestOptions(allowList?: net.BlockList): request.CoreOptions {
-  function lookup(
+// A dns.lookup that refuses a host with a restricted address, for the connection itself (DNS rebinding)
+function restrictedLookup(allowList?: net.BlockList) {
+  return function lookup(
     hostname: string
   , options: dns.LookupOptions
   , callback: (err: Error | null, address: string | dns.LookupAddress[], family?: number) => void
@@ -173,6 +173,29 @@ function requestOptions(allowList?: net.BlockList): request.CoreOptions {
       return callback(null, records[0]!.address, records[0]!.family)
     })
   }
+}
+
+// safeConnect <target> [allowList]: net.connect to a public address only, or to one of the allowed networks; the
+// socket emits an error for any other (a literal address at once, a host name once it resolves)
+function safeConnect(target: {host: string, port: number}, allowList?: net.BlockList): net.Socket {
+  const host = target.host.replace(/^\[(.*)\]$/, '$1')
+  if (familyOf(host) && isRestricted(host, allowList)) {
+    const sock = new net.Socket()
+    process.nextTick(function() {
+      sock.destroy(new Error(`Refusing the restricted address "${host}"`))
+    })
+    return sock
+  }
+  return net.connect({
+    host: host
+  , port: target.port
+  , lookup: restrictedLookup(allowList) as unknown as net.LookupFunction
+  })
+}
+
+// The options of @cypress/request that keep the checks of assertSafeUrl for the connection
+function requestOptions(allowList?: net.BlockList): request.CoreOptions {
+  const lookup = restrictedLookup(allowList)
 
   // The lookup is skipped for literal addresses, so a redirect to one is checked here
   function followRedirect(response: request.Response) {
@@ -221,5 +244,6 @@ export default {
 , createAllowList
 , isRestricted
 , requestOptions
+, safeConnect
 , download: safeDownload
 }

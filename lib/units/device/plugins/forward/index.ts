@@ -11,6 +11,7 @@ import streamutil from '../../../../util/streamutil.js'
 import wireutil from '../../../../wire/util.js'
 
 import ForwardManager from './util/manager.js'
+import {forwardConnect} from '../../../../util/zebrunner-forward.js'
 import type {EventEmitter} from 'events'
 import type {Duplex} from 'stream'
 import type {
@@ -131,10 +132,8 @@ export default syrup.serial()
         reject_ = reject
       })
 
-      var conn = net.connect({
-        host: options.targetHost
-      , port: options.targetPort
-      })
+      // Fork (Zebrunner): public targets only, or the networks of STF_FORWARD_ALLOW
+      var conn = forwardConnect(options)
 
       function connectListener() {
         resolve_(conn)
