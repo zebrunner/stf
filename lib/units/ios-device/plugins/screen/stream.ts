@@ -10,6 +10,7 @@ import logger from '../../../../util/logger.js'
 import iosutil from '../util/iosutil.js'
 import type {
   IosDeviceOptions
+, IosGroupPlugin
 , IosNotifierPlugin
 , IosSoloPlugin
 , WdaClientPlugin
@@ -18,6 +19,7 @@ import soloSyrup from '../solo.js'
 import notifierSyrup from '../devicenotifier.js'
 import wdaClientSyrup from '../wda/WdaClient.js'
 import pushSyrup from '../../support/push.js'
+import groupSyrup from '../group.js'
 import zebrunnerNodes from '../../../../util/zebrunner-nodes.js'
 
 const HEARTBEAT_INTERVAL_MS = 30000
@@ -32,12 +34,14 @@ export default syrup.serial()
   .dependency(notifierSyrup)
   .dependency(wdaClientSyrup)
   .dependency(pushSyrup)
+  .dependency(groupSyrup)
   .define(function(
     options: IosDeviceOptions
   , _solo: IosSoloPlugin
   , notifier: IosNotifierPlugin
   , WdaClient: WdaClientPlugin
   , _push: unknown
+  , group: IosGroupPlugin
   ) {
     var log = logger.createLogger('device:plugins:screen:stream')
     // Fork (Zebrunner): only the screen ticket of stf-proxy or the container itself, never any other
@@ -62,8 +66,17 @@ export default syrup.serial()
     })
     var targetUrl = iosutil.getUri(options.wdaHost, options.mjpegPort || options.connectPort)
 
-    wss.on('connection', function(ws: import('ws').WebSocket) {
+    wss.on('connection', function(ws: import('ws').WebSocket, req: import('http').IncomingMessage) {
       var isConnectionAlive = true
+      // Fork (Zebrunner): the screen of a user ends when the user leaves the device, the ticket
+      // admitted that user only (lib/util/zebrunner-nodes.ts)
+      function leaveListener() {
+        log.info('Closing a screen: the user left the device')
+        ws.close()
+      }
+      if (zebrunnerNodes.screenClientOfUser(req)) {
+        group.on('leave', leaveListener)
+      }
       var isPongReceived = true
       var consumer = new MjpegConsumer()
       var frameStream: request.Request | null = null
@@ -91,6 +104,7 @@ export default syrup.serial()
       // then queues every frame for a client that never reads them and grows until iOS kills it.
       function closeFrameStream() {
         clearInterval(heartbeat)
+        group.removeListener('leave', leaveListener)
         if (frameStream) {
           frameStream.abort()
           frameStream = null
