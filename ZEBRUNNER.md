@@ -294,6 +294,12 @@ binding and is not made ready (an `ios-device` unit gets no registration ack and
 generation of the binding: revocation and rotation unbind the devices (screens and relay refused) until they register
 again with the new token.
 
+A device bound to another active node stays with it: a registration from any other node (or without a proof) is
+refused and logged the same way, but neither takes the device nor clears its binding and ports. The device moves to
+another node once its node is revoked or enrolled again, or once it has been absent for a minute (`REBIND_AFTER`,
+unplugged there): the heartbeats of the real node make it present again, so a forged absence does not last that long.
+A device unit refused meanwhile registers again on its restart (an `ios-device` unit exits without the ack).
+
 ### Screens
 
 stf-proxy sends every connection to `/d/<host>/<serial>/<port>/` through `auth_request` to the API unit, e.g.:
@@ -391,7 +397,8 @@ grid (4446) and stf-proxy (`STF_PORT`) on it. The ports of the devices must not 
 - Existing ZeroMQ sessions of a revoked node survive until the triproxies restart: ZAP checks new connections only.
   `./zebrunner.sh nodes revoke` of mcloud restarts them.
 - A compromised active node can still lie about its own devices (their state, screens and ports on its own address);
-  it cannot bind devices to another node or address.
+  it cannot bind devices to another node or address, nor take or clear the binding of a device of another active
+  node. The other messages of a device (ready, presence, status, remote connect) carry no proof of the node yet.
 - The LAN traffic to the grid (Appium of the nodes) is plain HTTP: a node token can be sniffed there, but it is bound
   to the address of its node for the grid, the device binding and the relay.
 - The uniqueness of the address and key is kept by the API unit serializing the enrollments: several API units could
