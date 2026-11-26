@@ -40,6 +40,18 @@ export function keepMatcher(patterns?: readonly unknown[]): (id: string) => bool
   }
 }
 
+// keptWebDriverAgents <patterns>: the exact bundle ids of WebDriverAgent (*.xctrunner) of the keep list, the
+// WDA_BUNDLEID of the device (mcloud-device); none: an older deployment, which keeps any *.xctrunner
+export function keptWebDriverAgents(patterns?: readonly unknown[]): string[] {
+  return (patterns || [])
+    .flatMap(function(pattern) {
+      return String(pattern).split(/[\s,]+/)
+    })
+    .filter(function(pattern) {
+      return pattern.endsWith('.xctrunner') && !pattern.includes('*')
+    })
+}
+
 // STF_CLEANUP_BASELINE_DIR: the folder of the files of the apps a device had at the first start of its unit, the temp
 // folder of the container by default (lib/units/device/plugins/cleanup.ts, lib/units/ios-device/plugins/cleanup.ts)
 export const BASELINE_DIR = 'STF_CLEANUP_BASELINE_DIR'
