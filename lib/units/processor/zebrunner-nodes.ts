@@ -5,6 +5,11 @@
 * node when the node is active, the proof is valid with its token and the host of the provider is
 * the address of the node. Any other registration is rejected: the device gets no ports and no
 * binding and is not made ready.
+*
+* A device bound to another active node keeps that binding: the registration of a node never takes
+* (or clears) the device of another node while that node has it. The device moves to another node
+* once its node revoked, or once it has been absent for REBIND_AFTER (unplugged there): the real node
+* sends heartbeats, which make it present again, so a forged absence does not last that long.
 **/
 
 import Promise from 'bluebird'
@@ -21,15 +26,23 @@ export interface Registration {
   providerHost?: string | null
 }
 
+// rejected: the device gets no binding (a binding it had is cleared); kept: the registration is
+// refused and the device keeps the binding of its node
 export type Decision =
   {result: 'bound', binding: NodeBinding} |
-  {result: 'rejected', reason: string}
+  {result: 'rejected', reason: string} |
+  {result: 'kept', reason: string}
+
+// how long a device bound to an active node is absent before another node can take it
+export const REBIND_AFTER = 60 * 1000
 
 export interface NodeBinderDb {
   loadNode(label: string): PromiseLike<NodeDocument | null>
   loadDeviceBySerial(serial: string): PromiseLike<{
     node?: string | null
     nodeGeneration?: number | null
+    present?: boolean | null
+    presenceChangedAt?: Date | string | number | null
   } | null>
 }
 
@@ -68,6 +81,30 @@ export function decide(registration: Registration, node: NodeDocument | null): D
   return {result: 'rejected', reason: reason}
 }
 
+// heldElsewhere <registration> <device> <its node> [now, ms]: why the device stays with the node it is
+// bound to, null when the registration may take it (no binding, the same node, a node that is not
+// active any more, or a device absent for REBIND_AFTER)
+export function heldElsewhere(
+  registration: Registration
+, device: {
+    node?: string | null
+    nodeGeneration?: number | null
+    present?: boolean | null
+    presenceChangedAt?: Date | string | number | null
+  } | null
+, current: NodeDocument | null
+, now: number = Date.now()
+): string | null {
+  if (!device || !device.node || device.node === registration.node || !isBoundTo(device, current)) {
+    return null
+  }
+  var changed = device.presenceChangedAt ? new Date(device.presenceChangedAt).getTime() : NaN
+  if (device.present === false && changed <= now - REBIND_AFTER) {
+    return null
+  }
+  return `the device is bound to the active node "${device.node}"`
+}
+
 // The node a registration claims, for the diagnostics of that node: a label, else null
 export function claimOf(registration: {node?: string | null}): string | null {
   return zebrunnerNodes.isLabel(registration.node) ? registration.node : null
@@ -90,21 +127,45 @@ export function createNodeBinder(db: NodeBinderDb, log: Log, options: BinderOpti
   // the last decision of every device registered with this processor
   var bound = new Map<string, boolean>()
 
+  // held <registration>: why the device stays with another node, null when it does not
+  function held(registration: Registration): Promise<string | null> {
+    return Promise.resolve(db.loadDeviceBySerial(registration.serial)).then(function(device) {
+      if (!device || !device.node || device.node === registration.node) {
+        return null
+      }
+      return Promise.resolve(db.loadNode(device.node)).then(function(current) {
+        return heldElsewhere(registration, device, current)
+      })
+    })
+  }
+
   // bind <registration>: the decision for the registration of a device, never fails (rejected on
   // an error)
   function bind(registration: Registration): Promise<Decision> {
     var serial = registration.serial
-    var decision = Promise.resolve(registration.node ? db.loadNode(registration.node) : null)
-      .then(function(node) {
-        return decide(registration, node)
+    var decision = held(registration)
+      .then(function(reason): Decision | Promise<Decision> {
+        if (reason) {
+          return {result: 'kept', reason: reason}
+        }
+        return Promise.resolve(registration.node ? db.loadNode(registration.node) : null)
+          .then(function(node) {
+            return decide(registration, node)
+          })
       })
       .catch(function(err: Error): Decision {
         log.error('Unable to check the node of device "%s"', serial, err.stack)
         return {result: 'rejected', reason: 'the node could not be checked'}
       })
       .then(function(result) {
-        bound.set(serial, result.result === 'bound')
-        if (result.result === 'rejected') {
+        // a refused claim says nothing about the binding of the device: its node keeps it
+        if (result.result === 'kept') {
+          bound.delete(serial)
+        }
+        else {
+          bound.set(serial, result.result === 'bound')
+        }
+        if (result.result !== 'bound') {
           log.warn(
             'Rejected the registration of device "%s" from "%s" (node "%s"): %s'
           , serial
@@ -181,4 +242,4 @@ export function createNodeBinder(db: NodeBinderDb, log: Log, options: BinderOpti
   return {accepted, bind, whenAccepted}
 }
 
-export default {claimOf, createNodeBinder, decide}
+export default {REBIND_AFTER, claimOf, createNodeBinder, decide, heldElsewhere}

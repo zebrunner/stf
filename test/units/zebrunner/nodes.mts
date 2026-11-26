@@ -235,6 +235,50 @@ describe('zebrunner: nodes', function() {
       })
     })
 
+    describe('a device of another node', function() {
+      var now = Date.now()
+      var other = node({label: 'node-2', address: '10.0.0.6'})
+      function device(fields: Record<string, unknown> = {}) {
+        return Object.assign({
+          node: 'node-2'
+        , nodeGeneration: 2
+        , present: true
+        , presenceChangedAt: new Date(now - 3600000)
+        }, fields)
+      }
+
+      it('should stay with the active node that has it', function() {
+        expect(processorNodes.heldElsewhere(registration(), device(), other, now))
+          .to.equal('the device is bound to the active node "node-2"')
+        // absent a moment ago: a forged absence, or the real node sends its heartbeat again soon
+        expect(processorNodes.heldElsewhere(registration(), device({
+          present: false, presenceChangedAt: new Date(now - 5000)
+        }), other, now)).to.match(/^the device is bound/)
+        // no proof at all: refused, the binding of the device is kept all the same
+        expect(processorNodes.heldElsewhere(registration({node: null, nodeProof: null}), device()
+          , other, now)).to.match(/^the device is bound/)
+      })
+
+      it('should move to another node once absent a while, or once its node is gone', function() {
+        expect(processorNodes.heldElsewhere(registration(), device({
+          present: false, presenceChangedAt: new Date(now - processorNodes.REBIND_AFTER)
+        }), other, now)).to.equal(null)
+        expect(processorNodes.heldElsewhere(registration(), device(), node({
+          label: 'node-2', status: 'revoked'
+        }), now)).to.equal(null)
+        expect(processorNodes.heldElsewhere(registration(), device(), null, now)).to.equal(null)
+        // enrolled again since: the binding is of an old generation
+        var old = device({nodeGeneration: 1})
+        expect(processorNodes.heldElsewhere(registration(), old, other, now)).to.equal(null)
+        // its own node, or no binding
+        expect(processorNodes.heldElsewhere(registration(), device({node: 'node-1'}), node(), now))
+          .to.equal(null)
+        expect(processorNodes.heldElsewhere(registration(), device({node: null}), other, now))
+          .to.equal(null)
+        expect(processorNodes.heldElsewhere(registration(), null, other, now)).to.equal(null)
+      })
+    })
+
     it('should keep the node a registration claims, a label only', function() {
       expect(processorNodes.claimOf({node: 'node-1'})).to.equal('node-1')
       expect(processorNodes.claimOf({node: 'Not A Label'})).to.equal(null)
@@ -245,7 +289,12 @@ describe('zebrunner: nodes', function() {
     describe('binder', function() {
       var warnings: string[]
        , nodes: Record<string, NodeDocument>
-       , devices: Record<string, {node?: string | null, nodeGeneration?: number | null}>
+       , devices: Record<string, {
+           node?: string | null
+           nodeGeneration?: number | null
+           present?: boolean
+           presenceChangedAt?: Date
+         }>
        , broken: boolean
       var db = {
         loadNode: function(label: string) {
@@ -332,6 +381,30 @@ describe('zebrunner: nodes', function() {
         var started = Date.now()
         expect(await binder.accepted('late')).to.equal(true)
         expect(Date.now() - started).to.be.within(80, 900)
+      })
+
+      it('should leave a device of another active node to that node', async function() {
+        var binder = processorNodes.createNodeBinder(db, log, {bindingWait: 50, bindingPoll: 10})
+        nodes['node-2'] = node({label: 'node-2', address: '10.0.0.6'})
+        devices = {serial1: {node: 'node-2', nodeGeneration: 2, present: true}}
+        // a valid proof of node-1, and a forged one: neither takes nor clears the device of node-2
+        expect(await binder.bind(registration())).to.eql({
+          result: 'kept', reason: 'the device is bound to the active node "node-2"'
+        })
+        expect((await binder.bind(registration({nodeProof: 'f'.repeat(64)}))).result)
+          .to.equal('kept')
+        expect(warnings[0]).to.match(/^Rejected the registration of device .* bound to the active/)
+        // its own node still has it
+        expect(await binder.accepted('serial1')).to.equal(true)
+
+        // unplugged there long enough: node-1 takes it
+        devices.serial1 = {
+          node: 'node-2'
+        , nodeGeneration: 2
+        , present: false
+        , presenceChangedAt: new Date(Date.now() - processorNodes.REBIND_AFTER - 1000)
+        }
+        expect((await binder.bind(registration())).result).to.equal('bound')
       })
 
       it('should reject a registration when the database fails', async function() {

@@ -412,6 +412,10 @@ export default db.ensureConnectivity(function(options: ProcessorOptions) {
       , providerHost: message.providerHost
       })
         .then(function(decision) {
+          // kept: the device stays with the node it is bound to, untouched
+          if (decision.result === 'kept') {
+            return null
+          }
           return decision.result === 'rejected' ?
             dbapi.rejectDeviceRegistration(message.serial, zebrunnerNodes.claimOf(message)) :
             dbapi.initializeIosDeviceState(options.publicIp, message, decision.binding)
@@ -432,6 +436,10 @@ export default db.ensureConnectivity(function(options: ProcessorOptions) {
     .on(wire.DevicePortsMessage, function(channel, message) {
       nodeBinder.bind(message)
         .then(function(decision) {
+          // kept: the device stays with the node it is bound to, untouched
+          if (decision.result === 'kept') {
+            return null
+          }
           return decision.result === 'rejected' ?
             dbapi.rejectDeviceRegistration(message.serial, zebrunnerNodes.claimOf(message)) :
             dbapi.setDevicePorts(message, decision.binding)
