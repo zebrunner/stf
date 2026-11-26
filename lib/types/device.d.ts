@@ -38,6 +38,8 @@ export interface DeviceOptions {
   cleanupDisableBluetooth: boolean
   cleanupBluetoothBonds: boolean
   cleanupFolder: string[]
+  // Fork (Zebrunner): lib/util/zebrunner-cleanup.ts
+  cleanupKeepPackages: string[]
   screenReset: boolean
 }
 

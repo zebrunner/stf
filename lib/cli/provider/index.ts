@@ -71,6 +71,14 @@ var builder = function(yargs: Argv) {
     , type: 'array'
     , default: []
     })
+    .option('cleanup-keep-packages', {
+      describe: 'Fork (Zebrunner): the apps the cleanup keeps besides the ones the device had ' +
+        'at its start: ' +
+        'ids or prefixes ending with *, separated by spaces or commas, ' +
+        'eg. "--cleanup-keep-packages io.appium.settings com.hmdm.*"'
+    , type: 'array'
+    , default: []
+    })
     // Fork (Zebrunner): the fixed remote debug port of the device, lib/util/zebrunner-connect-port.ts
     .option('connect-port', {
       describe: 'Fixed port of `adb connect` for the device (1..65535), taken out of the ' +
@@ -300,6 +308,8 @@ var handler = function(argv: CommandArgv<typeof builder, {serial: (string | numb
       .concat(argv.cleanupDisableBluetooth ? ['--cleanup-disable-bluetooth'] : [])
       .concat(argv.cleanupBluetoothBonds ? ['--cleanup-bluetooth-bonds'] : [])
       .concat(argv.cleanupFolder ? ['--cleanup-folder' as CliArg].concat(argv.cleanupFolder) : [])
+      .concat(argv.cleanupKeepPackages.length ?
+        ['--cleanup-keep-packages' as CliArg].concat(argv.cleanupKeepPackages.map(String)) : [])
       .concat(!argv.screenReset ? ['--no-screen-reset'] : [])
 
       var proc = fork(cli, args)

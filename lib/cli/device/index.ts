@@ -51,6 +51,14 @@ var builder = function(yargs: Argv) {
     , type: 'array'
     , default: []
     })
+    .option('cleanup-keep-packages', {
+      describe: 'Fork (Zebrunner): the apps the cleanup keeps besides the ones the device had ' +
+        'at its start: ' +
+        'ids or prefixes ending with *, separated by spaces or commas, ' +
+        'eg. "--cleanup-keep-packages io.appium.settings com.hmdm.*"'
+    , type: 'array'
+    , default: []
+    })
     .option('connect-port', {
       describe: 'Port allocated to adb connections.'
     , type: 'number'
@@ -224,6 +232,7 @@ var handler = function(argv: CommandArgv<typeof builder>) {
   , cleanupDisableBluetooth: argv.cleanupDisableBluetooth
   , cleanupBluetoothBonds: argv.cleanupBluetoothBonds
   , cleanupFolder: argv.cleanupFolder
+  , cleanupKeepPackages: argv.cleanupKeepPackages.map(String)
   , screenReset: argv.screenReset
   , providerHost: argv.providerHost
   })

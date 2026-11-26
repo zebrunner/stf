@@ -34,6 +34,14 @@ var builder = function(yargs: Argv) {
     , type: 'boolean'
     , default: true
     })
+    .option('cleanup-keep-packages', {
+      describe: 'Fork (Zebrunner): the apps the cleanup keeps besides the ones the device had ' +
+        'at its start: ' +
+        'ids or prefixes ending with *, separated by spaces or commas, ' +
+        'eg. "--cleanup-keep-packages io.appium.settings com.hmdm.*"'
+    , type: 'array'
+    , default: []
+    })
     .option('connect-port', {
       describe: 'The port of the device: the MJPEG stream of WDA, unless --mjpeg-port is set.'
     , type: 'number'
@@ -214,6 +222,7 @@ var handler = function(argv: CommandArgv<typeof builder>) {
   , muteMaster: argv.muteMaster
   , lockRotation: argv.lockRotation
   , cleanup: argv.cleanup
+  , cleanupKeepPackages: argv.cleanupKeepPackages.map(String)
   , screenReset: argv.screenReset
   , deviceName: String(argv.deviceName)
   , host: argv.host

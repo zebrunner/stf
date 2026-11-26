@@ -45,6 +45,8 @@ export interface IosDeviceOptions {
   muteMaster: 'always' | 'inuse' | 'never'
   lockRotation: boolean | undefined
   cleanup: boolean
+  // Fork (Zebrunner): lib/util/zebrunner-cleanup.ts
+  cleanupKeepPackages: string[]
   screenReset: boolean
   deviceName: string
   host: string

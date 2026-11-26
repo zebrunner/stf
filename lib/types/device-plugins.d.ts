@@ -52,6 +52,8 @@ export interface DevicePluginOptions {
   connectUrlPattern: string
   cleanup: boolean
   cleanupFolder: string[]
+  // Fork (Zebrunner): lib/util/zebrunner-cleanup.ts
+  cleanupKeepPackages: string[]
   cleanupDisableBluetooth: boolean
   cleanupBluetoothBonds: boolean
   muteMaster: 'always' | 'inuse' | 'never'
