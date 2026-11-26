@@ -4,10 +4,10 @@
 
 import util from 'util'
 import events from 'events'
-import net from 'net'
 
 import ForwardReader from './reader.js'
 import ForwardWriter from './writer.js'
+import {forwardConnect} from '../../../../../util/zebrunner-forward.js'
 import type {Duplex} from 'stream'
 import type {ReverseForwardFields} from '../../../../../types/wire.js'
 
@@ -45,10 +45,8 @@ interface ForwardManagerCtor {
 
 // Handles a single connection
 function DestHandler(this: DestHandler, id: number, conn: Duplex, options: ForwardOptions) {
-  var dest = net.connect({
-      host: options.targetHost
-      , port: options.targetPort
-    })
+  // Fork (Zebrunner): public targets only, or the networks of STF_FORWARD_ALLOW
+  var dest = forwardConnect(options)
 
   var writer = dest.pipe(new ForwardWriter(id))
 

@@ -1,11 +1,13 @@
 // Fork (Zebrunner): SSRF protection of the downloads of the storage units, lib/util/urlsafety.ts
 import fs from 'node:fs/promises'
 import type http from 'node:http'
+import net from 'node:net'
 
 import {expect} from 'chai'
 
 import requtil from '../../../lib/util/requtil.js'
 import urlsafety from '../../../lib/util/urlsafety.js'
+import zebrunnerForward from '../../../lib/util/zebrunner-forward.js'
 import {listen, type Running} from '../../helpers/zebrunner.mts'
 
 type Lookup = (
@@ -184,6 +186,71 @@ describe('zebrunner: urlsafety', function() {
         expect(addresses).to.be.an('array').that.is.not.empty
         done()
       })
+    })
+  })
+
+  describe('safeConnect', function() {
+    var server: net.Server
+      , port: number
+
+    before(function(done) {
+      server = net.createServer(function(sock) {
+        // the client closes at once
+        sock.on('error', function() {})
+        sock.end()
+      })
+      server.listen(0, '127.0.0.1', function() {
+        port = (server.address() as net.AddressInfo).port
+        done()
+      })
+    })
+
+    after(function(done) {
+      server.close(function() {
+        done()
+      })
+    })
+
+    function outcome(sock: net.Socket): Promise<string> {
+      return new Promise(function(resolve) {
+        sock.on('connect', function() {
+          sock.destroy()
+          resolve('connected')
+        })
+        sock.on('error', function(err) {
+          resolve(err.message)
+        })
+      })
+    }
+
+    it('should refuse a restricted literal address or a host name of one', async function() {
+      expect(await outcome(urlsafety.safeConnect({host: '127.0.0.1', port: port})))
+        .to.match(/^Refusing the restricted address "127.0.0.1"/)
+      expect(await outcome(urlsafety.safeConnect({host: '[::1]', port: port})))
+        .to.match(/^Refusing the restricted address "::1"/)
+      expect(await outcome(urlsafety.safeConnect({host: '169.254.169.254', port: 80})))
+        .to.match(/^Refusing/)
+      expect(await outcome(urlsafety.safeConnect({host: 'localhost', port: port})))
+        .to.match(/restricted address of "localhost"/)
+    })
+
+    it('should connect to an address of the allow list', async function() {
+      var allowed = urlsafety.createAllowList(['127.0.0.0/8', '::1'])
+      expect(await outcome(urlsafety.safeConnect({host: '127.0.0.1', port: port}, allowed)))
+        .to.equal('connected')
+      var lookup = await outcome(urlsafety.safeConnect({host: 'localhost', port: port}, allowed))
+      // localhost may resolve to ::1 first, which the server does not listen on
+      expect(lookup).to.not.match(/^Refusing|restricted/)
+    })
+
+    it('should read the networks of STF_FORWARD_ALLOW, none for an invalid value', function() {
+      var list = zebrunnerForward.forwardAllowList({STF_FORWARD_ALLOW: '10.1.2.0/24, 192.168.5.7'})
+      expect(list.check('10.1.2.9', 'ipv4')).to.equal(true)
+      expect(list.check('192.168.5.7', 'ipv4')).to.equal(true)
+      expect(list.check('192.168.5.8', 'ipv4')).to.equal(false)
+      expect(zebrunnerForward.forwardAllowList({}).check('10.1.2.9', 'ipv4')).to.equal(false)
+      expect(zebrunnerForward.forwardAllowList({STF_FORWARD_ALLOW: 'not-a-network'})
+        .check('10.1.2.9', 'ipv4')).to.equal(false)
     })
   })
 
