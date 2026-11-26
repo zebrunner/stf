@@ -7,7 +7,7 @@ import Promise from 'bluebird'
 import _ from 'lodash'
 
 import logger from '../../../util/logger.js'
-import {keepMatcher} from '../../../util/zebrunner-cleanup.js'
+import {keepMatcher, keptBaseline} from '../../../util/zebrunner-cleanup.js'
 import util from 'util'
 import type {
   Adb
@@ -133,6 +133,10 @@ export default syrup.serial()
     var keep = keepMatcher(options.cleanupKeepPackages)
 
     return listPackages()
+      // Fork (Zebrunner): the packages of the first start of the unit in this container, not of this start
+      .then(function(packages) {
+        return keptBaseline(options.serial, packages)
+      })
       .then(function(initialPackages) {
         initialPackages.push(stfservice.pkg)
 

@@ -1,5 +1,5 @@
 // Fork (Zebrunner): the cleanup of an iOS device between its uses, as the one of Android
-// (lib/units/device/plugins/cleanup.ts): the apps of the user the device has when the unit starts stay, the ones
+// (lib/units/device/plugins/cleanup.ts): the apps of the user the device has when the unit starts first stay, the ones
 // installed since (by the user of the device, a test) are uninstalled with go-ios when the device is released, but
 // WebDriverAgent (any *.xctrunner, the automation of the device) and the ones of --cleanup-keep-packages
 // (lib/util/zebrunner-cleanup.ts). On with --cleanup (the default), --no-cleanup turns it off.
@@ -11,7 +11,7 @@ import syrup from '@devicefarmer/stf-syrup'
 import Promise from 'bluebird'
 
 import logger from '../../../util/logger.js'
-import {keepMatcher} from '../../../util/zebrunner-cleanup.js'
+import {keepMatcher, keptBaseline} from '../../../util/zebrunner-cleanup.js'
 import type {IosDeviceOptions, IosGroupPlugin} from '../../../types/ios-device.js'
 import groupSyrup from './group.js'
 import {execGoIos} from './util/goios.js'
@@ -98,8 +98,13 @@ export default syrup.serial()
 
     // the apps of the start, taken in the background: the start of the unit does not wait for go-ios
     var initialApps = snapshot(1)
+      // the apps of the first start of the unit in this container, not of this start
       .then(function(apps) {
-        log.info('Cleanup keeps the %d apps of the start: %j', apps.size, Array.from(apps))
+        return keptBaseline(options.serial, Array.from(apps))
+      })
+      .then(function(list) {
+        var apps = new Set(list)
+        log.info('Cleanup keeps the %d apps of the start: %j', apps.size, list)
         return apps
       })
       .catch(function(err: Error) {

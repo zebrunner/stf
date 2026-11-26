@@ -9,7 +9,12 @@ import Bluebird from 'bluebird'
 import syrup from '@devicefarmer/stf-syrup'
 import {expect} from 'chai'
 
-import {keepMatcher} from '../../../lib/util/zebrunner-cleanup.js'
+import {
+  BASELINE_DIR
+, baselineFile
+, keepMatcher
+, keptBaseline
+} from '../../../lib/util/zebrunner-cleanup.js'
 import {parseApps} from '../../../lib/units/ios-device/plugins/cleanup.js'
 import {importFresh, mockModule} from '../../helpers/module-mock.mts'
 
@@ -81,6 +86,39 @@ describe('zebrunner: the cleanup of a device', function() {
     })
   })
 
+  describe('keptBaseline', function() {
+    var dir: string
+
+    beforeEach(function() {
+      dir = fs.mkdtempSync(path.join(os.tmpdir(), 'stf-baseline-'))
+    })
+
+    afterEach(function() {
+      fs.rmSync(dir, {recursive: true, force: true})
+    })
+
+    it('should keep the apps of the first start over the later ones', async function() {
+      var file = baselineFile('serial/1', dir)
+      expect(path.dirname(file)).to.equal(dir)
+      expect(await keptBaseline('serial/1', ['a', 'b'], file)).to.deep.equal(['a', 'b'])
+      expect(fs.statSync(file).mode & 0o777).to.equal(0o600)
+      // a restart of the unit with an app a user installed meanwhile: the first list stays
+      expect(await keptBaseline('serial/1', ['a', 'b', 'user.app'], file)).to.deep.equal(['a', 'b'])
+    })
+
+    it('should start a new list over a broken file', async function() {
+      var file = baselineFile('serial-2', dir)
+      fs.writeFileSync(file, '{"not": "a list"}')
+      expect(await keptBaseline('serial-2', ['a'], file)).to.deep.equal(['a'])
+      expect(JSON.parse(fs.readFileSync(file, 'utf8'))).to.deep.equal(['a'])
+    })
+
+    it('should keep the apps of this start when the file cannot be written', async function() {
+      var file = path.join(dir, 'missing', 'baseline.json')
+      expect(await keptBaseline('serial-3', ['a'], file)).to.deep.equal(['a'])
+    })
+  })
+
   describe('parseApps', function() {
     it('should read the bundle ids of the JSON list of go-ios', function() {
       var stdout = JSON.stringify([
@@ -135,6 +173,7 @@ describe('zebrunner: the cleanup of a device', function() {
       fs.writeFileSync(callsFile, '')
       process.env.FAKE_GO_IOS_APPS = appsFile
       process.env.FAKE_GO_IOS_CALLS = callsFile
+      process.env[BASELINE_DIR] = work
       delete process.env.FAKE_GO_IOS_APPS_FAIL
     })
 
@@ -144,6 +183,7 @@ describe('zebrunner: the cleanup of a device', function() {
       delete process.env.FAKE_GO_IOS_APPS_FAIL
       delete process.env.FAKE_GO_IOS_UNINSTALL_DELAY
       delete process.env.FAKE_GO_IOS_STARTED
+      delete process.env[BASELINE_DIR]
       fs.rmSync(work, {recursive: true, force: true})
     })
 
@@ -200,6 +240,16 @@ describe('zebrunner: the cleanup of a device', function() {
       , 'com.kept.tool'
       , 'com.other.WebDriverAgentRunner.xctrunner'
       ])
+    })
+
+    it('should keep the apps of the first start over a restart of the unit', async function() {
+      setApps(['com.preinstalled.app'])
+      var first = await load({cleanup: true, cleanupKeepPackages: []})
+      await first.plugin.removeApps()
+      // a user installs an app and the device reboots: the unit starts again
+      setApps(['com.preinstalled.app', 'com.user.app'])
+      var again = await load({cleanup: true, cleanupKeepPackages: []})
+      expect(await again.plugin.removeApps()).to.deep.equal(['com.user.app'])
     })
 
     it('should clean up when the device is released', async function() {
