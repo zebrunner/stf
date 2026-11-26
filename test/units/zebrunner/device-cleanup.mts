@@ -35,6 +35,11 @@ if (args[0] === 'apps') {
   })))
 }
 else if (args[0] === 'uninstall') {
+  // FAKE_GO_IOS_STARTED: the uninstalls that started, before the slow ones
+  // (FAKE_GO_IOS_UNINSTALL_DELAY) end
+  if (process.env.FAKE_GO_IOS_STARTED) {
+    fs.appendFileSync(process.env.FAKE_GO_IOS_STARTED, args[1] + '\\n')
+  }
   var delay = Number(process.env.FAKE_GO_IOS_UNINSTALL_DELAY || 0)
   var until = Date.now() + delay
   while (Date.now() < until) {}
@@ -102,6 +107,9 @@ describe('zebrunner: the cleanup of a device', function() {
   })
 
   describe('iOS', function() {
+    // every call of the fake go-ios starts a node process: a few hundred milliseconds each on a busy runner
+    this.timeout(20000)
+
     var bin: string
       , work: string
       , appsFile: string
@@ -135,6 +143,7 @@ describe('zebrunner: the cleanup of a device', function() {
       delete process.env.FAKE_GO_IOS_CALLS
       delete process.env.FAKE_GO_IOS_APPS_FAIL
       delete process.env.FAKE_GO_IOS_UNINSTALL_DELAY
+      delete process.env.FAKE_GO_IOS_STARTED
       fs.rmSync(work, {recursive: true, force: true})
     })
 
@@ -225,17 +234,29 @@ describe('zebrunner: the cleanup of a device', function() {
       var {plugin, group} = await load({cleanup: true, cleanupKeepPackages: []})
       await plugin.removeApps()
       setApps(['com.preinstalled.app', 'com.first.app', 'com.second.app', 'com.third.app'])
-      process.env.FAKE_GO_IOS_UNINSTALL_DELAY = '200'
+      var started = path.join(work, 'started')
+      fs.writeFileSync(started, '')
+      process.env.FAKE_GO_IOS_STARTED = started
+      // the first uninstall runs long enough for the device to be taken while it runs
+      process.env.FAKE_GO_IOS_UNINSTALL_DELAY = '1000'
       group.emit('leave', {group: 'group-1'})
-      for (var i = 0; i < 250 && uninstalled().length === 0; i++) {
+      for (var i = 0; i < 500 && fs.readFileSync(started, 'utf8') === ''; i++) {
         await new Promise(function(resolve) {
           setTimeout(resolve, 10)
         })
       }
       group.emit('join', {group: 'group-2'})
+      for (var j = 0; j < 500 && uninstalled().length === 0; j++) {
+        await new Promise(function(resolve) {
+          setTimeout(resolve, 10)
+        })
+      }
+      // time for a next uninstall to start, if the cleanup went on
       await new Promise(function(resolve) {
-        setTimeout(resolve, 800)
+        setTimeout(resolve, 300)
       })
+      var startedIds = fs.readFileSync(started, 'utf8').split('\n').filter(Boolean)
+      expect(startedIds).to.deep.equal(['com.first.app'])
       expect(uninstalled()).to.deep.equal(['com.first.app'])
     })
 
