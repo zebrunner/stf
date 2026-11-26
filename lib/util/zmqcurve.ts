@@ -22,6 +22,12 @@
 * handshake interval of the server (ZMQ_HANDSHAKE_IVL, 30 s) and the client connects again, so the
 * nodes that connect at once after a restart of the server are let in then instead of being refused
 * for good (a refusal ends their connection, libzmq does not connect it again).
+*
+* A node only subscribes to the messages of its devices and pushes their messages (SUB to the PUB
+* socket, PUSH to the PULL socket of the triproxy of the devices), so the keys of the nodes are let
+* in on the PUB and PULL sockets only. The other bound sockets (the DEALER of the triproxies, the
+* coordinator side that sends to every device) let in the key of the server units only: each kind
+* has its ZAP domain.
 **/
 
 import crypto from 'crypto'
@@ -43,7 +49,9 @@ const KEY = /^[0-9a-f]{64}$/i
 // The DER prefixes of the X25519 keys, followed by the 32 bytes of the key
 const PKCS8_X25519 = Buffer.from('302e020100300506032b656e04220420', 'hex')
 const ZAP_ENDPOINT = 'inproc://zeromq.zap.01'
+// the bound sockets of the server units only, and the ones the nodes connect to as well
 const ZAP_DOMAIN = 'stf'
+const ZAP_NODES_DOMAIN = 'stf-nodes'
 // A refused client (or a server refusing this one) is logged once in this time, not on every
 // reconnect
 const DENIED_LOG_INTERVAL = 60 * 1000
@@ -269,8 +277,17 @@ export function setNodeKeys(keys: NodeKeys) {
   nodeKeysRead = true
 }
 
-function logDenied(address: string, key: string) {
+function logDenied(address: string, key: string, nodesDomain: boolean) {
   if (once(deniedLogged, address)) {
+    if (!nodesDomain && isAllowedKey(key, new Set())) {
+      log.warn(
+        'Refused the ZeroMQ client %s with the key "%s" of a node on a socket of the server ' +
+        'units only: a node connects to the PUB and PULL sockets of the triproxy of the devices'
+      , address
+      , key
+      )
+      return
+    }
     if (nodeKeys.denied.has(key)) {
       log.warn(
         'Refused the ZeroMQ client %s with the key "%s" of a revoked node (or a retired key)'
@@ -325,17 +342,18 @@ async function serveZap(router: zmq.Router) {
   try {
     for await (const frames of router) {
       // routing id, delimiter, version, request id, domain, address, identity, mechanism, key
-      const [routingId, delimiter, , requestId, , address, , mechanism, credentials] = frames
+      const [routingId, delimiter, , requestId, domain, address, , mechanism, credentials] = frames
       const key = credentials ? Buffer.from(credentials).toString('hex') : ''
       const curve = String(mechanism) === 'CURVE'
+      const nodesDomain = String(domain) === ZAP_NODES_DOMAIN
       let status = ['200', 'OK']
-      if (!curve || !isAllowedKey(key, allowedClients)) {
-        if (curve && nodeKeysPending()) {
+      if (!curve || !isAllowedKey(key, allowedClients, nodesDomain ? nodeKeys : NO_NODE_KEYS)) {
+        if (curve && nodesDomain && nodeKeysPending()) {
           logDeferred(String(address), key)
           status = ['300', 'The keys of the enrolled nodes are not read yet']
         }
         else {
-          logDenied(String(address), key)
+          logDenied(String(address), key, nodesDomain)
           status = ['400', 'Unknown client key']
         }
       }
@@ -478,6 +496,12 @@ function nativeSocket(sock: CompatSocket): zmq.Socket {
   return native
 }
 
+// The sockets the nodes connect to: the PUB (their SUB) and the PULL (their PUSH) of a triproxy
+export function acceptsNodes(native: zmq.Socket): boolean {
+  return native instanceof zmq.Publisher || native instanceof zmq.XPublisher ||
+    native instanceof zmq.Pull
+}
+
 function isTcp(address: string) {
   return /^tcp:\/\//i.test(address)
 }
@@ -497,7 +521,7 @@ export function secure<S extends CompatSocket>(sock: S, curve: CurveConfig = cur
       if (isTcp(address)) {
         native.curveServer = true
         native.curveSecretKey = z85(server.secretKey)
-        native.zapDomain = ZAP_DOMAIN
+        native.zapDomain = acceptsNodes(native) ? ZAP_NODES_DOMAIN : ZAP_DOMAIN
         native.zapEnforceDomain = true
         startZapHandler(server.clients, server.nodes)
       }
@@ -534,7 +558,8 @@ export function secure<S extends CompatSocket>(sock: S, curve: CurveConfig = cur
 }
 
 export default {
-  clientHint
+  acceptsNodes
+, clientHint
 , config
 , generateKeyPair
 , isAllowedKey
