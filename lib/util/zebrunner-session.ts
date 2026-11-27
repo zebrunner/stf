@@ -48,13 +48,20 @@ export function trustProxy(address: string, hop: number): boolean {
   return hop === 0 && privateNetworks(address, hop)
 }
 
-export function sessionCookie(name: string, secret: string, publicUrl?: string) {
-  var session = cookieSession({
+// sessionCookie <name> <secret> [publicUrl] [options]: options.maxAge, the lifetime of the cookie in ms
+// (none: a cookie of the browser session)
+export function sessionCookie(
+  name: string
+, secret: string
+, publicUrl?: string
+, options: {maxAge?: number} = {}
+) {
+  var session = cookieSession(Object.assign({
     name: name
   , keys: [secret]
   , httpOnly: true
-  , sameSite: 'lax'
-  })
+  , sameSite: 'lax' as const
+  }, options))
   return function(req: Request, res: Response, next: NextFunction) {
     var secure = isSecure(req, publicUrl)
     if (secure && req.protocol !== 'https') {

@@ -294,6 +294,8 @@ ExecStart=/usr/bin/docker run --rm \
 ExecStop=-/usr/bin/docker stop -t 10 %p-%i
 ```
 
+Zebrunner: set `OAUTH_DOMAIN` (the email domain of the users), the profile must report a verified email (`email_verified`), and the `state` parameter is on; see [OAuth2 sign-in](../ZEBRUNNER.md#oauth2-sign-in) for providers without `email_verified`.
+
 #### Option C: LDAP
 
 See `stf auth-ldap --help` and change one of the unit files above as required.
