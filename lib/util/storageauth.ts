@@ -11,6 +11,9 @@
 *
 * The storage plugins proxy /s/blob, they forward the credentials of their caller instead of having
 * their own, so a plugin route is as protected as the storage route behind it.
+*
+* The requests of the device units with the token go only to the server of the pinned TLS key of
+* MCloud when MCLOUD_TLS_PIN is set (lib/util/tlspin.ts).
 **/
 
 import crypto from 'crypto'
@@ -21,6 +24,7 @@ import type express from 'express'
 
 import {isFresh, type SessionJwt} from './sessionjwt.js'
 import logger from './logger.js'
+import tlspin from './tlspin.js'
 import nodesClient from './zebrunner-nodes-client.js'
 import zebrunnerNodes from './zebrunner-nodes.js'
 
@@ -63,12 +67,31 @@ function storageUrl(base: string, href: string): string {
   return target.href
 }
 
-function sign<T extends object>(options: T & {headers?: Record<string, string>}): T {
+// The options of a request of a device unit to the storage: the token header, and the agent that
+// checks the pin of the TLS key of MCloud (MCLOUD_TLS_PIN, lib/util/tlspin.ts) for an https URL;
+// the options as they are without a token and a pin
+function sign<T extends object>(
+  options: T & {headers?: Record<string, string>, url?: unknown, agent?: unknown}
+): T {
   const headers = internalHeaders()
-  if (!Object.keys(headers).length) {
+  const pinned = typeof options.url === 'string' ? tlspin.agentFor(options.url) : null
+  if (!Object.keys(headers).length && !pinned) {
     return options
   }
-  return {...options, headers: {...options.headers, ...headers}}
+  const signed: T & {headers?: Record<string, string>, agent?: unknown} = {...options}
+  if (Object.keys(headers).length) {
+    signed.headers = {...options.headers, ...headers}
+  }
+  if (pinned) {
+    signed.agent = pinned
+  }
+  return signed
+}
+
+// The agent of a request of a device unit to the storage of the URL with node:http(s): the pinned
+// one of MCLOUD_TLS_PIN for https, null otherwise (the agent by default)
+function agentFor(url: string) {
+  return tlspin.agentFor(url)
 }
 
 // The credentials of the caller of a storage plugin, to forward to the storage
@@ -167,6 +190,7 @@ function middleware(options: StorageAuthOptions): express.RequestHandler {
 
 export default {
   TOKEN_HEADER
+, agentFor
 , forwardHeaders
 , internalHeaders
 , middleware
