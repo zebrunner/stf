@@ -268,7 +268,7 @@ security handler answers 401 without credentials and 403 to a user.
 | `GET /api/v1/nodes` | admin | | 200 `{"nodes": [{"label", "address", "publicKey", "wgPublicKey", "wireguard", "status", "createdAt", "revokedAt", "lastSeenAt"}]}`; `wgPublicKey` is the WireGuard key of the node or null, `wireguard` whether it has one |
 | `POST /api/v1/nodes/{label}/revoke` | admin | | 200 `{"success": true}`; 400 for an unknown node |
 | `DELETE /api/v1/nodes/{label}` | admin | | 200 `{"success": true}`; 400 for an unknown or active node |
-| `GET /api/v1/nodes/self` | the node (`Authorization: Bearer <node token>`) | | 200 `{"label": "mac-mini-1", "address": "10.0.0.5", "status": "active", "lastSeenAt": "...", "devices": [{"serial": "R58M...", "platform": "Android", "present": true, "bound": true, "screenPort": 7404, "connectPort": 7405}]}`; 401 without a valid node token, 403 for a revoked node (below) |
+| `GET /api/v1/nodes/self` | the node (`Authorization: Bearer <node token>`) | | 200 `{"label": "mac-mini-1", "address": "10.0.0.5", "status": "active", "lastSeenAt": "...", "devices": [{"serial": "R58M...", "platform": "Android", "present": true, "bound": true, "screenPort": 7404, "connectPort": 7405}]}`; the label also in the header `X-MCloud-Node`; 401 without a valid node token, 403 for a revoked node (below) |
 | `PUT /api/v1/nodes/self/devices/{serial}` | the node (`Authorization: Bearer <node token>`) | `{"note": "...", "status": "Unhealthy"}`, either or both, also in `device` | 200 `{"success": true}`; 400 for any other field or status, 401 without a valid node token, 403 for a revoked node, 404 for a device not bound to the node ([Device status of a node](#device-status-of-a-node)) |
 | `POST /api/v1/nodes/verify` | admin (mcloud-grid) | `{"token": "mcn1....", "host": "10.0.0.5"}` | 200 `{"label": "mac-mini-1", "address": "10.0.0.5"}` only for the token of an active node whose address is the host (case-insensitive), else 403; updates lastSeenAt at most once a minute |
 | `GET /api/v1/nodes/relay` | admin (adb relay) | | 200 `{"devices": [{"serial": "R58M...", "label": "mac-mini-1", "address": "10.0.0.5", "connectPort": 7405}]}`: every Android device bound to an active node, present or not (the relay stays static, the node refuses the connections of an absent device); the address is the registered one of the node, never the display URL; the port is the connect port of the device |
@@ -388,6 +388,12 @@ claimed it, each with `present`, `bound` (bound to the node with its current tok
 deployed device missing from the list never registered: its container does not reach the triproxies (the CURVE key of
 the node, `STF_ZMQ_CURVE_SERVER_PUBLIC_KEY`, the endpoints). `./zebrunner.sh doctor` of mcloud-agent calls it,
 `./zebrunner.sh nodes check <label>` of mcloud shows the same from the server side.
+
+The label of the node is in the header `X-MCloud-Node` of the answer too: stf-proxy of mcloud checks the node token of
+the MDM paths of the nodes (`/mdm/enroll`, `/android/release`, ...) with this route (`auth_request`) and passes the
+label to mcloud-mdm in that header (the one of the client overwritten); with `MDM_ENFORCE_NODE_BINDING=true` of mcloud,
+mcloud-mdm acts only on the devices whose `node` is that label. An older STF sends no header: mcloud-mdm then refuses
+every MDM call of the nodes while the setting is on.
 
 | What is wrong | What STF tells |
 | --- | --- |

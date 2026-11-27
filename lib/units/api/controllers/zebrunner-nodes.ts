@@ -24,6 +24,7 @@ import logger from '../../../util/logger.js'
 import zebrunnerNodes, {
   INVITE_MAX_TTL_MINUTES
 , INVITE_TTL_MINUTES
+, NODE_LABEL_HEADER
 , PUBLIC_KEY
 , SCREEN_TICKET_HEADER
 , WG_PERSISTENT_KEEPALIVE
@@ -584,6 +585,8 @@ function getNodeSelf(req: Request, res: Response) {
         return null
       }
       return dbapi.loadNodeDevices(node.label).then(function(devices) {
+        // Fork (Zebrunner): the label for the auth_request of stf-proxy (NODE_LABEL_HEADER)
+        res.set(NODE_LABEL_HEADER, node.label)
         return res.status(200).json({
           label: node.label
         , address: node.address

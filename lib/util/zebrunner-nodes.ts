@@ -426,6 +426,12 @@ export function deviceBinding(
 // sha256(node token), screen|v1|<serial>|<port>|<expiry>)>: stf-api has the hash of the token, the
 // node the token
 export const SCREEN_TICKET_HEADER = 'x-mcloud-screen-ticket'
+
+// Fork (Zebrunner): GET /nodes/self names the node of the token in NODE_LABEL_HEADER too, so the
+// auth_request of stf-proxy for the MDM paths of the nodes passes it to mcloud-mdm (nginx reads the
+// headers of an auth answer, not its body): mcloud-mdm acts only on the devices bound to that node
+// (MDM_ENFORCE_NODE_BINDING of mcloud)
+export const NODE_LABEL_HEADER = 'x-mcloud-node'
 export const SCREEN_TICKET_TTL_SECONDS = 60
 const SCREEN_TICKET = /^v1\.([0-9]{1,12})\.([0-9a-f]{64})$/
 
@@ -547,6 +553,7 @@ export function parseScreenUri(uri: unknown): ScreenTarget | null {
 export default {
   INVITE_MAX_TTL_MINUTES
 , INVITE_TTL_MINUTES
+, NODE_LABEL_HEADER
 , RESERVED_LABELS
 , SCREEN_TICKET_HEADER
 , SCREEN_WITHOUT_TICKET

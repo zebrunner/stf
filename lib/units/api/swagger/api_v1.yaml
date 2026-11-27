@@ -2573,6 +2573,10 @@ paths:
       responses:
         "200":
           description: The node and its devices
+          headers:
+            X-MCloud-Node:
+              description: The label of the node (stf-proxy passes it to the MDM)
+              type: string
           schema:
             $ref: "#/definitions/NodeSelfResponse"
         default:
