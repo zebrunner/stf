@@ -5,6 +5,7 @@
 import {createRequire} from 'module'
 import type {Argv} from 'yargs'
 import type {CommandArgv} from '../../types/cli.js'
+import {DEFAULT_RESET_STEPS} from '../../util/zebrunner-reset.js'
 
 var require = createRequire(import.meta.url)
 
@@ -56,6 +57,20 @@ var builder = function(yargs: Argv) {
         'at its start: ' +
         'ids or prefixes ending with *, separated by spaces or commas, ' +
         'eg. "--cleanup-keep-packages io.appium.settings com.hmdm.*"'
+    , type: 'array'
+    , default: []
+    })
+    .option('cleanup-reset', {
+      describe: 'Fork (Zebrunner): the steps of the reset of the state of the device the ' +
+        'cleanup runs, separated by spaces or commas, "none" for none: Android proxy, dns, ' +
+        'accessibility, clipboard, wifi, downloads, media, report; iOS profiles. The steps of ' +
+        'the other platform are ignored (ZEBRUNNER.md#cleanup-between-uses)'
+    , type: 'array'
+    , default: DEFAULT_RESET_STEPS
+    })
+    .option('cleanup-keep-wifi', {
+      describe: 'Fork (Zebrunner): the SSIDs of the Wi-Fi networks the cleanup keeps besides ' +
+        'the ones the device had at its start, separated by commas'
     , type: 'array'
     , default: []
     })
@@ -233,6 +248,8 @@ var handler = function(argv: CommandArgv<typeof builder>) {
   , cleanupBluetoothBonds: argv.cleanupBluetoothBonds
   , cleanupFolder: argv.cleanupFolder
   , cleanupKeepPackages: argv.cleanupKeepPackages.map(String)
+  , cleanupReset: argv.cleanupReset.map(String)
+  , cleanupKeepWifi: argv.cleanupKeepWifi.map(String)
   , screenReset: argv.screenReset
   , providerHost: argv.providerHost
   })

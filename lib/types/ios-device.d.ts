@@ -47,6 +47,9 @@ export interface IosDeviceOptions {
   cleanup: boolean
   // Fork (Zebrunner): lib/util/zebrunner-cleanup.ts
   cleanupKeepPackages: string[]
+  // Fork (Zebrunner): lib/util/zebrunner-reset.ts, the steps and the profiles the reset keeps
+  cleanupReset: string[]
+  cleanupKeepProfiles: string[]
   screenReset: boolean
   deviceName: string
   host: string

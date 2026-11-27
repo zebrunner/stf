@@ -56,11 +56,20 @@ export function keptWebDriverAgents(patterns?: readonly unknown[]): string[] {
 // folder of the container by default (lib/units/device/plugins/cleanup.ts, lib/units/ios-device/plugins/cleanup.ts)
 export const BASELINE_DIR = 'STF_CLEANUP_BASELINE_DIR'
 
+// <kind>: another list of the first start, of the state the cleanup puts back (lib/util/zebrunner-reset.ts: 'wifi',
+// 'admins', 'accounts', 'profiles'); none: the apps
 export function baselineFile(
   serial: string
 , dir: string = process.env[BASELINE_DIR] || os.tmpdir()
+, kind = ''
 ): string {
-  return path.join(dir, `stf-cleanup-baseline-${encodeURIComponent(serial)}.json`)
+  var suffix = kind ? `-${encodeURIComponent(kind)}` : ''
+  return path.join(dir, `stf-cleanup-baseline-${encodeURIComponent(serial)}${suffix}.json`)
+}
+
+// stateBaselineFile <serial> <kind>: baselineFile of a list of the state, in STF_CLEANUP_BASELINE_DIR
+export function stateBaselineFile(serial: string, kind: string): string {
+  return baselineFile(serial, process.env[BASELINE_DIR] || os.tmpdir(), kind)
 }
 
 function readBaseline(file: string): Promise<string[] | null> {
@@ -79,15 +88,18 @@ function readBaseline(file: string): Promise<string[] | null> {
 // keptBaseline <serial> <apps> [file]: the apps the cleanup keeps, the ones of the first start of the unit in this
 // container. A later start (the unit starts again after a reboot of the device, a crash) takes them from the file,
 // not the apps of that moment: an app a user installed and kept over a reboot of the device does not become one of
-// the device. The container made again starts a new list
+// the device. The container made again starts a new list. [what]: the name of the list in the log; the lists of the
+// state (baselineFile <kind>) are kept the same way
 export function keptBaseline(
   serial: string
 , apps: readonly string[]
 , file: string = baselineFile(serial)
+, what = 'apps'
 ): Promise<string[]> {
   return readBaseline(file).then(function(stored) {
     if (stored) {
-      log.info('Cleanup keeps the %d apps of the first start of the unit (%s)', stored.length, file)
+      log.info('Cleanup keeps the %d %s of the first start of the unit (%s)', stored.length, what
+      , file)
       return stored
     }
     var temp = `${file}.${process.pid}.tmp`
@@ -97,7 +109,8 @@ export function keptBaseline(
       })
       .catch(function(err: Error) {
         log.warn(
-          'Unable to keep the apps of the start in %s, a restart of the unit takes them again: %s'
+          'Unable to keep the %s of the start in %s, a restart of the unit takes them again: %s'
+        , what
         , file
         , err.message
         )

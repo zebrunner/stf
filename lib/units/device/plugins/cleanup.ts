@@ -7,7 +7,15 @@ import Promise from 'bluebird'
 import _ from 'lodash'
 
 import logger from '../../../util/logger.js'
-import {keepMatcher, keptBaseline} from '../../../util/zebrunner-cleanup.js'
+import {keepMatcher, keptBaseline, stateBaselineFile} from '../../../util/zebrunner-cleanup.js'
+import {
+  ANDROID_RESET_STEPS
+, androidBaselineNow
+, androidReset
+, resetSteps
+, splitList
+, type AndroidBaseline
+} from '../../../util/zebrunner-reset.js'
 import util from 'util'
 import type {
   Adb
@@ -132,12 +140,51 @@ export default syrup.serial()
     // Fork (Zebrunner): the helpers of the farm installed after the start, --cleanup-keep-packages
     var keep = keepMatcher(options.cleanupKeepPackages)
 
+    // Fork (Zebrunner): the reset of the state a user leaves (lib/util/zebrunner-reset.ts), --cleanup-reset
+    var steps = resetSteps(options.cleanupReset, ANDROID_RESET_STEPS, log)
+    log.info('Cleanup resets %j', Array.from(steps))
+    function shell(args: string[]) {
+      return adb.shell(options.serial, args)
+        .then(adb.util.readAll)
+        .then(function(output) {
+          return output.toString()
+        })
+    }
+    // the lists of the first start of the unit in this container the reset compares with; never stops the unit
+    // (nor holds its start longer than half a minute)
+    function stateBaseline(): Promise<AndroidBaseline> {
+      return androidBaselineNow(shell, steps, log)
+        .timeout(30000)
+        .then(function(now) {
+          function kept(kind: keyof AndroidBaseline, what: string) {
+            var list = now[kind]
+            return list && keptBaseline(
+              options.serial, list, stateBaselineFile(options.serial, kind), what
+            )
+          }
+          return Promise.props({
+            wifi: kept('wifi', 'Wi-Fi networks')
+          , admins: kept('admins', 'device admins')
+          , accounts: kept('accounts', 'accounts')
+          })
+        })
+        .catch(function(err: Error) {
+          log.warn('Cleanup resets no listed state until the next start: %s', err.message)
+          return {wifi: null, admins: null, accounts: null}
+        })
+    }
+
     return listPackages()
       // Fork (Zebrunner): the packages of the first start of the unit in this container, not of this start
       .then(function(packages) {
         return keptBaseline(options.serial, packages)
       })
       .then(function(initialPackages) {
+        return stateBaseline().then(function(baseline) {
+          return {initialPackages: initialPackages, baseline: baseline}
+        })
+      })
+      .then(function({initialPackages, baseline}) {
         initialPackages.push(stfservice.pkg)
 
         plugin.removePackages = function() {
@@ -175,9 +222,26 @@ export default syrup.serial()
           return Promise.each(options.cleanupFolder, cleanFolder)
         }
 
+        // Fork (Zebrunner): never rejects
+        plugin.resetState = function() {
+          return androidReset({
+            shell: shell
+          , steps: steps
+          , log: log
+          , keep: keep
+          , keepWifi: splitList(options.cleanupKeepWifi, /,/)
+          , baseline: baseline
+          , setClipboard: function(text) {
+              return service.setClipboard(text)
+            }
+          })
+        }
+
         group.on('leave', function() {
           Promise.each([
               plugin.removePackages
+              // Fork (Zebrunner): after the uninstall, which takes the settings of the apps away with them
+            , plugin.resetState
             , plugin.cleanBluetoothBonds
             , plugin.disableBluetooth
             , plugin.cleanFolders
