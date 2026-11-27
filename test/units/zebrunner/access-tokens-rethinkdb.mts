@@ -33,13 +33,13 @@ var USER = 'user@example.com'
     })
   }
 
-  // legacy <secret> <title>: a token of an earlier STF, its id is the token
-  function legacy(secret: string, title: string) {
+  // legacy <secret> <title> [units secret]: a token of an earlier STF, its id is the token
+  function legacy(secret: string, title: string, units = SECRET) {
     return r.table('accessTokens').insert({
       id: secret
     , email: USER
     , title: title
-    , jwt: jwtutil.encode({payload: {email: USER, name: 'user'}, secret: SECRET})
+    , jwt: jwtutil.encode({payload: {email: USER, name: 'user'}, secret: units})
     }).run(conn)
   }
 
@@ -104,7 +104,7 @@ var USER = 'user@example.com'
     expect(before).to.include({id: old})
     expect(accessTokens.emailOf(before, SECRET)).to.equal(USER)
 
-    expect(await dbapi.hashAccessTokens()).to.equal(2)
+    expect(await dbapi.hashAccessTokens(SECRET)).to.eql({hashed: 2, kept: 0})
     var stored = await all()
     expect(stored.map(function(token) {
       return token.id
@@ -116,7 +116,7 @@ var USER = 'user@example.com'
     var after = await dbapi.loadAccessToken(old)
     expect(after).to.include({id: accessTokens.hashId(old), title: 'ci'})
     expect(accessTokens.emailOf(after, SECRET)).to.equal(USER)
-    expect(await dbapi.hashAccessTokens()).to.equal(0)
+    expect(await dbapi.hashAccessTokens(SECRET)).to.eql({hashed: 0, kept: 0})
   })
 
   it('should finish a migration that stopped between the hash and the removal', async function() {
@@ -125,22 +125,36 @@ var USER = 'user@example.com'
     await r.table('accessTokens').insert(accessTokens.hashedDocument({
       id: old, email: USER, title: 'ci'
     })).run(conn)
-    expect(await dbapi.hashAccessTokens()).to.equal(1)
+    expect(await dbapi.hashAccessTokens()).to.eql({hashed: 1, kept: 0})
     expect((await all()).map(function(token) {
       return token.id
     })).to.eql([accessTokens.hashId(old)])
   })
 
+  it('should keep a token of another secret as it is: it does not start to work', async function() {
+    var other = 'e'.repeat(64)
+    await legacy(other, 'other', 'another-secret')
+    expect(await dbapi.hashAccessTokens(SECRET)).to.eql({hashed: 0, kept: 1})
+    var token = await dbapi.loadAccessToken(other)
+    expect(token).to.include({id: other})
+    expect(accessTokens.emailOf(token, SECRET)).to.equal(null)
+    // without the secret of the units every earlier token is hashed
+    expect(await dbapi.hashAccessTokens()).to.eql({hashed: 1, kept: 0})
+  })
+
   it('should hash the earlier tokens in stf migrate', async function() {
     var old = 'd'.repeat(64)
     await legacy(old, 'mcloud')
+    await legacy('f'.repeat(64), 'other', 'another-secret')
     var env: Record<string, string> = {}
     Object.entries(process.env).forEach(function([name, value]) {
       if (!/^(STF_|RETHINKDB_|SECRET$)/.test(name) && typeof value === 'string') {
         env[name] = value
       }
     })
-    Object.assign(env, {RETHINKDB_PORT_28015_TCP: address!, RETHINKDB_ENV_DATABASE: database})
+    Object.assign(env, {
+      RETHINKDB_PORT_28015_TCP: address!, RETHINKDB_ENV_DATABASE: database, SECRET: SECRET
+    })
     var code = await new Promise<number | null>(function(resolve) {
       spawn(process.execPath, [
         fileURLToPath(new URL('../../../lib/cli/index.js', import.meta.url))
@@ -151,5 +165,6 @@ var USER = 'user@example.com'
     var token = await dbapi.loadAccessToken(old)
     expect(token).to.include({id: accessTokens.hashId(old), title: 'mcloud'})
     expect(accessTokens.emailOf(token, SECRET)).to.equal(USER)
+    expect(await dbapi.loadAccessToken('f'.repeat(64))).to.include({id: 'f'.repeat(64)})
   })
 })

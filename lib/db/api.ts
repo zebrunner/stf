@@ -213,8 +213,9 @@ interface DbApi extends ZebrunnerDbApi {
   loadAccessTokens(email: string): Promise<r.Cursor>
   // the document of a secret
   loadAccessToken(secret: string): Promise<AccessTokenDocument | null>
-  // Fork (Zebrunner): stf migrate: the earlier documents (the id is the secret) by the hashes of their secrets
-  hashAccessTokens(): Promise<number>
+  // Fork (Zebrunner): stf migrate: the earlier documents (the id is the secret) by the hashes of their secrets;
+  // with the secret of the units, only the ones whose JWT it signed (the others did not work before either)
+  hashAccessTokens(secret?: string): Promise<{hashed: number, kept: number}>
 }
 const log = logger.createLogger('db:api')
 
@@ -1950,15 +1951,19 @@ dbapi.loadAccessToken = function(secret) {
 }
 
 // Fork (Zebrunner): a hashed document first, then the earlier one is removed: a migration that stopped in between
-// is finished by the next one
-dbapi.hashAccessTokens = function() {
+// is finished by the next one. With the secret of the units, a token whose JWT another secret signed (it did not work)
+// is kept as it is, so it does not start to work
+dbapi.hashAccessTokens = function(secret) {
   return db.run(r.table('accessTokens'))
     .then(function(cursor) {
       return cursor.toArray() as Promise<AccessTokenDocument[]>
     })
     .then(function(all) {
-      var tokens = all.filter(function(token) {
+      var earlier = all.filter(function(token) {
         return !accessTokens.isHashedId(token.id)
+      })
+      var tokens = earlier.filter(function(token) {
+        return !secret || accessTokens.emailOf(token, secret) !== null
       })
       return Promise.mapSeries(tokens, function(token) {
         return db.run(r.table('accessTokens').insert(
@@ -1970,7 +1975,7 @@ dbapi.hashAccessTokens = function() {
           })
       })
         .then(function() {
-          return tokens.length
+          return {hashed: tokens.length, kept: earlier.length - tokens.length}
         })
     })
 }
