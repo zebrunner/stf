@@ -6,7 +6,7 @@
 # python3, cmake, the -dev packages, the JDK), the image gets /app, its
 # node_modules, node and the runtime packages only. The base is pinned by the
 # digest of its multi-platform index (Dependabot updates it).
-FROM ubuntu:26.04@sha256:065aa8626841f16057b78b027b464cd59c4fac36c204c72dcbf48d66f5fa8a96 AS deps
+FROM ubuntu:26.04@sha256:d66b366dac61b575bee2aef07e9c26e8070096fbe84a3d4d3eb0da069b5d76db AS deps
 
 ARG TARGETARCH
 
@@ -101,7 +101,7 @@ RUN set -x && \
     rm -rf doc .github .tx .semaphore *.md *.yaml LICENSE Dockerfile* \
       .eslintrc .nvmrc .tool-versions res/.eslintrc
 
-FROM ubuntu:26.04@sha256:065aa8626841f16057b78b027b464cd59c4fac36c204c72dcbf48d66f5fa8a96
+FROM ubuntu:26.04@sha256:d66b366dac61b575bee2aef07e9c26e8070096fbe84a3d4d3eb0da069b5d76db
 
 # Sneak the stf executable into $PATH.
 ENV PATH=/app/bin:$PATH
