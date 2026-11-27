@@ -945,6 +945,7 @@ describe('zebrunner: node API', function() {
         ]
       }})
       expect(dbapi.loadNodeDevices.calledOnceWith('node-1')).to.equal(true)
+      expect(replyHeaders[zebrunnerNodes.NODE_LABEL_HEADER]).to.equal('node-1')
     })
 
     it('should answer 401 without a valid node token', async function() {
@@ -959,12 +960,14 @@ describe('zebrunner: node API', function() {
       for (var [token, header] of invalid) {
         expect(await self(token, header), String(token || header))
           .to.eql({code: 401, body: {success: false}})
+        expect(replyHeaders).to.not.have.property(zebrunnerNodes.NODE_LABEL_HEADER)
       }
     })
 
     it('should answer 403 to a revoked node', async function() {
       dbapi.loadNode.withArgs('node-1').resolves(node({status: 'revoked'}))
       expect(await self(TOKEN)).to.eql({code: 403, body: {success: false}})
+      expect(replyHeaders).to.not.have.property(zebrunnerNodes.NODE_LABEL_HEADER)
     })
 
     it('should never log the token', async function() {
