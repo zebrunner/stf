@@ -60,16 +60,28 @@ var builder = function(yargs: Argv) {
     , default: process.env.OAUTH_SCOPE
     , demand: true
     })
+    // Fork (Zebrunner): on by default, kept in a cookie of the sign-in (upstream off, and it needed a
+    // session store the unit did not have); --no-oauth-state turns it off
     .option('oauth-state', {
-      describe: 'Whether to enable OAuth 2.0 state token support.'
+      describe: 'Whether to send and check the OAuth 2.0 state parameter (login CSRF).'
     , type: 'boolean'
-    , default: false
+    , default: process.env.OAUTH_STATE ? process.env.OAUTH_STATE !== 'false' : true
+    , defaultDescription: 'true, or OAUTH_STATE of the environment'
     })
     .option('oauth-domain', {
-      describe: 'Optional email domain to allow authentication for.'
+      describe: 'Email domain of the users (recommended: without it every account of the ' +
+        'provider with a verified email signs in).'
     , type: 'string'
     , default: process.env.OAUTH_DOMAIN
     , demand: false
+    })
+    // Fork (Zebrunner): for a provider that never sends email_verified (ZEBRUNNER.md#oauth2-sign-in)
+    .option('oauth-allow-missing-email-verified', {
+      describe: 'Take a profile without email_verified (a provider that never sends it); a ' +
+        'profile with email_verified false is refused anyway.'
+    , type: 'boolean'
+    , default: process.env.OAUTH_ALLOW_MISSING_EMAIL_VERIFIED === 'true'
+    , defaultDescription: 'false, or OAUTH_ALLOW_MISSING_EMAIL_VERIFIED of the environment'
     })
     .option('port', {
       alias: 'p'
@@ -107,6 +119,7 @@ var handler = function(argv: CommandArgv<typeof builder>) {
   , ssid: argv.ssid
   , appUrl: argv.appUrl
   , domain: argv.oauthDomain
+  , allowMissingEmailVerified: argv.oauthAllowMissingEmailVerified
   , oauth: {
       authorizationURL: argv.oauthAuthorizationUrl
     , tokenURL: argv.oauthTokenUrl

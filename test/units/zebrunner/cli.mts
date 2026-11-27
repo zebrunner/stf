@@ -4,6 +4,7 @@ import {expect} from 'chai'
 import yargs, {type Argv} from 'yargs'
 
 import * as api from '../../../lib/cli/api/index.js'
+import * as authOauth2 from '../../../lib/cli/auth-oauth2/index.js'
 import * as authZebrunner from '../../../lib/cli/auth-zebrunner/index.js'
 import * as iosDevice from '../../../lib/cli/ios-device/index.js'
 import * as local from '../../../lib/cli/local/index.js'
@@ -22,7 +23,7 @@ function parse(command: Command, args: string[], env: Record<string, string> = {
   // yargs keeps the process.env object it saw first, so it is changed in place
   var saved: Record<string, string | undefined> = {}
   Object.keys(process.env).concat(Object.keys(env)).forEach(function(name) {
-    if (/^(STF_|SECRET$|SSID$|ZEBRUNNER_)/.test(name) && !(name in saved)) {
+    if (/^(STF_|SECRET$|SSID$|ZEBRUNNER_|OAUTH_)/.test(name) && !(name in saved)) {
       saved[name] = process.env[name]
       delete process.env[name]
     }
@@ -151,6 +152,38 @@ describe('zebrunner: CLI', function() {
         parse(storageS3, s3Args, {STF_STORAGE_TOKEN: 'token'})
       }).to.throw(/needs --secret/)
       expect(parse(storageS3, s3Args, storageEnv).storageToken).to.equal('token')
+    })
+  })
+
+  describe('auth-oauth2', function() {
+    var oauthEnv = {
+      SECRET: 'secret'
+    , OAUTH_AUTHORIZATION_URL: 'https://idp/authorize'
+    , OAUTH_TOKEN_URL: 'https://idp/token'
+    , OAUTH_USERINFO_URL: 'https://idp/userinfo'
+    , OAUTH_CLIENT_ID: 'client'
+    , OAUTH_CLIENT_SECRET: 'client-secret'
+    , OAUTH_CALLBACK_URL: 'https://stf/auth/oauth/callback'
+    , OAUTH_SCOPE: 'openid email'
+    }
+    var oauthArgs = ['--app-url', 'https://stf/stf']
+
+    it('should send the state and refuse a missing email_verified by default', function() {
+      var argv = parse(authOauth2, oauthArgs, oauthEnv)
+      expect(argv.oauthState).to.equal(true)
+      expect(argv.oauthAllowMissingEmailVerified).to.equal(false)
+    })
+
+    it('should take the options and the variables of mcloud', function() {
+      expect(parse(authOauth2, oauthArgs.concat(['--no-oauth-state']), oauthEnv).oauthState)
+        .to.equal(false)
+      var off = parse(authOauth2, oauthArgs, Object.assign({OAUTH_STATE: 'false'}, oauthEnv))
+      expect(off.oauthState).to.equal(false)
+      var lenient = parse(authOauth2, oauthArgs
+      , Object.assign({OAUTH_ALLOW_MISSING_EMAIL_VERIFIED: 'true'}, oauthEnv))
+      expect(lenient.oauthAllowMissingEmailVerified).to.equal(true)
+      expect(parse(authOauth2, oauthArgs.concat(['--oauth-allow-missing-email-verified']), oauthEnv)
+        .oauthAllowMissingEmailVerified).to.equal(true)
     })
   })
 

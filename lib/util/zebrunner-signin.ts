@@ -4,8 +4,11 @@
 *
 * - the token expires in two minutes: the app takes it over at once, a URL may stay in logs;
 * - an OAuth2 user needs an email of the allowed domain (`user@example.com` for `example.com`, not
-*   `user@evil-example.com`) that the provider did not report as unverified (`email_verified`,
-*   OpenID Connect): an unverified email could be the one of somebody else, e.g. of the admin.
+*   `user@evil-example.com`) that the provider reports as verified (`email_verified: true` of OpenID
+*   Connect, `verified_email: true` of the v1/v2 user info of Google): an unverified email could be
+*   the one of somebody else, e.g. of the admin. A provider that never says it (GitHub, the user info
+*   of Azure AD) needs --oauth-allow-missing-email-verified, which takes a profile without either
+*   field; a profile that says false is refused whatever the option.
 **/
 
 export const SIGN_IN_TOKEN_TTL = 2 * 60 * 1000
@@ -18,6 +21,7 @@ export function signInTokenExpiry(): number {
 export interface OAuth2Profile {
   email?: unknown
   email_verified?: unknown
+  verified_email?: unknown
 }
 
 // isEmailAllowed <email> [domain]: the email is in the domain (`example.com` or `@example.com`), any
@@ -30,10 +34,18 @@ export function isEmailAllowed(email: unknown, domain?: string): email is string
   return !allowed || email.toLowerCase().endsWith('@' + allowed)
 }
 
-// isEmailVerified <profile>: the provider did not report the email as unverified
-export function isEmailVerified(profile: OAuth2Profile): boolean {
-  var verified = profile.email_verified
-  return verified !== false && String(verified).toLowerCase() !== 'false'
+function isMissing(value: unknown): boolean {
+  return typeof value === 'undefined' || value === null
+}
+
+// isEmailVerified <profile> [allowMissing]: the provider reports the email as verified (true or
+// "true"); with allowMissing also a profile that does not say it
+export function isEmailVerified(profile: OAuth2Profile, allowMissing = false): boolean {
+  var verified = isMissing(profile.email_verified) ? profile.verified_email : profile.email_verified
+  if (isMissing(verified)) {
+    return allowMissing
+  }
+  return verified === true || String(verified).toLowerCase() === 'true'
 }
 
 export default {SIGN_IN_TOKEN_TTL, signInTokenExpiry, isEmailAllowed, isEmailVerified}
