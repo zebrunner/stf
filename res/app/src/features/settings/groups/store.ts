@@ -174,6 +174,18 @@ function groupClassOf(id: string): Promise<string | false> {
     .catch(() => false as const)
 }
 
+// Fork (Zebrunner): a user who is not an admin gets itself and the users of its groups only (GET /api/v1/users),
+// loaded again after a user is added by its email (addGroupUserByEmail)
+export function loadSettingsUsers(): Promise<void> {
+  return usersApi.getUsers(userFields)
+    .then((response) => {
+      set((state) => ({
+        users: addItems(state.users, response.users as SettingsUser[], (user) => user.email, -1)
+      }))
+    })
+    .catch(showLoadError)
+}
+
 export function loadGroupsSettings(): void {
   set(initialState())
   groupsApi.getMyGroups()
@@ -187,13 +199,7 @@ export function loadGroupsSettings(): void {
       set({loadingGroups: false})
       showLoadError(error)
     })
-  usersApi.getUsers(userFields)
-    .then((response) => {
-      set((state) => ({
-        users: addItems(state.users, response.users as SettingsUser[], (user) => user.email, -1)
-      }))
-    })
-    .catch(showLoadError)
+  loadSettingsUsers()
   getUser()
     .then((response) => {
       set((state) => ({currentUser: mergeObject(state.currentUser, response.user)}))

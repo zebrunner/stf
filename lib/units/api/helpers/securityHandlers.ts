@@ -16,7 +16,8 @@ var log = logger.createLogger('api:helpers:securityHandlers')
 // Fork (Zebrunner): the operations tagged admin need an admin, with an access token and with the session cookie of
 // the app alike (upstream checked the token only: any signed-in user could call them from the browser)
 function forbidsUser(req: SecurityRequest, privilege: string): boolean {
-  var tags = req.swagger.operation.definition.tags || []
+  // the description of the API (lib/units/api/index.ts) is no operation
+  var tags = req.swagger?.operation?.definition?.tags || []
   return privilege === apiutil.USER && tags.indexOf('admin') > -1
 }
 

@@ -1,12 +1,19 @@
 import {useMemo, useState} from 'react'
-import {ActionIcon, Badge, Button, Tabs, Tooltip} from '@mantine/core'
+import {ActionIcon, Badge, Button, Group, Tabs, TextInput, Tooltip} from '@mantine/core'
 import {IconMail, IconPlus, IconTrash, IconUser} from '@tabler/icons-react'
 import {getItem, listOf} from '@/core/collection'
 import type {Group as StfGroup} from '@/core/groups-api'
 import {gettext, useTranslation} from '@/core/i18n'
 import {mailTo} from '@/ui/mail'
 import {tableDataDefaults} from '@/ui/table-model'
-import {addGroupUser, addGroupUsers, removeGroupUser, removeGroupUsers} from './actions'
+import {
+  addGroupUser
+  , addGroupUserByEmail
+  , addGroupUsers
+  , isUserEmail
+  , removeGroupUser
+  , removeGroupUsers
+} from './actions'
 import {canRemoveGroupUser} from './rules'
 import {ObjectsTable, type ObjectsColumn} from './shared/ObjectsTable'
 import {useGroupsStore} from './store'
@@ -45,6 +52,50 @@ function ContactButton({users, label}: {users: SettingsUser[], label: string}) {
         {t('Contact Users')}
       </Button>
     </Tooltip>
+  )
+}
+
+// Fork (Zebrunner): a user out of the available ones (a user who is not an admin sees the users of its groups only) is
+// added by its email
+function AddByEmail({group}: {group: StfGroup}) {
+  const {t} = useTranslation()
+  const [email, setEmail] = useState('')
+  const [adding, setAdding] = useState(false)
+  const valid = isUserEmail(email)
+
+  async function add() {
+    setAdding(true)
+    const added = await addGroupUserByEmail(group, email)
+    setAdding(false)
+    if (added) {
+      setEmail('')
+    }
+  }
+
+  return (
+    <form
+      className='group-add-user-email'
+      onSubmit={(event) => {
+        event.preventDefault()
+        if (valid && !adding) {
+          add()
+        }
+      }}
+    >
+      <Group gap='xs' mb='md' align='flex-end'>
+        <TextInput
+          size='xs'
+          type='email'
+          label={t('Add a user by email')}
+          placeholder='user@example.com'
+          value={email}
+          onChange={(event) => setEmail(event.currentTarget.value)}
+        />
+        <Button type='submit' size='xs' leftSection={<IconPlus size={14} />} disabled={!valid} loading={adding}>
+          {t('Add')}
+        </Button>
+      </Group>
+    </form>
   )
 }
 
@@ -124,6 +175,7 @@ export function GroupUsers({group}: {group: StfGroup}) {
         />
       </Tabs.Panel>
       <Tabs.Panel value='available' className='available-users'>
+        <AddByEmail group={group} />
         <ObjectsTable
           rows={availableUsers}
           rowKey={(user) => user.email}

@@ -57,12 +57,14 @@ function isHttps(req: SessionRequest): boolean {
   return String(proto || '').split(',')[0]!.trim().toLowerCase() === 'https'
 }
 
-// The cookie options of a session: not readable by scripts, not sent by other sites
+// The cookie options of a session: not readable by scripts, not sent by other sites. Secure stays on
+// when the session cookie set it (the public URL of the unit is https, lib/util/zebrunner-session.ts):
+// a header of the request only adds it
 function harden(req: SessionRequest) {
   if (req.sessionOptions) {
     req.sessionOptions.httpOnly = true
     req.sessionOptions.sameSite = 'lax'
-    req.sessionOptions.secure = isHttps(req)
+    req.sessionOptions.secure = req.sessionOptions.secure === true || isHttps(req)
     req.sessionOptions.maxAge = ttlSeconds() * 1000
   }
 }

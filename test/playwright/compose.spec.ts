@@ -5,7 +5,12 @@ import * as h from './helpers.ts'
 
 test('[check:compose_api] Nginx routes an authenticated request to the API',
   async function({page}) {
+    // Fork (Zebrunner): the description of the API is for the signed-in users only
+    expect((await page.request.get('/api/v1/swagger.json')).status()).toBe(401)
     await h.login(page)
+    const swagger = await page.request.get('/api/v1/swagger.json')
+    expect(swagger.status()).toBe(200)
+    expect((await swagger.json()).swagger).toBe('2.0')
     const response = await page.request.get('/api/v1/user')
     expect(response.status()).toBe(200)
     const body = await response.json()

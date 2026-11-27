@@ -21,6 +21,7 @@ import logger from '../../util/logger.js'
 import storageauth, {type StorageSecurityOptions} from '../../util/storageauth.js'
 import urlsafety from '../../util/urlsafety.js'
 import requtil from '../../util/requtil.js'
+import zebrunnerSession from '../../util/zebrunner-session.js'
 import type {Readable} from 'stream'
 
 var require = createRequire(import.meta.url)
@@ -59,7 +60,8 @@ export default function(options: S3StorageOptions & StorageSecurityOptions) {
 
   app.set('strict routing', true)
   app.set('case sensitive routing', true)
-  app.set('trust proxy', true)
+  // Fork (Zebrunner): X-Forwarded-For of stf-proxy only, lib/util/zebrunner-session.ts
+  app.set('trust proxy', zebrunnerSession.trustProxy)
 
   app.use(storageauth.middleware(options))
   app.use(bodyParser.json())

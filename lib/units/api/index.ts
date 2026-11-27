@@ -19,8 +19,9 @@ import zmqutil from '../../util/zmqutil.js'
 import srv from '../../util/srv.js'
 import lifecycle from '../../util/lifecycle.js'
 import wireutil from '../../wire/util.js'
-import type {ApiUnitOptions} from '../../types/units-api.js'
+import type {ApiUnitOptions, SecurityRequest} from '../../types/units-api.js'
 import zebrunnerSession from '../../util/zebrunner-session.js'
+import * as securityHandlers from './helpers/securityHandlers.js'
 
 export default function(options: ApiUnitOptions) {
   var log = logger.createLogger('api')
@@ -123,6 +124,12 @@ export default function(options: ApiUnitOptions) {
     if (err) {
       throw err
     }
+    // Fork (Zebrunner): the description of the API (/api/v1/swagger.json and the /api-docs of swagger-ui)
+    // for a signed-in user or an access token, as the operations; registered here, after the session
+    // middlewares below (create answers asynchronously), before the swagger ones that serve it
+    app.use(['/api/v1/swagger.json', '/api-docs'], function(req, res, next) {
+      securityHandlers.accessTokenAuth(req as unknown as SecurityRequest, res, next)
+    })
     app.use(swaggerUi(swaggerExpress.runner.swagger))
     swaggerExpress.register(app)
   })
@@ -143,8 +150,9 @@ export default function(options: ApiUnitOptions) {
   })
 
   // TODO: Remove this once frontend is stateless
-  // Fork (Zebrunner): HttpOnly, SameSite=Lax and Secure over https, lib/util/zebrunner-session.ts
-  app.use(zebrunnerSession.sessionCookie(options.ssid, options.secret))
+  // Fork (Zebrunner): HttpOnly, SameSite=Lax and Secure with an https --nodes-stf-url (the public URL) or
+  // over https, lib/util/zebrunner-session.ts
+  app.use(zebrunnerSession.sessionCookie(options.ssid, options.secret, options.nodes?.stfUrl))
 
   // Fork (Zebrunner): sessions expire and end at logout, see lib/util/authsession.ts
   app.use(authsession.middleware())

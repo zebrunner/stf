@@ -13,6 +13,7 @@ import logger from '../../../../util/logger.js'
 import download from '../../../../util/download.js'
 import storageauth from '../../../../util/storageauth.js'
 import manifest from './task/manifest.js'
+import zebrunnerSession from '../../../../util/zebrunner-session.js'
 
 interface ApkPluginOptions {
   port: number
@@ -27,7 +28,8 @@ export default function(options: ApkPluginOptions) {
 
   app.set('strict routing', true)
   app.set('case sensitive routing', true)
-  app.set('trust proxy', true)
+  // Fork (Zebrunner): X-Forwarded-For of stf-proxy only, lib/util/zebrunner-session.ts
+  app.set('trust proxy', zebrunnerSession.trustProxy)
 
   app.disable('x-powered-by')
 

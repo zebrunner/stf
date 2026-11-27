@@ -119,16 +119,15 @@ export default function(options: ZebrunnerAuthOptions) {
   app.set('strict routing', true)
   app.set('case sensitive routing', true)
 
-  // Fork (Zebrunner): HttpOnly, SameSite=Lax and Secure over https, lib/util/zebrunner-session.ts
-  app.use(zebrunnerSession.sessionCookie(options.ssid, options.secret))
+  // Fork (Zebrunner): HttpOnly, SameSite=Lax and Secure with an https --app-url or over https,
+  // lib/util/zebrunner-session.ts
+  app.use(zebrunnerSession.sessionCookie(options.ssid, options.secret, options.appUrl))
   app.use(bodyParser.json())
   app.use(csrf())
   app.use('/static/auth/zebrunner', serveStatic(pathutil.resource('auth/zebrunner')))
 
-  app.use(function(req, res, next) {
-    res.cookie('XSRF-TOKEN', req.csrfToken())
-    next()
-  })
+  // Fork (Zebrunner): Secure as the session cookie, lib/util/zebrunner-session.ts
+  app.use(zebrunnerSession.xsrfCookie(options.appUrl))
 
   app.disable('x-powered-by')
 

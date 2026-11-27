@@ -70,6 +70,7 @@ import {iosNetwork} from '../../db/zebrunner.js'
 import {touchPathIosMessage} from '../../wire/zebrunner.js'
 import {guardSocket} from '../../util/zebrunner-guard.js'
 import {channelGuard} from './zebrunner-channels.js'
+import zebrunnerSession from '../../util/zebrunner-session.js'
 
 var request = Promise.promisifyAll(cypressRequest) as unknown as PromisifiedRequest
 var adb = adbutil()
@@ -234,10 +235,10 @@ export default function(options: WebsocketOptions) {
   , keys: [options.secret]
   }))
 
+  // Fork (Zebrunner): X-Forwarded-For of stf-proxy only, lib/util/zebrunner-session.ts (upstream trusted
+  // every hop, so the client chose its address)
   io.use(ip({
-    trust: function() {
-      return true
-    }
+    trust: zebrunnerSession.trustProxy
   }))
 
   // Fork (Zebrunner): sessions expire and end at logout, see lib/util/authsession.ts
@@ -255,7 +256,8 @@ export default function(options: WebsocketOptions) {
     var channels: string[] = []
     var messageListener: MessageListener
 
-    user.ip = socket.handshake.query.uip as string | undefined || req.ip
+    // Fork (Zebrunner): the address of stf-proxy's hop, not the uip parameter of the client (upstream took it)
+    user.ip = req.ip
     socket.emit('socket.ip', user.ip)
 
     function joinChannel(channel: string) {

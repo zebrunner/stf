@@ -508,7 +508,7 @@ paths:
           type: string
         - name: users
           in: body
-          description: Users to add as a comma-separated list of emails; note that by not providing this parameter it means all available users are added into the group
+          description: Users to add as a comma-separated list of emails; note that by not providing this parameter it means all available users are added into the group (an admin only, 400 for another user)
           required: false
           schema:
             $ref: "#/definitions/UsersPayload"
@@ -673,7 +673,7 @@ paths:
     x-swagger-router-controller: users
     get:
       summary: Gets users
-      description: gets users; if you are the administrator user then all user fields are returned, otherwise only 'email', 'name' and 'privilege' user fields are returned
+      description: gets users; if you are the administrator user then all user fields are returned, otherwise only 'email', 'name' and 'privilege' user fields are returned; an admin gets every user, another user itself and the users of its groups (the members and owners of the groups it belongs to or owns, but the root group)
       operationId: getUsers
       tags:
         - users

@@ -344,10 +344,37 @@ function getUserByEmail(req: ApiRequest, res: Response) {
   })
 }
 
+// Fork (Zebrunner): the emails of the users a user who is not an admin sees, null for an admin (every
+// user): itself and the members and owners of its groups (the ones it belongs to or owns) but the root
+// group, which has every user. A group owner adds a user out of them by its email (PUT
+// /groups/{id}/users/{email})
+function visibleEmails(user: UserDocument): Promise<Set<string> | null> {
+  if (user.privilege === apiutil.ADMIN) {
+    return Promise.resolve(null)
+  }
+  return Promise.all([dbapi.getUserGroups(user.email), dbapi.getGroupsByIndex(user.email, 'owner')])
+    .then(function([memberOf, owned]) {
+      const emails = new Set<string>([user.email])
+      memberOf.concat(owned).forEach(function(group) {
+        if (group.privilege === apiutil.ROOT) {
+          return
+        }
+        emails.add(group.owner.email)
+        group.users.forEach(function(email) {
+          emails.add(email)
+        })
+      })
+      return emails
+    })
+}
+
 function getUsers(req: ApiRequest, res: Response) {
   const fields = req.swagger.params.fields.value
 
-  dbapi.getUsers().then(function(users) {
+  Promise.all([dbapi.getUsers(), visibleEmails(req.user)]).then(function([allUsers, visible]) {
+    const users = visible ? allUsers.filter(function(user) {
+      return visible.has(user.email)
+    }) : allUsers
     return dbapi.getRootGroup().then(function(group) {
       apiutil.respond(res, 200, 'Users Information', {
         users: users.map(function(user) {

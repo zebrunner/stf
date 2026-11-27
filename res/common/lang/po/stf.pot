@@ -114,6 +114,10 @@ msgstr ""
 msgid "Add Key"
 msgstr ""
 
+#: res/app/src/features/settings/groups/GroupUsers.tsx:90
+msgid "Add a user by email"
+msgstr ""
+
 #: res/app/src/ui/modals.tsx:176
 msgid "Add the following ADB Key to STF?"
 msgstr ""

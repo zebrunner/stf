@@ -15,6 +15,7 @@ import parseCrop from './param/crop.js'
 import parseGravity from './param/gravity.js'
 import get from './task/get.js'
 import transform from './task/transform.js'
+import zebrunnerSession from '../../../../util/zebrunner-session.js'
 
 interface ImagePluginOptions {
   port: number
@@ -30,7 +31,8 @@ export default function(options: ImagePluginOptions) {
 
   app.set('strict routing', true)
   app.set('case sensitive routing', true)
-  app.set('trust proxy', true)
+  // Fork (Zebrunner): X-Forwarded-For of stf-proxy only, lib/util/zebrunner-session.ts
+  app.set('trust proxy', zebrunnerSession.trustProxy)
 
   app.disable('x-powered-by')
 
