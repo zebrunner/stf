@@ -7,11 +7,27 @@
 // The cleanup never stops the unit: when go-ios cannot list the apps at the start (a simulator, whose apps are of
 // xcrun, or a device that is not reachable yet) it is off until the next start, and an app that cannot be
 // uninstalled is logged and left.
+//
+// After the apps, the step 'profiles' of --cleanup-reset (lib/util/zebrunner-reset.ts) removes the configuration
+// profiles installed since the first start (with the root certificates they installed and trusted), but the ones of
+// the farm (FARM_PROFILES: the enrollment profile of the MDM, its ready profiles, the Wi-Fi of the farm) and of
+// --cleanup-keep-profiles, the same way.
 import syrup from '@devicefarmer/stf-syrup'
 import Promise from 'bluebird'
 
 import logger from '../../../util/logger.js'
-import {keepMatcher, keptBaseline, keptWebDriverAgents} from '../../../util/zebrunner-cleanup.js'
+import {
+  keepMatcher
+, keptBaseline
+, keptWebDriverAgents
+, stateBaselineFile
+} from '../../../util/zebrunner-cleanup.js'
+import {
+  FARM_PROFILES
+, IOS_RESET_STEPS
+, parseProfiles
+, resetSteps
+} from '../../../util/zebrunner-reset.js'
 import type {IosDeviceOptions, IosGroupPlugin} from '../../../types/ios-device.js'
 import groupSyrup from './group.js'
 import {execGoIos} from './util/goios.js'
@@ -27,6 +43,8 @@ export interface IosCleanupPlugin {
   // the uninstall of the apps installed since the start, the bundle ids it removed; a cleanup of the release of
   // <since> (the uses of the device counted at that release) stops when the device is used again meanwhile
   removeApps(since?: number): Promise<string[]>
+  // the removal of the configuration profiles installed since the start, the identifiers it removed; as removeApps
+  removeProfiles(since?: number): Promise<string[]>
 }
 
 // parseApps <stdout of go-ios apps>: the bundle ids of the apps of the user, go-ios prints them as a JSON array
@@ -57,6 +75,9 @@ export default syrup.serial()
     var log = logger.createLogger('device:plugins:cleanup')
     var plugin = Object.create(null) as IosCleanupPlugin
     plugin.removeApps = function() {
+      return Promise.resolve([])
+    }
+    plugin.removeProfiles = function() {
       return Promise.resolve([])
     }
     if (!options.cleanup) {
@@ -116,6 +137,44 @@ export default syrup.serial()
         return null
       })
 
+    // the configuration profiles of the start, as the apps; null: not removed
+    var steps = resetSteps(options.cleanupReset, IOS_RESET_STEPS, log)
+    var keepProfile = keepMatcher(FARM_PROFILES.concat(options.cleanupKeepProfiles || []))
+    function listProfiles() {
+      return execGoIos(options.serial, ['profile', 'list'], LIST_TIMEOUT)
+        .then(function(result) {
+          return parseProfiles(result.stdout)
+        })
+    }
+    var initialProfiles: Promise<Set<string> | null> = !steps.has('profiles') ?
+      Promise.resolve(null) :
+      initialApps
+        // after the apps: the device is reachable by then, or the cleanup is off anyway
+        .then(function(apps) {
+          if (!apps) {
+            return null
+          }
+          return listProfiles()
+            .then(function(profiles) {
+              return keptBaseline(
+                options.serial
+              , profiles
+              , stateBaselineFile(options.serial, 'profiles')
+              , 'configuration profiles'
+              )
+            })
+            .then(function(list) {
+              log.info('Cleanup keeps the %d configuration profiles of the start: %j', list.length
+              , list)
+              return new Set(list)
+            })
+        })
+        .catch(function(err: Error) {
+          log.warn('Cleanup removes no configuration profile until the next start, they are not ' +
+            'listed: %s', err.message)
+          return null
+        })
+
     function uninstall(id: string) {
       log.info('Cleaning up app "%s"', id)
       return execGoIos(options.serial, ['uninstall', id], UNINSTALL_TIMEOUT)
@@ -161,15 +220,68 @@ export default syrup.serial()
       })
     }
 
-    // one cleanup at a time: a release during a running one waits for it
+    function removeProfile(id: string) {
+      log.info('Cleaning up configuration profile "%s"', id)
+      return execGoIos(options.serial, ['profile', 'remove', id], LIST_TIMEOUT)
+        .then(function() {
+          return id
+        })
+        .catch(function(err: Error) {
+          log.warn('Unable to clean up configuration profile "%s": %s', id, err.message)
+          return null
+        })
+    }
+
+    plugin.removeProfiles = function(since = uses) {
+      function usedAgain() {
+        return uses !== since
+      }
+      return initialProfiles.then(function(initial) {
+        if (!initial || usedAgain()) {
+          return []
+        }
+        return listProfiles()
+          .then(function(current) {
+            var remove = current.filter(function(id) {
+              return !initial.has(id) && !keepProfile(id)
+            })
+            return Promise.mapSeries(remove, function(id) {
+              if (usedAgain()) {
+                log.info('The device is used again: the cleanup leaves the profile "%s"', id)
+                return null
+              }
+              return removeProfile(id)
+            })
+          })
+          .then(function(removed) {
+            return removed.filter(function(id): id is string {
+              return id !== null
+            })
+          })
+          .catch(function(err: Error) {
+            log.warn('Unable to clean up the configuration profiles: %s', err.message)
+            return []
+          })
+      })
+    }
+
+    // one cleanup at a time: a release during a running one waits for it; the profiles after the apps (one go-ios
+    // call at a time)
     var running: Promise<unknown> = Promise.resolve()
     group.on('leave', function() {
       var since = uses
-      running = running.then(function() {
-        return plugin.removeApps(since)
-      })
+      var apps: string[] = []
+      running = running
+        .then(function() {
+          return plugin.removeApps(since)
+        })
         .then(function(removed) {
-          log.info('Cleanup done, %d apps removed', (removed as string[]).length)
+          apps = removed
+          return plugin.removeProfiles(since)
+        })
+        .then(function(profiles) {
+          log.info('Cleanup done, %d apps and %d configuration profiles removed', apps.length
+          , profiles.length)
         })
     })
 

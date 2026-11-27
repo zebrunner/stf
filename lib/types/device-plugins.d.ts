@@ -54,6 +54,9 @@ export interface DevicePluginOptions {
   cleanupFolder: string[]
   // Fork (Zebrunner): lib/util/zebrunner-cleanup.ts
   cleanupKeepPackages: string[]
+  // Fork (Zebrunner): lib/util/zebrunner-reset.ts, the steps and the Wi-Fi networks the reset keeps
+  cleanupReset: string[]
+  cleanupKeepWifi: string[]
   cleanupDisableBluetooth: boolean
   cleanupBluetoothBonds: boolean
   muteMaster: 'always' | 'inuse' | 'never'
@@ -249,4 +252,6 @@ export interface CleanupPlugin {
   disableBluetooth(): Bluebird<void>
   cleanBluetoothBonds(): Bluebird<void>
   cleanFolders(): Bluebird<string[]>
+  // Fork (Zebrunner): the steps of --cleanup-reset that ran
+  resetState(): Bluebird<string[]>
 }

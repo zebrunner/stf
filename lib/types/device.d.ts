@@ -40,6 +40,9 @@ export interface DeviceOptions {
   cleanupFolder: string[]
   // Fork (Zebrunner): lib/util/zebrunner-cleanup.ts
   cleanupKeepPackages: string[]
+  // Fork (Zebrunner): lib/util/zebrunner-reset.ts, the steps and the Wi-Fi networks the reset keeps
+  cleanupReset: string[]
+  cleanupKeepWifi: string[]
   screenReset: boolean
 }
 

@@ -21,6 +21,7 @@ The image `public.ecr.aws/zebrunner/stf` runs the STF units of [mcloud](https://
 | `.ipa` manifests (Info.plist) in the apk storage plugin | `lib/units/storage/plugins/apk/task/` |
 | The WebSocket sends the commands of a user (input, shell, install, remote ADB, files, ...) to the devices the user uses only (an admin: to any device), the invitations to the devices of the groups of the user, and subscribes the client to the channels of its transactions only: the channel of a device is `base64(sha1(serial))`, so any user controlled any device. A released device gets no command later than 2 s after it | `lib/units/websocket/zebrunner-channels.ts`, `lib/db/zebrunner.ts` |
 | A malformed ZeroMQ message or WebSocket event (or a listener failing on it) is logged once a minute and dropped instead of ending the unit: the listeners run in `process.nextTick`, so their exceptions were uncaught | `lib/util/zebrunner-guard.ts`, `lib/wire/router.ts`, `lib/units/websocket/index.ts` |
+| The cleanup between the uses of a device: the apps installed since the first start of the unit are uninstalled (but the helpers of the farm, `--cleanup-keep-packages`), also on iOS (go-ios), then the state a user can leave for the next one is reset: the global proxy, Private DNS, accessibility services, clipboard, Wi-Fi networks and downloads of Android, the configuration profiles (and their root certificates) of iOS, each step can be left out (`--cleanup-reset`), see [Cleanup between uses](#cleanup-between-uses) | `lib/util/zebrunner-cleanup.ts`, `lib/util/zebrunner-reset.ts`, `lib/units/device/plugins/cleanup.ts`, `lib/units/ios-device/plugins/cleanup.ts` |
 | Android rotation: the rotation of the user is always locked (STFService thawed an unlocked one at once, the sensors turned a device standing in a rack back to portrait), a rotated device is turned back to a locked portrait with the auto-rotate setting it had before when it is released, also without the screen reset (no Home); `--lock-rotation` is ignored | `lib/units/device/plugins/service.ts`, `lib/units/device/plugins/group.ts` |
 | UI: iOS/tvOS controls, the app under `/stf`, device list filter and scroll position | `res/app/src/` (`zebrunner` in the file name, or marked `Fork (Zebrunner)`) |
 | The cookies of an https deployment are Secure whatever the headers of the request, the address of the client is the one stf-proxy saw; `GET /auth/contact` tells the admin to the signed-in users only, `GET /api/v1/users` lists the users of the groups of a user (every user to an admin), the description of the API needs a user, see [Sessions](#sessions) and [REST API](#rest-api) | `lib/util/zebrunner-session.ts`, `lib/util/zebrunner-contact.ts`, `lib/units/api/controllers/users.ts`, `res/app/src/features/settings/groups/` |
@@ -154,6 +155,45 @@ The variables the fork adds or the Zebrunner deployment relies on, the other opt
 Every Android device worker sends its ports to the processor (`DevicePortsMessage`) before it is ready, which stores them in the device document as `screenPort` and `connectPort`, as for the iOS devices. The REST API returns them (`GET /api/v1/devices?fields=serial,platform,present,display,screenPort,connectPort,provider`); the adb relay of mcloud reads `GET /api/v1/nodes/relay`, see [Nodes (enrollment)](#nodes-enrollment).
 
 `stf ios-device` takes the options of a device unit plus `--wda-host` (`127.0.0.1` by default; mcloud-device passes `WDA_HOST`, the connector container), `--wda-port`, `--mjpeg-port`, `--device-name` and `--host`, see `stf ios-device --help`. Its `--connect-port` is the port of the MJPEG stream of WebDriverAgent (mcloud-device passes `MJPEG_PORT`), unless `--mjpeg-port` is given; the API returns it as the `connectPort` of the device.
+
+### Cleanup between uses
+
+With `--cleanup` (the default) a device is cleaned up when its user releases it (`lib/units/device/plugins/cleanup.ts`, `lib/units/ios-device/plugins/cleanup.ts`):
+
+1. the apps installed since the first start of the unit in this container are uninstalled (adb, go-ios), but the ones of `--cleanup-keep-packages` (the helpers of the farm installed later: UiAutomator2, the settings of Appium, the agent of the MDM) and WebDriverAgent;
+2. the state is reset, the steps of `--cleanup-reset` (`lib/util/zebrunner-reset.ts`), in this order. Each step is logged (`device:plugins:cleanup`), a failed one is logged and the next one runs; the cleanup never stops the unit.
+
+| Step | Platform | Default | What it does |
+| --- | --- | --- | --- |
+| `proxy` | Android | on | a global HTTP proxy is turned off: `settings put global http_proxy :0` (Android applies it at once, a deleted key only at the next boot), then `http_proxy`, `global_http_proxy_host`, `_port`, `_exclusion_list` and `global_proxy_pac_url` are deleted. A farm whose devices need a global proxy leaves the step out |
+| `dns` | Android | on | a Private DNS of a host name (`private_dns_mode=hostname`) goes back to the default of Android (`private_dns_mode`, `private_dns_specifier` deleted) |
+| `accessibility` | Android | on | the accessibility services of the apps that are not of `--cleanup-keep-packages` are turned off (`enabled_accessibility_services`; `accessibility_enabled=0` when none is left); add the app of a service the farm needs to the keep list |
+| `clipboard` | Android | on | the clipboard is emptied (STFService) |
+| `wifi` | Android 11+ | on | the saved Wi-Fi networks that are neither of the first start (the same SSID and security: an open network of the name of the farm network is not it) nor of `--cleanup-keep-wifi` (SSIDs) are forgotten (`cmd wifi list-networks`, `forget-network`). Without the list at the start (Android 10 and older) none is forgotten. A network the MDM adds later goes to `--cleanup-keep-wifi` |
+| `downloads` | Android | on | `/sdcard/Download` is emptied (only the number of the files is logged) |
+| `media` | Android | off | `/sdcard/DCIM`, `Pictures`, `Movies`, `Music` and `Documents` are emptied too |
+| `report` | Android | on | the device admins (but the ones of `--cleanup-keep-packages`) and the accounts (their types, never their names) added since the first start are logged as warnings: adb cannot remove them |
+| `profiles` | iOS | on | the configuration profiles installed since the first start (`ios profile list`) are removed (`ios profile remove`), with the root certificates they installed and trusted; the profiles of the farm stay by their exact identifiers: the enrollment profile of mcloud-mdm (`com.zebrunner.mcloud.mdm`), its ready profiles (`com.zebrunner.mcloud.mdm.preset.*`, each by its name), the Wi-Fi profile of `zebrunner.sh mdm supervise` (`com.zebrunner.mcloud.wifi`), `com.apple.configurator.usbrestrictedmode` of `ios prepare`, and `--cleanup-keep-profiles` (a custom `MDM_PROFILE_ID` of mcloud-mdm, a profile the admin UI installs) |
+
+| Option | Variable (provider) | Default | Description |
+| --- | --- | --- | --- |
+| `--cleanup-reset` | `STF_PROVIDER_CLEANUP_RESET` | every step but `media` | the steps, separated by spaces or commas; `none`: no step. One list for both platforms: a platform runs its steps of it |
+| `--cleanup-keep-wifi` | `STF_PROVIDER_CLEANUP_KEEP_WIFI` | | Android: the SSIDs of the Wi-Fi networks that stay besides the ones of the first start, separated by commas |
+| `--cleanup-keep-profiles` | | | iOS (`stf ios-device`): the identifiers of the profiles that stay besides the ones of the first start and of the farm, exact or a prefix ending with `*`, separated by spaces or commas |
+
+The lists of the first start (the apps, the Wi-Fi networks, the device admins, the accounts, the profiles) are kept in `STF_CLEANUP_BASELINE_DIR` (the temp folder of the container by default) as `stf-cleanup-baseline-<serial>[-<kind>].json`: a restart of the unit (a reboot of the device, a crash) compares with them, not with what a user left; a new container starts new lists.
+
+What the cleanup does not reset, and why:
+
+| State | Why | What helps |
+| --- | --- | --- |
+| Android: the CA certificates a user installed | the shell of adb cannot read or write `/data/misc/user/0/cacerts-added` (checked on Android 12: Permission denied) | the device owner can: `DevicePolicyManager.uninstallAllUserCaCerts(admin)` in the agent of mcloud-mdm (a new push command, e.g. `mcloudResetCredentials`) and a node route of mcloud-mdm the unit calls on a release with its node token (`POST /android/cleanup?serial=<serial>` behind stf-proxy, as `/android/status`): follow-up, not implemented |
+| Android: the accounts (Google, ...) | neither the shell nor the device owner can remove the account of another app; logged by `report` | the preset `accounts-off` of mcloud-mdm (`no_modify_accounts`) keeps users from adding them |
+| Android: a device admin of an app | `dpm remove-active-admin` refuses an admin that is not test-only, and such an app cannot be uninstalled; logged by `report` | a factory reset |
+| Android: the default apps (roles) | an uninstalled app loses its roles; a role given to an app that stays is kept (Android 12 `cmd role` cannot list them) | |
+| Android: the proxy of a saved Wi-Fi network (the farm network) | a setting of the network, the shell cannot read or change it | the preset `wifi-locked` of mcloud-mdm (`no_config_wifi`) |
+| iOS: the data of Safari, the pasteboard | no lockdown or MDM command clears them (the pasteboard: WebDriverAgent could, follow-up) | |
+| iOS: whether `ios profile remove` removes a profile the user installed through Settings or one MDM installed | not checked on a device; a failure is logged and the profile stays | the preset `erase-off` of mcloud-mdm (`allowUIConfigurationProfileInstallation=false`) keeps users from installing profiles |
 
 ## REST API
 

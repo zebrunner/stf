@@ -2,6 +2,7 @@ import {createRequire} from 'module'
 import type {Argv} from 'yargs'
 import type {CommandArgv} from '../../types/cli.js'
 import type {IosDeviceOptions} from '../../types/ios-device.js'
+import {DEFAULT_RESET_STEPS} from '../../util/zebrunner-reset.js'
 
 var require = createRequire(import.meta.url)
 
@@ -39,6 +40,21 @@ var builder = function(yargs: Argv) {
         'at its start: ' +
         'ids or prefixes ending with *, separated by spaces or commas, ' +
         'eg. "--cleanup-keep-packages io.appium.settings com.hmdm.*"'
+    , type: 'array'
+    , default: []
+    })
+    .option('cleanup-reset', {
+      describe: 'Fork (Zebrunner): the steps of the reset of the state of the device the ' +
+        'cleanup runs, separated by spaces or commas, "none" for none: Android proxy, dns, ' +
+        'accessibility, clipboard, wifi, downloads, media, report; iOS profiles. The steps of ' +
+        'the other platform are ignored (ZEBRUNNER.md#cleanup-between-uses)'
+    , type: 'array'
+    , default: DEFAULT_RESET_STEPS
+    })
+    .option('cleanup-keep-profiles', {
+      describe: 'Fork (Zebrunner): the identifiers of the configuration profiles the cleanup ' +
+        'keeps besides the ones the device had at its start and the ones of the farm, ' +
+        'ids or prefixes ending with *, separated by spaces or commas'
     , type: 'array'
     , default: []
     })
@@ -223,6 +239,8 @@ var handler = function(argv: CommandArgv<typeof builder>) {
   , lockRotation: argv.lockRotation
   , cleanup: argv.cleanup
   , cleanupKeepPackages: argv.cleanupKeepPackages.map(String)
+  , cleanupReset: argv.cleanupReset.map(String)
+  , cleanupKeepProfiles: argv.cleanupKeepProfiles.map(String)
   , screenReset: argv.screenReset
   , deviceName: String(argv.deviceName)
   , host: argv.host

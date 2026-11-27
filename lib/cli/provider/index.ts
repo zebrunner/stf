@@ -6,6 +6,7 @@ import {createRequire} from 'module'
 import type {Argv} from 'yargs'
 import type {CommandArgv} from '../../types/cli.js'
 import type {Device} from '@devicefarmer/adbkit'
+import {DEFAULT_RESET_STEPS} from '../../util/zebrunner-reset.js'
 
 var require = createRequire(import.meta.url)
 
@@ -76,6 +77,20 @@ var builder = function(yargs: Argv) {
         'at its start: ' +
         'ids or prefixes ending with *, separated by spaces or commas, ' +
         'eg. "--cleanup-keep-packages io.appium.settings com.hmdm.*"'
+    , type: 'array'
+    , default: []
+    })
+    .option('cleanup-reset', {
+      describe: 'Fork (Zebrunner): the steps of the reset of the state of the device the ' +
+        'cleanup runs, separated by spaces or commas, "none" for none: Android proxy, dns, ' +
+        'accessibility, clipboard, wifi, downloads, media, report; iOS profiles. The steps of ' +
+        'the other platform are ignored (ZEBRUNNER.md#cleanup-between-uses)'
+    , type: 'array'
+    , default: DEFAULT_RESET_STEPS
+    })
+    .option('cleanup-keep-wifi', {
+      describe: 'Fork (Zebrunner): the SSIDs of the Wi-Fi networks the cleanup keeps besides ' +
+        'the ones the device had at its start, separated by commas'
     , type: 'array'
     , default: []
     })
@@ -310,6 +325,11 @@ var handler = function(argv: CommandArgv<typeof builder, {serial: (string | numb
       .concat(argv.cleanupFolder ? ['--cleanup-folder' as CliArg].concat(argv.cleanupFolder) : [])
       .concat(argv.cleanupKeepPackages.length ?
         ['--cleanup-keep-packages' as CliArg].concat(argv.cleanupKeepPackages.map(String)) : [])
+      // Fork (Zebrunner): lib/util/zebrunner-reset.ts; an empty list of steps is "none"
+      .concat(['--cleanup-reset' as CliArg].concat(argv.cleanupReset.length ?
+        argv.cleanupReset.map(String) : ['none']))
+      .concat(argv.cleanupKeepWifi.length ?
+        ['--cleanup-keep-wifi' as CliArg].concat(argv.cleanupKeepWifi.map(String)) : [])
       .concat(!argv.screenReset ? ['--no-screen-reset'] : [])
 
       var proc = fork(cli, args)
