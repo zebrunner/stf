@@ -51,6 +51,15 @@ var builder = function(yargs: Argv) {
     , type: 'string'
     , demand: true
     })
+    // Fork (Zebrunner): ZEBRUNNER.md#websocket-origin
+    .option('allowed-origin', {
+      describe: 'An origin (or URL) of the pages of the UI that may open the WebSocket, ' +
+        'besides the one of --storage-url and the host of the request. A browser of another ' +
+        'origin is refused.'
+    , type: 'string'
+    , array: true
+    , default: []
+    })
     .epilog('Each option can be be overwritten with an environment variable ' +
       'by converting the option to uppercase, replacing dashes with ' +
       'underscores and prefixing it with `STF_WEBSOCKET_` (e.g. ' +
@@ -63,6 +72,7 @@ var handler = function(argv: CommandArgv<typeof builder>) {
   , secret: argv.secret
   , ssid: argv.ssid
   , storageUrl: argv.storageUrl
+  , allowedOrigins: argv.allowedOrigin
   , endpoints: {
       sub: argv.connectSub
     , push: argv.connectPush

@@ -71,6 +71,7 @@ import {touchPathIosMessage} from '../../wire/zebrunner.js'
 import {guardSocket} from '../../util/zebrunner-guard.js'
 import {channelGuard} from './zebrunner-channels.js'
 import zebrunnerSession from '../../util/zebrunner-session.js'
+import zebrunnerOrigin from './zebrunner-origin.js'
 
 var request = Promise.promisifyAll(cypressRequest) as unknown as PromisifiedRequest
 var adb = adbutil()
@@ -182,9 +183,19 @@ interface WebsocketClientEvents {
 export default function(options: WebsocketOptions) {
   var log = logger.createLogger('websocket')
   var server = http.createServer()
+  // Fork (Zebrunner): a browser opens the socket from the pages of STF only, see zebrunner-origin.ts
+  var origins = zebrunnerOrigin.allowedOrigins(options.allowedOrigins, options.storageUrl)
   var io = new Socketio<WebsocketClientEvents, DefaultEventsMap>(server, {
         serveClient: false
       , transports: ['websocket']
+      , allowRequest: function(req, callback) {
+          var refusal = zebrunnerOrigin.originRefusal(req.headers, origins)
+          if (refusal) {
+            log.warn('Refused a WebSocket of %s: %s', JSON.stringify(req.headers.origin), refusal)
+            return callback('Forbidden', false)
+          }
+          return callback(null, true)
+        }
       })
   var channelRouter = new events.EventEmitter()
 

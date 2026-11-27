@@ -6,6 +6,8 @@ export interface WebsocketOptions {
   secret: string
   ssid: string
   storageUrl: string
+  // Fork (Zebrunner): the origins of the pages that may open the socket, lib/units/websocket/zebrunner-origin.ts
+  allowedOrigins?: string[]
   endpoints: {
     sub: string[]
     push: string[]
