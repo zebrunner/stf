@@ -4,6 +4,7 @@ import cookieSession from 'cookie-session'
 import express from 'express'
 
 import {importFresh, mockModule} from '../../helpers/module-mock.mts'
+import zebrunnerSession from '../../../lib/util/zebrunner-session.js'
 import {listen, sessionCookie, type Running} from '../../helpers/zebrunner.mts'
 
 var SECRET = 'authsession-secret'
@@ -124,6 +125,28 @@ describe('zebrunner: authsession', function() {
     expect(await res.json()).to.eql({success: true})
     expect(deleted).to.eql(['mine'])
     expect(res.headers.getSetCookie().join('\n')).to.match(/ssid=;/)
+  })
+
+  it('should keep the Secure cookie of an https URL, X-Forwarded-Proto: http', async function() {
+    var app = express()
+    app.use(zebrunnerSession.sessionCookie('ssid', SECRET, 'https://mcloud.example.com/auth/mock/'))
+    app.use(authsession.middleware())
+    app.get('/signin', function(req, res, next) {
+      req.session!.jwt = {email: 'new@example.com', name: 'New'}
+      authsession.establish(req)
+        .then(function() {
+          res.end()
+        })
+        .catch(next)
+    })
+    var https = await listen(app)
+    try {
+      var res = await fetch(https.origin + '/signin', {headers: {'x-forwarded-proto': 'http'}})
+      expect(res.headers.getSetCookie().join('\n')).to.match(/ssid=[^;]+;.*secure/i)
+    }
+    finally {
+      await https.close()
+    }
   })
 
   it('should take the lifetime of the sessions from STF_SESSION_TTL_SECONDS', function() {

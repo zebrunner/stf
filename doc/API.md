@@ -20,7 +20,7 @@ A few [examples](#examples) are also provided. We also have a more advanced exam
 
 STF uses OAuth 2.0 for authentication. In order to use the API, you will first need to generate an access token. Access tokens can be easily generated from the STF UI. Just go to the **Settings** tab and generate a new access token in **Keys** section. Don't forget to save this token somewhere, you will not be able to see it again.
 
-The access token must be included in every request.
+The access token must be included in every request, also the one of the description of the API (`/api/v1/swagger.json`, Zebrunner: no longer public).
 
 Using cURL:
 

@@ -15,7 +15,8 @@ import logger from '../../util/logger.js'
 import urlutil from '../../util/urlutil.js'
 import jwtutil from '../../util/jwtutil.js'
 
-import dbapi from '../../db/api.js'
+import zebrunnerSession from '../../util/zebrunner-session.js'
+import zebrunnerContact from '../../util/zebrunner-contact.js'
 import type {VerifiedCallback, VerifyWithoutRequest} from '@node-saml/passport-saml'
 
 interface Saml2AuthOptions {
@@ -42,23 +43,13 @@ export default function(options: Saml2AuthOptions) {
   app.set('strict routing', true)
   app.set('case sensitive routing', true)
 
-  app.get('/auth/contact', function(req, res) {
-    dbapi.getRootGroup().then(function(group) {
-      res.status(200)
-        .json({
-          success: true
-        , contact: group.owner
-        })
-    })
-    .catch(function(err) {
-      log.error('Unexpected error', err.stack)
-      res.status(500)
-        .json({
-          success: false
-        , error: 'ServerError'
-        })
-      })
-  })
+  // Fork (Zebrunner): the admin for the signed-in users only (the session cookie of the app), only read
+  // here, lib/util/zebrunner-contact.ts
+  app.get(
+    '/auth/contact'
+  , zebrunnerSession.sessionCookie(options.ssid, options.secret, options.appUrl)
+  , zebrunnerContact.contact(log)
+  )
 
   var verify: VerifyWithoutRequest = function(profile, done: VerifiedCallback) {
     return done(null, profile as Record<string, unknown>)

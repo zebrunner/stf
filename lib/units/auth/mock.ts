@@ -27,6 +27,7 @@ import lifecycle from '../../util/lifecycle.js'
 
 import dbapi from '../../db/api.js'
 import zebrunnerSession from '../../util/zebrunner-session.js'
+import zebrunnerContact from '../../util/zebrunner-contact.js'
 
 interface MockAuthOptions {
   port: number
@@ -69,7 +70,8 @@ export default function(options: MockAuthOptions) {
 
   // Fork (Zebrunner): with the admin credentials set, an admin of STF signs in with them only. The mock sign-in takes
   // any name and email behind the credentials of the users, so without them whoever has those credentials and knows
-  // the name and the email of an admin (GET /auth/contact tells the ones of the root group) signs in as the admin
+  // the name and the email of an admin (GET /auth/contact tells a signed-in user the email of the root group's
+  // owner) signs in as the admin
   var adminAuth = options.mock.adminBasicAuth || {}
   var adminSignIn = Boolean(adminAuth.username && adminAuth.password)
   function isAdminCredentials(user: ReturnType<typeof credentials>) {
@@ -123,16 +125,15 @@ export default function(options: MockAuthOptions) {
   app.set('strict routing', true)
   app.set('case sensitive routing', true)
 
-  // Fork (Zebrunner): HttpOnly, SameSite=Lax and Secure over https, lib/util/zebrunner-session.ts
-  app.use(zebrunnerSession.sessionCookie(options.ssid, options.secret))
+  // Fork (Zebrunner): HttpOnly, SameSite=Lax and Secure with an https --app-url or over https,
+  // lib/util/zebrunner-session.ts
+  app.use(zebrunnerSession.sessionCookie(options.ssid, options.secret, options.appUrl))
   app.use(bodyParser.json())
   app.use(csrf())
   app.use('/static/auth/mock', serveStatic(pathutil.resource('auth/mock')))
 
-  app.use(function(req, res, next) {
-    res.cookie('XSRF-TOKEN', req.csrfToken())
-    next()
-  })
+  // Fork (Zebrunner): Secure as the session cookie, lib/util/zebrunner-session.ts
+  app.use(zebrunnerSession.xsrfCookie(options.appUrl))
 
   if (options.mock.useBasicAuth) {
     app.use(basicAuthMiddleware)
@@ -144,23 +145,8 @@ export default function(options: MockAuthOptions) {
     res.redirect('/auth/mock/')
   })
 
-  app.get('/auth/contact', function(req, res) {
-    dbapi.getRootGroup().then(function(group) {
-      res.status(200)
-        .json({
-          success: true
-        , contact: group.owner
-        })
-    })
-    .catch(function(err) {
-      log.error('Unexpected error', err.stack)
-      res.status(500)
-        .json({
-          success: false
-        , error: 'ServerError'
-        })
-      })
-  })
+  // Fork (Zebrunner): the admin for the signed-in users only, lib/util/zebrunner-contact.ts
+  app.get('/auth/contact', zebrunnerContact.contact(log))
 
   app.get('/auth/mock/', function(req, res) {
     res.render('index')

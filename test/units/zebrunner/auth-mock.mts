@@ -62,3 +62,45 @@ describe('zebrunner: auth-mock', function() {
     expect(exp).to.be.at.most(Date.now() + 2 * 60 * 1000)
   })
 })
+
+describe('zebrunner: auth-mock behind https', function() {
+  var auth: Running
+
+  before(async function() {
+    var restores = [
+      mockModule(new URL('../../../lib/db/index.js', import.meta.url), {default: {}})
+    , mockModule(new URL('../../../lib/db/api.js', import.meta.url), {default: {}})
+    ]
+    try {
+      auth = await startUnit(new URL('../../../lib/units/auth/mock.js', import.meta.url), {
+        secret: 'mock-secret'
+      , ssid: 'ssid'
+      , appUrl: 'https://stf.example.com/stf'
+      , mock: {useBasicAuth: false, basicAuth: {}}
+      })
+    }
+    finally {
+      restores.forEach(function(restore) {
+        restore()
+      })
+    }
+  })
+
+  after(function() {
+    return auth.close()
+  })
+
+  it('should set Secure cookies for an https app URL, X-Forwarded-Proto: http', async function() {
+    var page = await fetch(auth.origin + '/auth/mock/', {headers: {'x-forwarded-proto': 'http'}})
+    var cookies = page.headers.getSetCookie()
+    expect(cookies.filter(function(cookie) {
+      return /^(ssid|XSRF-TOKEN)=[^;]*;.*; secure/i.test(cookie)
+    })).to.have.length(2)
+  })
+
+  it('should tell the admin to no one who is not signed in', async function() {
+    var res = await fetch(auth.origin + '/auth/contact')
+    expect(res.status).to.equal(200)
+    expect(await res.json()).to.eql({success: true, contact: {}})
+  })
+})

@@ -4,7 +4,6 @@
 
 import {createRequire} from 'module'
 import http from 'http'
-import url from 'url'
 import fs from 'fs'
 
 import express from 'express'
@@ -64,7 +63,8 @@ export default function(options: AppOptions) {
   app.set('views', pathutil.resource('app/views'))
   app.set('strict routing', true)
   app.set('case sensitive routing', true)
-  app.set('trust proxy', true)
+  // Fork (Zebrunner): X-Forwarded-For of stf-proxy only, lib/util/zebrunner-session.ts
+  app.set('trust proxy', zebrunnerSession.trustProxy)
 
   // one-shot startup check for a prebuilt bundle
   // eslint-disable-next-line no-sync
@@ -98,8 +98,9 @@ export default function(options: AppOptions) {
   app.use(serveFavicon(pathutil.resource(
     'common/logo/exports/STF-128.png')))
 
-  // Fork (Zebrunner): HttpOnly, SameSite=Lax and Secure over https, lib/util/zebrunner-session.ts
-  app.use(zebrunnerSession.sessionCookie(options.ssid, options.secret))
+  // Fork (Zebrunner): HttpOnly, SameSite=Lax and Secure with an https public URL (the one of the sign-in) or
+  // over https, lib/util/zebrunner-session.ts
+  app.use(zebrunnerSession.sessionCookie(options.ssid, options.secret, options.authUrl))
 
   // Fork (Zebrunner): sessions expire and end at logout, see lib/util/authsession.ts
   app.use(authsession.middleware())
@@ -119,10 +120,8 @@ export default function(options: AppOptions) {
   app.use(bodyParser.json())
   app.use(csrf())
 
-  app.use(function(req, res, next) {
-    res.cookie('XSRF-TOKEN', req.csrfToken())
-    next()
-  })
+  // Fork (Zebrunner): Secure as the session cookie, lib/util/zebrunner-session.ts
+  app.use(zebrunnerSession.xsrfCookie(options.authUrl))
 
   app.disable('x-powered-by')
 
@@ -133,11 +132,9 @@ export default function(options: AppOptions) {
   app.get('/app/api/v1/state.js', function(req, res) {
     var state: AppState = {
       config: {
-        websocketUrl: (function() {
-          var wsUrl = url.parse(options.websocketUrl, true)
-          wsUrl.query.uip = req.ip
-          return url.format(wsUrl)
-        })()
+        // Fork (Zebrunner): no uip parameter of the client address, the websocket unit takes the one of
+        // stf-proxy (a parameter of the URL is the client's to change)
+        websocketUrl: options.websocketUrl
       , stfVersion: packageJson.version
       }
     , user: req.user

@@ -509,6 +509,13 @@ function addGroupUsers(req: ApiRequest<EmailsBody>, res: Response) {
   const target = apiutil.getQueryParameter(req.swagger.params.redirected) ? 'user' : 'users'
   const lock: ApiLock = {}
 
+  // Fork (Zebrunner): without emails every user is added: an admin only, otherwise the owner of a group
+  // would list every user through its group (GET /users shows the users of the groups of a user)
+  if (typeof emails === 'undefined' && req.user.privilege !== apiutil.ADMIN) {
+    apiutil.respond(res, 400, 'Bad Request (the emails of the users to add)')
+    return
+  }
+
   function addGroupUser(email: string) {
     const lock: ApiLock = {}
 

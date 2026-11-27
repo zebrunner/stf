@@ -5,7 +5,7 @@ import {groupsApi, type Group} from '@/core/groups-api'
 import {gettext, translate} from '@/core/i18n'
 import {openConfirm, withErrorModal} from '@/ui/modals'
 import {flattenConflicts, isOriginGroup, type ScheduleDraft} from './rules'
-import {setGroupConflicts} from './store'
+import {loadSettingsUsers, setGroupConflicts} from './store'
 import type {ServerConflict, SettingsDevice, SettingsUser} from './types'
 
 function showConflicts(groupId: string, error: unknown): void {
@@ -105,6 +105,23 @@ export async function removeGroupDevices(group: Group, devices: SettingsDevice[]
 
 export async function addGroupUser(group: Group, user: SettingsUser): Promise<boolean> {
   const {error} = await withErrorModal(() => groupsApi.addGroupUser(group.id, user.email))
+  return !error
+}
+
+// Fork (Zebrunner): a user out of the list (a user who is not an admin sees the users of its groups only) is added by
+// its email, then listed with the users of the groups
+export function isUserEmail(email: string): boolean {
+  return /^[^\s/?#%@]+@[^\s/?#%@]+$/.test(email.trim())
+}
+
+export async function addGroupUserByEmail(group: Group, email: string): Promise<boolean> {
+  if (!isUserEmail(email)) {
+    return false
+  }
+  const {error} = await withErrorModal(() => groupsApi.addGroupUser(group.id, email.trim()))
+  if (!error) {
+    await loadSettingsUsers()
+  }
   return !error
 }
 

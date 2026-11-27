@@ -19,6 +19,7 @@ import requtil from '../../util/requtil.js'
 import storageauth, {type StorageSecurityOptions} from '../../util/storageauth.js'
 import urlsafety from '../../util/urlsafety.js'
 import bundletool from '../../util/bundletool.js'
+import zebrunnerSession from '../../util/zebrunner-session.js'
 
 var require = createRequire(import.meta.url)
 var formidable: typeof Formidable = require('formidable')
@@ -42,7 +43,8 @@ export default function(options: TempStorageOptions & StorageSecurityOptions) {
 
   app.set('strict routing', true)
   app.set('case sensitive routing', true)
-  app.set('trust proxy', true)
+  // Fork (Zebrunner): X-Forwarded-For of stf-proxy only, lib/util/zebrunner-session.ts
+  app.set('trust proxy', zebrunnerSession.trustProxy)
 
   app.use(storageauth.middleware(options))
   app.use(bodyParser.json())

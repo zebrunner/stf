@@ -87,6 +87,12 @@ describe('zebrunner: auth-oauth2', function() {
     })
   })
 
+  it('should tell the admin to no one who is not signed in', async function() {
+    var res = await fetch(auth.origin + '/auth/contact')
+    expect(res.status).to.equal(200)
+    expect(await res.json()).to.eql({success: true, contact: {}})
+  })
+
   it('should check the domain of an email', function() {
     expect(signin.isEmailAllowed('a@example.com', '@Example.com')).to.equal(true)
     expect(signin.isEmailAllowed('a@sub.example.com', 'example.com')).to.equal(false)

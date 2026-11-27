@@ -15,7 +15,8 @@ import pathutil from '../../../util/pathutil.js'
 import signin from '../../../util/zebrunner-signin.js'
 import Strategy from './strategy.js'
 
-import dbapi from '../../../db/api.js'
+import zebrunnerSession from '../../../util/zebrunner-session.js'
+import zebrunnerContact from '../../../util/zebrunner-contact.js'
 import type {VerifyCallback} from 'passport-oauth2'
 
 interface OAuth2AuthOptions {
@@ -38,23 +39,13 @@ export default function(options: OAuth2AuthOptions) {
   app.set('view engine', 'pug')
   app.set('views', pathutil.resource('app/views'))
 
-  app.get('/auth/contact', function(req, res) {
-    dbapi.getRootGroup().then(function(group) {
-      res.status(200)
-        .json({
-          success: true
-        , contact: group.owner
-        })
-    })
-    .catch(function(err) {
-      log.error('Unexpected error', err.stack)
-      res.status(500)
-        .json({
-          success: false
-        , error: 'ServerError'
-        })
-      })
-  })
+  // Fork (Zebrunner): the admin for the signed-in users only (the session cookie of the app), only read
+  // here, lib/util/zebrunner-contact.ts
+  app.get(
+    '/auth/contact'
+  , zebrunnerSession.sessionCookie(options.ssid, options.secret, options.appUrl)
+  , zebrunnerContact.contact(log)
+  )
 
   function verify(
     accessToken: string
