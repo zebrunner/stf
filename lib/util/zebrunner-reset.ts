@@ -440,8 +440,19 @@ export function androidReset(options: AndroidResetOptions): Promise<string[]> {
       return run(['cmd', 'wifi', 'list-networks'])
         .then(parseWifiNetworks)
         .then(function(networks) {
-          var forget = networks.filter(function(network) {
-            return !kept.has(wifiKey(network)) && !keepSsids.has(network.ssid)
+          // a network has a line per security type it takes (Android 16: open and owe): it stays when
+          // one of them is of the first start
+          var keptIds = new Set(networks
+            .filter(function(network) {
+              return kept.has(wifiKey(network)) || keepSsids.has(network.ssid)
+            })
+            .map(function(network) {
+              return network.id
+            }))
+          var forget = networks.filter(function(network, index) {
+            return !keptIds.has(network.id) && networks.findIndex(function(other) {
+              return other.id === network.id
+            }) === index
           })
           return Promise.mapSeries(forget, function(network) {
             log.info('Cleanup forgets the Wi-Fi network "%s" (%s)', network.ssid, network.security)

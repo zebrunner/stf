@@ -564,6 +564,15 @@ describe('zebrunner: the cleanup of a device', function() {
         {id: '0', ssid: 'SOLVD_DEMO', security: 'wpa2-psk'}
       , {id: '3', ssid: 'My Home Wi-Fi', security: 'open'}
       ])
+      // Android 16: a line per security type of a network
+      expect(parseWifiNetworks([
+        'Network Id      SSID                         Security type'
+      , '0            AndroidWifi                      open'
+      , '0            AndroidWifi                      owe^'
+      ].join('\n'))).to.deep.equal([
+        {id: '0', ssid: 'AndroidWifi', security: 'open'}
+      , {id: '0', ssid: 'AndroidWifi', security: 'owe^'}
+      ])
       expect(parseWifiNetworks('Network Id      SSID                         Security type\n'))
         .to.deep.equal([])
       expect(function() {
@@ -820,6 +829,20 @@ describe('zebrunner: the cleanup of a device', function() {
           return call.includes(word)
         })
       })).to.deep.equal([])
+    })
+
+    it('should forget a network of several security types once', async function() {
+      var state = fakeState()
+      state.wifi.push({id: '7', ssid: 'Guest', security: 'open'})
+      state.wifi.push({id: '7', ssid: 'Guest', security: 'owe^'})
+      var before = fakeState()
+      before.wifi.push({id: '0', ssid: 'SOLVD_DEMO', security: 'sae'})
+      var {log} = await reset(state, {steps: ['wifi'], baseline: before})
+      expect(state.wifi).to.deep.equal([{id: '0', ssid: 'SOLVD_DEMO', security: 'wpa2-psk'}])
+      expect(state.calls.filter(function(call) {
+        return call.includes('forget-network')
+      })).to.deep.equal([['cmd', 'wifi', 'forget-network', '7']])
+      expect(log.join('\n')).to.not.contain('Unable')
     })
 
     it('should keep the Wi-Fi networks of --cleanup-keep-wifi', async function() {
