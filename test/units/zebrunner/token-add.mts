@@ -10,7 +10,7 @@ import {fileURLToPath} from 'node:url'
 import {expect} from 'chai'
 import r from 'rethinkdb'
 
-import jwtutil from '../../../lib/util/jwtutil.js'
+import accessTokens from '../../../lib/util/zebrunner-access-tokens.js'
 
 var address = process.env.STF_TEST_RETHINKDB
 var SECRET = 'token-add-secret'
@@ -63,23 +63,39 @@ var ADMIN = 'admin@example.com'
     })
   }
 
-  function tokens(): Promise<Array<{id: string, title: string, email: string, jwt: string}>> {
+  function tokens(): Promise<Array<{
+    id: string, title: string, email: string, jwt?: string, expiresAt?: Date | null
+  }>> {
     return r.table('accessTokens').filter({email: ADMIN}).run(conn)
       .then(function(cursor) {
         return cursor.toArray()
       })
   }
 
-  it('should create an access token of the admin signed with SECRET', async function() {
+  it('should create an access token of the admin and keep its hash only', async function() {
     var result = await tokenAdd([], {STF_ADMIN_EMAIL: ADMIN, SECRET: SECRET})
     expect(result.code).to.equal(0)
     var id = /^token=([0-9a-f]{64})$/m.exec(result.stdout)![1]!
     var saved = await tokens()
     expect(saved).to.have.length(1)
-    expect(saved[0]).to.include({id: id, title: 'mcloud', email: ADMIN})
-    // the API unit verifies the token with its secret (lib/units/api/helpers/securityHandlers.ts)
-    expect(jwtutil.decode(saved[0]!.jwt, SECRET)).to.include({email: ADMIN, name: 'admin'})
-    expect(jwtutil.decode(saved[0]!.jwt, 'another-secret')).to.equal(null)
+    expect(saved[0]).to.include({id: accessTokens.hashId(id), title: 'mcloud', email: ADMIN})
+    expect(saved[0]!.expiresAt).to.equal(null)
+    expect(saved[0]).to.not.have.property('jwt')
+    expect(JSON.stringify(saved)).to.not.include(id)
+    // the API unit finds the user of the token (lib/units/api/helpers/securityHandlers.ts)
+    expect(accessTokens.emailOf(saved[0]!, SECRET)).to.equal(ADMIN)
+  })
+
+  it('should give the token the expiry of --ttl', async function() {
+    var before = Date.now()
+    var result = await tokenAdd(['--email', ADMIN, '--title', 'short', '--ttl', '3600'])
+    expect(result.code).to.equal(0)
+    var saved = (await tokens()).find(function(token) {
+      return token.title === 'short'
+    })!
+    var expiry = new Date(saved.expiresAt!).getTime()
+    expect(expiry).to.be.within(before + 3600 * 1000 - 1000, Date.now() + 3600 * 1000 + 1000)
+    expect((await tokenAdd(['--email', ADMIN, '--title', 'bad', '--ttl', '5'])).code).to.equal(1)
   })
 
   it('should replace the earlier token of the title and keep the other tokens', async function() {
@@ -92,10 +108,10 @@ var ADMIN = 'admin@example.com'
     var saved = await tokens()
     expect(saved.map(function(token) {
       return token.title
-    }).sort()).to.eql(['mcloud', 'mine'])
+    }).sort()).to.eql(['mcloud', 'mine', 'short'])
     expect(saved.find(function(token) {
       return token.title === 'mcloud'
-    })!.id).to.equal(id)
+    })!.id).to.equal(accessTokens.hashId(id))
   })
 
   it('should create a token of another title', async function() {
@@ -106,9 +122,12 @@ var ADMIN = 'admin@example.com'
     })).to.include('grid')
   })
 
-  it('should fail for an unknown user and without a secret', async function() {
+  it('should fail for an unknown user', async function() {
     expect(await tokenAdd(['--email', 'nobody@example.com', '--secret', SECRET]))
       .to.eql({code: 1, stdout: ''})
-    expect((await tokenAdd(['--email', ADMIN])).code).to.equal(1)
+  })
+
+  it('should not need the secret of the units', async function() {
+    expect((await tokenAdd(['--email', ADMIN, '--title', 'nosecret'])).code).to.equal(0)
   })
 })

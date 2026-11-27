@@ -45,6 +45,8 @@ export type ApiParams = {
   redirected?: SwaggerParam<boolean>
   // Fork (Zebrunner): GET /zebrunner/hub-auth
   scope?: SwaggerParam<string | undefined>
+  // Fork (Zebrunner): the lifetime of a new access token, seconds
+  ttl?: SwaggerParam<number | undefined>
 }
 
 export interface SwaggerContext {

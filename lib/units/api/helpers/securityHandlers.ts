@@ -3,7 +3,7 @@
 **/
 
 import dbapi from '../../../db/api.js'
-import jwtutil from '../../../util/jwtutil.js'
+import accessTokens from '../../../util/zebrunner-access-tokens.js'
 import logger from '../../../util/logger.js'
 import apiutil from '../../../util/apiutil.js'
 import type {Response} from 'express'
@@ -51,24 +51,17 @@ function accessTokenAuth(req: SecurityRequest, res: Response, next: (err?: unkno
 
     return dbapi.loadAccessToken(tokenId)
       .then(function(token) {
-        if (!token) {
+        // Fork (Zebrunner): the document of the hash of the token, refused after its expiry
+        // (lib/util/zebrunner-access-tokens.ts); upstream answered 500 to a JWT of another secret
+        var email = accessTokens.emailOf(token, req.options.secret)
+        if (!email) {
           return res.status(401).json({
             success: false
           , description: 'Bad Credentials'
           })
         }
 
-        var jwt = token.jwt
-        var data = jwtutil.decode(jwt, req.options.secret)
-
-        if (!data) {
-          return res.status(500).json({
-            success: false
-          , description: 'Internal Server Error'
-          })
-        }
-
-        return dbapi.loadUser(data.email)
+        return dbapi.loadUser(email)
           .then(function(user) {
             if (user) {
               // Fork (Zebrunner)

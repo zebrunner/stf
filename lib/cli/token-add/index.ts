@@ -32,22 +32,25 @@ var builder = function(yargs: Argv) {
     })
     .option('secret', {
       alias: 's'
-    , describe: 'The secret of the access tokens, the one of the api unit.'
+    , describe: 'Unused: the database keeps the hash of the token (accepted for the scripts ' +
+        'that pass it).'
     , type: 'string'
     , default: process.env.SECRET
     // the value of the secret is not shown by --help
     , defaultDescription: 'SECRET of the environment'
-    , demand: true
+    })
+    .option('ttl', {
+      describe: 'The lifetime of the token in seconds; none by default (the token does not expire).'
+    , type: 'number'
     })
     .epilog('Prints the token as `token=<token>`.')
 }
 
 var handler = function(argv: CommandArgv<typeof builder>) {
-  var crypto: typeof import('crypto') = require('crypto')
   var logger = require('../../util/logger.js').default
   var log = logger.createLogger('cli:token-add')
-  var jwtutil: typeof import('../../util/jwtutil.js').default =
-    require('../../util/jwtutil.js').default
+  var accessTokens: typeof import('../../util/zebrunner-access-tokens.js').default =
+    require('../../util/zebrunner-access-tokens.js').default
 
   function fail(message: string): void {
     log.fatal(message)
@@ -56,15 +59,15 @@ var handler = function(argv: CommandArgv<typeof builder>) {
 
   var email = argv.email
   var title = argv.title
-  var secret = argv.secret
   if (!email) {
     return fail('The email of the user is required (--email or STF_ADMIN_EMAIL)')
   }
-  if (!secret) {
-    return fail('The secret is required (--secret or SECRET)')
-  }
   if (!title) {
     return fail('The title is required')
+  }
+  var invalid = accessTokens.ttlError(argv.ttl)
+  if (invalid) {
+    return fail(`The token is not created: ${invalid}`)
   }
 
   var dbapi: typeof import('../../db/api.js').default = require('../../db/api.js').default
@@ -73,18 +76,16 @@ var handler = function(argv: CommandArgv<typeof builder>) {
       if (!user) {
         return fail(`No user "${email}": run stf migrate first, it creates the admin`)
       }
-      // a token of the API: 64 hex characters, as the ones of POST /api/v1/user/accessTokens
-      var id = crypto.randomBytes(32).toString('hex')
-      var jwt = jwtutil.encode({
-        payload: {
-          email: user.email
-        , name: user.name
-        }
-      , secret: secret
-      })
+      // a token of the API: 64 hex characters, as the ones of POST /api/v1/user/accessTokens; the database
+      // keeps its hash (ZEBRUNNER.md#access-tokens)
+      var id = accessTokens.newSecret()
       return dbapi.removeUserAccessToken(user.email, title)
         .then(function() {
-          return dbapi.saveUserAccessToken(user.email, {id: id, title: title, jwt: jwt})
+          return dbapi.saveUserAccessToken(user.email, {
+            secret: id
+          , title: title
+          , expiresAt: accessTokens.expiryOf(argv.ttl)
+          })
         })
         .then(function() {
           log.important('Access token "%s" of "%s" created', title, user.email)

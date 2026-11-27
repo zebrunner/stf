@@ -1216,6 +1216,15 @@ paths:
           description: Access token title
           required: true
           type: string
+        - name: ttl
+          in: query
+          description: >
+            The lifetime of the token in seconds (60 to 315360000); without it the token does not expire.
+            The token is refused from its expiresAt on.
+          required: false
+          type: integer
+          minimum: 60
+          maximum: 315360000
       responses:
         "201":
           description: Access token information
@@ -1301,7 +1310,7 @@ paths:
           type: string
         - name: id
           in: path
-          description: Access token identifier 
+          description: Access token identifier (the token itself)
           required: true
           type: string
       responses:
@@ -1333,7 +1342,7 @@ paths:
           type: string
         - name: id 
           in: path
-          description: Access token identifier 
+          description: Access token identifier (the token itself)
           required: true
           type: string
       responses:
@@ -1664,6 +1673,15 @@ paths:
           description: Access token title 
           required: true
           type: string
+        - name: ttl
+          in: query
+          description: >
+            The lifetime of the token in seconds (60 to 315360000); without it the token does not expire.
+            The token is refused from its expiresAt on.
+          required: false
+          type: integer
+          minimum: 60
+          maximum: 315360000
       responses:
         "201":
           description: Access token information
@@ -1726,7 +1744,7 @@ paths:
       parameters:
         - name: id
           in: path
-          description: Access token identifier
+          description: Access token identifier (the token itself)
           required: true
           type: string
       responses:
@@ -1753,7 +1771,7 @@ paths:
       parameters:
         - name: id 
           in: path
-          description: Access token identifier
+          description: Access token identifier (the token itself)
           required: true
           type: string
       responses:
@@ -3020,8 +3038,14 @@ definitions:
     properties:
       id:
         type: string
+        description: >
+          The secret of the token, in the answer of its creation only (and of GET with it); STF keeps its hash
       title:
         type: string
+      expiresAt:
+        type: string
+        format: date-time
+        description: The expiry of the token, null when it does not expire
   UserAccessTokenResponse:
     required:
       - success

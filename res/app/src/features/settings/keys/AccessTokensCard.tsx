@@ -8,6 +8,7 @@ import {
   , Collapse
   , Group
   , Loader
+  , NumberInput
   , Text
   , Textarea
   , TextInput
@@ -28,27 +29,55 @@ import classes from './Keys.module.css'
 interface GeneratedToken {
   title: string
   tokenId: string
+  expiresAt?: string | null
+}
+
+// Fork (Zebrunner): the title and the expiry of every token (never its secret, STF keeps its hash only)
+interface AccessTokenInfo {
+  title: string
+  expiresAt?: string | null
 }
 
 const accessTokensQueryKey = ['user', 'accessTokens']
+const DAY_SECONDS = 24 * 60 * 60
+const MAX_TTL_DAYS = 3650
 
-function fetchAccessTokenTitles(): Promise<string[]> {
-  return api.get<{titles?: string[]}>('/api/v1/user/accessTokens')
-    .then((response) => response.titles || [])
+function fetchAccessTokens(): Promise<AccessTokenInfo[]> {
+  return api.get<{tokens?: AccessTokenInfo[]}>('/api/v1/user/fullAccessTokens')
+    .then((response) => response.tokens || [])
+}
+
+function isExpired(expiresAt?: string | null): boolean {
+  return Boolean(expiresAt) && new Date(expiresAt!).getTime() <= Date.now()
+}
+
+function ExpiryText({expiresAt}: {expiresAt?: string | null | undefined}) {
+  const {t} = useTranslation()
+  if (!expiresAt) {
+    return <Text size='xs' c='dimmed'>{t('Does not expire')}</Text>
+  }
+  const date = new Date(expiresAt).toLocaleString()
+  return isExpired(expiresAt) ?
+    <Text size='xs' c='red'>{t('Expired {{date}}', {date})}</Text> :
+    <Text size='xs' c='dimmed'>{t('Expires {{date}}', {date})}</Text>
 }
 
 function GenerateAccessTokenForm({onClose}: {onClose: () => void}) {
   const {t} = useTranslation()
   const [title, setTitle] = useState('')
+  // Fork (Zebrunner): the optional lifetime of the token in days, empty: no expiry
+  const [days, setDays] = useState<number | string>('')
 
   function close() {
     setTitle('')
+    setDays('')
     onClose()
   }
 
   function submit(event: FormEvent) {
     event.preventDefault()
-    emit('user.keys.accessToken.generate', {title})
+    const ttl = typeof days === 'number' && days > 0 ? days * DAY_SECONDS : null
+    emit('user.keys.accessToken.generate', {title, ttl})
     close()
   }
 
@@ -64,6 +93,19 @@ function GenerateAccessTokenForm({onClose}: {onClose: () => void}) {
         value={title}
         onChange={(event) => setTitle(event.currentTarget.value)}
         onFocus={(event) => event.currentTarget.select()}
+      />
+      <NumberInput
+        id='access-token-ttl-days'
+        name='accessTokenTtlDays'
+        label={t('Expires in (days)')}
+        description={t('Empty: the token does not expire')}
+        mt='xs'
+        min={1}
+        max={MAX_TTL_DAYS}
+        allowDecimal={false}
+        allowNegative={false}
+        value={days}
+        onChange={setDays}
       />
       <Group justify='flex-end' gap='xs' mt='sm'>
         <Button variant='default' size='xs' onClick={close}>{t('Cancel')}</Button>
@@ -111,6 +153,7 @@ function GeneratedTokenNotice({token, onClose}: {token: GeneratedToken, onClose:
           {t('OK')}
         </Button>
       </Group>
+      <ExpiryText expiresAt={token.expiresAt} />
     </Alert>
   )
 }
@@ -122,10 +165,10 @@ export function AccessTokensCard() {
   const [generated, setGenerated] = useState<GeneratedToken | null>(null)
   const tokens = useQuery({
     queryKey: accessTokensQueryKey
-    , queryFn: fetchAccessTokenTitles
+    , queryFn: fetchAccessTokens
     , staleTime: 0
   })
-  const titles = tokens.data || []
+  const list = tokens.data || []
 
   function refresh() {
     queryClient.invalidateQueries({queryKey: accessTokensQueryKey}).catch(() => undefined)
@@ -187,18 +230,19 @@ export function AccessTokensCard() {
       {tokens.isError && (
         <Alert variant='light' color='red' p='xs'>{errorMessage(tokens.error)}</Alert>
       )}
-      {tokens.isSuccess && !titles.length && !showGenerate && !generated && (
+      {tokens.isSuccess && !list.length && !showGenerate && !generated && (
         <NothingToShow icon={<IconKey size={30} />} message={t('No access tokens')} />
       )}
-      {titles.length > 0 && (
+      {list.length > 0 && (
         <ul className={`key-list ${classes.list}`}>
-          {titles.map((title, index) => (
+          {list.map(({title, expiresAt}, index) => (
             <li key={`${index}-${title}`} className={classes.item}>
               <ThemeIcon variant='light' color='gray' size={36} radius='md'>
                 <IconKey size={18} />
               </ThemeIcon>
               <div className={`key-list-details selectable ${classes.itemDetails}`}>
                 <Text className='key-list-title' fw={500} size='sm' truncate>{title}</Text>
+                <ExpiryText expiresAt={expiresAt} />
               </div>
               <Button
                 className='key-list-remove'

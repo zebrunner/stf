@@ -2,8 +2,6 @@
 * Copyright © 2019-2024 contains code contributed by Orange SA, authors: Denis Barbaron - Licensed under the Apache license 2.0
 **/
 
-import util from 'util'
-
 import _ from 'lodash'
 import Promise from 'bluebird'
 import * as uuid from 'uuid'
@@ -17,7 +15,7 @@ import wireutil from '../../../wire/util.js'
 import wirerouter from '../../../wire/router.js'
 
 import apiutil from '../../../util/apiutil.js'
-import jwtutil from '../../../util/jwtutil.js'
+import accessTokens from '../../../util/zebrunner-access-tokens.js'
 import type {AccessTokenDocument, DeviceDocument} from '../../../types/stf.js'
 import lockutil from '../../../util/lockutil.js'
 import type {Response} from 'express'
@@ -461,6 +459,8 @@ function addAdbPublicKey(req: ApiRequest, res: Response) {
     })
 }
 
+// Fork (Zebrunner): the id of the route is the secret of the token, the database has its hash only
+// (lib/util/zebrunner-access-tokens.ts); no secret is logged
 function getAccessToken(req: ApiRequest, res: Response) {
   const id = req.swagger.params.id.value
 
@@ -470,12 +470,12 @@ function getAccessToken(req: ApiRequest, res: Response) {
     }
     else {
       apiutil.respond(res, 200, 'Access Token Information', {
-        token: apiutil.publishAccessToken(token)
+        token: accessTokens.published(token, id)
       })
     }
   })
   .catch(function(err) {
-    apiutil.internalError(res, 'Failed to delete access token "%s": ', id, err.stack)
+    apiutil.internalError(res, 'Failed to get an access token: ', err.stack)
   })
 }
 
@@ -484,12 +484,12 @@ function getAccessTokens(req: ApiRequest, res: Response) {
     Promise.promisify<
       AccessTokenDocument[]
     >(cursor.toArray, {context: cursor})().then(function(tokens) {
-      const tokenList: Partial<AccessTokenDocument>[] = []
+      const tokenList: ReturnType<typeof accessTokens.published>[] = []
 
       // Fork (Zebrunner): the id of a token is its secret, given once by its creation: a list (of the user, or of an
       // admin for a user) gives the titles only, so a stolen session or a leaked answer gives no permanent token
       tokens.forEach(function(token) {
-        tokenList.push(_.omit(apiutil.publishAccessToken(token), 'id'))
+        tokenList.push(accessTokens.published(token))
       })
       apiutil.respond(res, 200, 'Access Tokens Information', {tokens: tokenList})
     })
@@ -499,29 +499,32 @@ function getAccessTokens(req: ApiRequest, res: Response) {
   })
 }
 
+// Fork (Zebrunner): the answer has the secret (id) once, the database its hash only; the optional ttl (seconds)
+// gives the token an expiry (expiresAt), without it the token does not expire (lib/util/zebrunner-access-tokens.ts)
 function createAccessToken(req: ApiRequest, res: Response) {
   const title = req.swagger.params.title.value
-  const jwt = jwtutil.encode({
-    payload: {
-      email: req.user.email
-    , name: req.user.name
-    }
-  , secret: req.options.secret
-  })
-  const id = util.format('%s-%s', uuid.v4(), uuid.v4()).replace(/-/g, '')
+  const ttl = req.swagger.params.ttl ? req.swagger.params.ttl.value : null
+  const invalid = accessTokens.ttlError(ttl)
+  if (invalid) {
+    apiutil.respond(res, 400, 'Bad Request (' + invalid + ')')
+    return
+  }
+  const secret = accessTokens.newSecret()
+  const expiresAt = accessTokens.expiryOf(ttl as number | null)
 
   dbapi.saveUserAccessToken(req.user.email, {
     title: title
-  , id: id
-  , jwt: jwt
+  , secret: secret
+  , expiresAt: expiresAt
   })
-  .then(function(stats) {
+  .then(function() {
     req.options.pushdev.send([
       req.user.group
     , wireutil.envelope(new wire.UpdateAccessTokenMessage())
     ])
-    apiutil.respond(res, 201, 'Created (access token)',
-      {token: apiutil.publishAccessToken(stats.changes[0]!.new_val)})
+    apiutil.respond(res, 201, 'Created (access token)', {
+      token: accessTokens.published({title: title, expiresAt: expiresAt}, secret)
+    })
   })
   .catch(function(err) {
     apiutil.internalError(res, 'Failed to create access token "%s": ', title, err.stack)
@@ -552,9 +555,11 @@ function deleteAccessToken(req: ApiRequest, res: Response) {
   dbapi.loadAccessToken(id).then(function(token) {
     if (!token || token.email !== req.user.email) {
       apiutil.respond(res, 404, 'Not Found (access token)')
+      return Promise.resolve()
     }
     else {
-      dbapi.removeAccessToken(id).then(function(stats) {
+      // Fork (Zebrunner): the document of the secret (its hash)
+      return dbapi.removeAccessToken(token.id).then(function(stats) {
         if (!stats.deleted) {
           apiutil.respond(res, 404, 'Not Found (access token)')
         }
@@ -569,7 +574,7 @@ function deleteAccessToken(req: ApiRequest, res: Response) {
     }
   })
   .catch(function(err) {
-    apiutil.internalError(res, 'Failed to delete access token "%s": ', id, err.stack)
+    apiutil.internalError(res, 'Failed to delete an access token: ', err.stack)
   })
 }
 
