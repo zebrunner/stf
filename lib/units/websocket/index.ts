@@ -29,6 +29,7 @@ import jwtutil from '../../util/jwtutil.js'
 import apiutil from '../../util/apiutil.js'
 import adbutil from '../../util/adbutil.js'
 import cypressRequest from '@cypress/request'
+import zebrunnerOrigin from './zebrunner-origin.js'
 import type {DefaultEventsMap} from 'socket.io'
 import type {
   AccountAddMessageFields
@@ -71,7 +72,6 @@ import {touchPathIosMessage} from '../../wire/zebrunner.js'
 import {guardSocket} from '../../util/zebrunner-guard.js'
 import {channelGuard} from './zebrunner-channels.js'
 import zebrunnerSession from '../../util/zebrunner-session.js'
-import zebrunnerOrigin from './zebrunner-origin.js'
 
 var request = Promise.promisifyAll(cypressRequest) as unknown as PromisifiedRequest
 var adb = adbutil()
