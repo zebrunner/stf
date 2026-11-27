@@ -294,6 +294,16 @@ test.describe('STF against a real device', function() {
       await page.click(h.SEL.stopUsing)
       await page.waitForURL(/#\/devices/, {timeout: 60000})
       await expect(page.locator(h.SEL.deviceList)).toBeVisible()
+      // Fork (Zebrunner): the device stays free: the control page that saw it become available
+      // did not take it again (its rejoin of a device a test gave back)
+      async function owner() {
+        const response = await page.request.get('/api/v1/devices/' + SERIAL + '?fields=owner')
+        const body = await response.json()
+        return body.device && body.device.owner ? body.device.owner.email : null
+      }
+      await expect.poll(owner, {message: 'the device released', timeout: 30000}).toBeNull()
+      await page.waitForTimeout(3000)
+      expect(await owner(), 'the device still released 3 s later').toBeNull()
     })
 
   test('[check:playwright_ui] a released device is turned back to portrait',
