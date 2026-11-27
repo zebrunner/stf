@@ -9,7 +9,6 @@ import util from 'util'
 import {Server as Socketio} from 'socket.io'
 import Promise from 'bluebird'
 import _ from 'lodash'
-import * as uuid from 'uuid'
 
 import logger from '../../util/logger.js'
 import authsession from '../../util/authsession.js'
@@ -24,7 +23,6 @@ import zmqutil from '../../util/zmqutil.js'
 import cookieSession from './middleware/cookie-session.js'
 import ip from './middleware/remote-ip.js'
 import auth from './middleware/auth.js'
-import jwtutil from '../../util/jwtutil.js'
 
 import apiutil from '../../util/apiutil.js'
 import adbutil from '../../util/adbutil.js'
@@ -71,6 +69,7 @@ import {touchPathIosMessage} from '../../wire/zebrunner.js'
 import {guardSocket} from '../../util/zebrunner-guard.js'
 import {channelGuard} from './zebrunner-channels.js'
 import zebrunnerSession from '../../util/zebrunner-session.js'
+import accessTokens from '../../util/zebrunner-access-tokens.js'
 
 var request = Promise.promisifyAll(cypressRequest) as unknown as PromisifiedRequest
 var adb = adbutil()
@@ -115,7 +114,8 @@ interface WebsocketClientEvents {
   'device.note': (data: {serial: string, note: string}) => void
   'user.settings.update': (data: object) => void
   'user.settings.reset': () => void
-  'user.keys.accessToken.generate': (data: {title: string}) => void
+  // Fork (Zebrunner): ttl, the lifetime of the token in seconds (none: no expiry)
+  'user.keys.accessToken.generate': (data: {title: string, ttl?: number | null}) => void
   'user.keys.accessToken.remove': (data: {title: string}) => void
   'user.keys.adb.add': (data: {title: string, key: string}) => void
   'user.keys.adb.accept': (data: {title: string, fingerprint: string}) => void
@@ -610,27 +610,28 @@ export default function(options: WebsocketOptions) {
         .on('user.settings.reset', function() {
           dbapi.resetUserSettings(user.email)
         })
+        // Fork (Zebrunner): the database keeps the hash of the token, the optional ttl (seconds) is its expiry
+        // (lib/util/zebrunner-access-tokens.ts); the client gets the token once
         .on('user.keys.accessToken.generate', function(data) {
-          var jwt = jwtutil.encode({
-            payload: {
-              email: user.email
-            , name: user.name
-            }
-          , secret: options.secret
-          })
-
-          var tokenId = util.format('%s-%s', uuid.v4(), uuid.v4()).replace(/-/g, '')
           var title = data.title
+          var invalid = accessTokens.ttlError(data.ttl)
+          if (typeof title !== 'string' || !title || invalid) {
+            log.warn('No access token for %s: %s', user.email, invalid || 'no title')
+            return Promise.resolve()
+          }
+          var tokenId = accessTokens.newSecret()
+          var expiresAt = accessTokens.expiryOf(data.ttl)
 
           return dbapi.saveUserAccessToken(user.email, {
             title: title
-          , id: tokenId
-          , jwt: jwt
+          , secret: tokenId
+          , expiresAt: expiresAt
           })
             .then(function() {
               socket.emit('user.keys.accessToken.generated', {
                 title: title
               , tokenId: tokenId
+              , expiresAt: expiresAt
               })
             })
         })

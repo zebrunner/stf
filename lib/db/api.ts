@@ -17,6 +17,7 @@ import Promise from 'bluebird'
 import _ from 'lodash'
 import logger from '../util/logger.js'
 import deviceutil from '../util/deviceutil.js'
+import accessTokens from '../util/zebrunner-access-tokens.js'
 import type {
   AccessTokenDocument
 , AdbKey
@@ -200,15 +201,21 @@ interface DbApi extends ZebrunnerDbApi {
   loadBookableDevice(groups: string[], serial: string): Promise<DeviceDocument[]>
   loadDeviceByCurrent(groups: string[], serial: string): Promise<DeviceDocument[]>
   loadDeviceByOrigin(groups: string[], serial: string): Promise<DeviceDocument[]>
+  // Fork (Zebrunner): the document keeps the hash of the secret (lib/util/zebrunner-access-tokens.ts)
   saveUserAccessToken(
     email: string
-  , token: Pick<AccessTokenDocument, 'id' | 'title' | 'jwt'>
-  ): Promise<r.WriteResultWithChanges>
+  , token: {secret: string, title: string, expiresAt?: Date | null}
+  ): Promise<r.WriteResult>
   removeUserAccessTokens(email: string): Promise<r.WriteResult>
   removeUserAccessToken(email: string, title: string): Promise<r.WriteResult>
+  // the id of the document (loadAccessToken), not the secret
   removeAccessToken(id: string): Promise<r.WriteResult>
   loadAccessTokens(email: string): Promise<r.Cursor>
-  loadAccessToken(id: string): Promise<AccessTokenDocument | null>
+  // the document of a secret
+  loadAccessToken(secret: string): Promise<AccessTokenDocument | null>
+  // Fork (Zebrunner): stf migrate: the earlier documents (the id is the secret) by the hashes of their secrets;
+  // with the secret of the units, only the ones whose JWT it signed (the others did not work before either)
+  hashAccessTokens(secret?: string): Promise<{hashed: number, kept: number}>
 }
 const log = logger.createLogger('db:api')
 
@@ -1891,13 +1898,12 @@ dbapi.loadDeviceByOrigin = function(groups, serial) {
   })
 }
 
+// Fork (Zebrunner): the hash of the secret, never the secret (upstream: the id was the secret, with a JWT of
+// the user without an expiry), see lib/util/zebrunner-access-tokens.ts
 dbapi.saveUserAccessToken = function(email, token) {
-  return db.run(r.table('accessTokens').insert({
-    email: email
-  , id: token.id
-  , title: token.title
-  , jwt: token.jwt
-  }, {returnChanges: true}))
+  return db.run(r.table('accessTokens').insert(
+    accessTokens.newDocument(token.secret, email, token.title, token.expiresAt || null)
+  ))
 }
 
 dbapi.removeUserAccessTokens = function(email) {
@@ -1922,8 +1928,56 @@ dbapi.loadAccessTokens = function(email) {
   }))
 }
 
-dbapi.loadAccessToken = function(id) {
-  return db.run(r.table('accessTokens').get<AccessTokenDocument>(id))
+// Fork (Zebrunner): the document of the hash of the secret; an earlier document (its id is the secret) until
+// stf migrate hashed it
+dbapi.loadAccessToken = function(secret) {
+  if (typeof secret !== 'string' || !secret) {
+    return Promise.resolve(null)
+  }
+  return db.run(r.table('accessTokens').get<AccessTokenDocument>(accessTokens.hashId(secret)))
+    .then(function(token) {
+      if (token || !accessTokens.isLegacySecret(secret)) {
+        return token
+      }
+      return db.run(r.table('accessTokens').get<AccessTokenDocument>(secret))
+        .then(function(legacy) {
+          if (!legacy || accessTokens.isHashedId(legacy.id)) {
+            return null
+          }
+          log.warn('An access token of "%s" is not hashed yet: run stf migrate', legacy.email)
+          return legacy
+        })
+    })
+}
+
+// Fork (Zebrunner): a hashed document first, then the earlier one is removed: a migration that stopped in between
+// is finished by the next one. With the secret of the units, a token whose JWT another secret signed (it did not work)
+// is kept as it is, so it does not start to work
+dbapi.hashAccessTokens = function(secret) {
+  return db.run(r.table('accessTokens'))
+    .then(function(cursor) {
+      return cursor.toArray() as Promise<AccessTokenDocument[]>
+    })
+    .then(function(all) {
+      var earlier = all.filter(function(token) {
+        return !accessTokens.isHashedId(token.id)
+      })
+      var tokens = earlier.filter(function(token) {
+        return !secret || accessTokens.emailOf(token, secret) !== null
+      })
+      return Promise.mapSeries(tokens, function(token) {
+        return db.run(r.table('accessTokens').insert(
+          accessTokens.hashedDocument(token)
+        , {conflict: 'replace'}
+        ))
+          .then(function() {
+            return db.run(r.table('accessTokens').get(token.id).delete())
+          })
+      })
+        .then(function() {
+          return {hashed: tokens.length, kept: earlier.length - tokens.length}
+        })
+    })
 }
 
 // Fork (Zebrunner): the methods of lib/db/zebrunner.ts

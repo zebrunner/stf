@@ -48,7 +48,20 @@ var handler = function() {
             // bootstrap is updated with new signatures
             return dbapi.updateBootStrap(group, env)
           })
+          // Fork (Zebrunner): the access tokens of an earlier STF (the id was the secret) by the hashes of their
+          // secrets: they keep working, the database has no secret any more (ZEBRUNNER.md#access-tokens)
+          // with SECRET (the secret of the units) only the tokens that worked
           .then(function() {
+            return dbapi.hashAccessTokens(process.env.SECRET)
+          })
+          .then(function(result) {
+            if (result.hashed) {
+              log.info('Hashed %d access tokens', result.hashed)
+            }
+            if (result.kept) {
+              log.warn('Kept %d access tokens of another SECRET as they are: they do not work'
+              , result.kept)
+            }
             resolve(true)
           })
           .catch(function(err) {

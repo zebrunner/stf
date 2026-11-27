@@ -22,6 +22,8 @@ STF uses OAuth 2.0 for authentication. In order to use the API, you will first n
 
 The access token must be included in every request, also the one of the description of the API (`/api/v1/swagger.json`, Zebrunner: no longer public).
 
+Zebrunner: STF keeps the hash of a token only, and a token may have an expiry ("Expires in (days)" of the **Keys** section, `ttl` in seconds of `POST /api/v1/user/accessTokens`), after which it is refused; without it the token does not expire.
+
 Using cURL:
 
 ```bash

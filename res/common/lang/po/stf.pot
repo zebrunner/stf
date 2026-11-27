@@ -2351,3 +2351,23 @@ msgstr ""
 #: res/app/src/core/devices/enhance.ts:32
 msgid "You (or someone else) kicked the device."
 msgstr ""
+
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:57
+msgid "Does not expire"
+msgstr ""
+
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:101
+msgid "Empty: the token does not expire"
+msgstr ""
+
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:61
+msgid "Expired {{date}}"
+msgstr ""
+
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:62
+msgid "Expires {{date}}"
+msgstr ""
+
+#: res/app/src/features/settings/keys/AccessTokensCard.tsx:100
+msgid "Expires in (days)"
+msgstr ""

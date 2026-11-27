@@ -8,6 +8,7 @@ import sinon from 'sinon'
 
 import logger from '../../../lib/util/logger.js'
 import jwtutil from '../../../lib/util/jwtutil.js'
+import accessTokens from '../../../lib/util/zebrunner-access-tokens.js'
 import {importFresh, mockModule} from '../../helpers/module-mock.mts'
 
 var yaml = createRequire(import.meta.url)('js-yaml')
@@ -155,6 +156,22 @@ describe('zebrunner: hub auth', function() {
     , jwt: jwtutil.encode({payload: {email: USER.email, name: 'x'}, secret: 'other'})
     })
     expect((await call({authorization: 'Bearer ' + TOKEN})).code).to.equal(401)
+  })
+
+  it('should take a hashed token until its expiry, also when its user is kept', async function() {
+    var clock = sinon.useFakeTimers({now: Date.now(), toFake: ['Date']})
+    try {
+      dbapi.loadAccessToken.withArgs(TOKEN).resolves(
+        accessTokens.newDocument(TOKEN, USER.email, 'ci', new Date(Date.now() + 1000))
+      )
+      expect((await call({authorization: 'Bearer ' + TOKEN})).code).to.equal(204)
+      clock.tick(1000)
+      expect((await call({authorization: 'Bearer ' + TOKEN})).code).to.equal(401)
+      expect(dbapi.loadAccessToken.callCount).to.equal(2)
+    }
+    finally {
+      clock.restore()
+    }
   })
 
   it('should take the session cookie for the console and admin, not for the hub', async function() {

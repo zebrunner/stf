@@ -21,7 +21,7 @@ import type {Response} from 'express'
 
 import dbapi from '../../../db/api.js'
 import apiutil from '../../../util/apiutil.js'
-import jwtutil from '../../../util/jwtutil.js'
+import accessTokens from '../../../util/zebrunner-access-tokens.js'
 import logger from '../../../util/logger.js'
 import type {ApiRequest} from '../../../types/units-api.js'
 
@@ -87,21 +87,27 @@ function userOfToken(token: string, secret: string): Promise<HubUser | null> {
     return Promise.resolve(cached.user)
   }
   cache.delete(key)
-  function remember(user: HubUser | null) {
+  // a user of a token is not kept past the expiry of the token
+  function remember(user: HubUser | null, expiresAt?: Date | null) {
     if (cache.size >= CACHE_MAX_ENTRIES) {
       cache.clear()
     }
-    cache.set(key, {user: user, until: Date.now() + (user ? CACHE_TTL_MS : REFUSED_TTL_MS)})
+    var until = Date.now() + (user ? CACHE_TTL_MS : REFUSED_TTL_MS)
+    if (expiresAt) {
+      until = Math.min(until, new Date(expiresAt).getTime())
+    }
+    cache.set(key, {user: user, until: until})
     return user
   }
   return Promise.resolve(dbapi.loadAccessToken(token))
     .then(function(stored) {
-      var data = stored && stored.jwt ? jwtutil.decode(stored.jwt, secret) : null
-      if (!data || typeof data.email !== 'string') {
+      // the document of the hash of the token, valid until its expiry (lib/util/zebrunner-access-tokens.ts)
+      var email = accessTokens.emailOf(stored, secret)
+      if (!email) {
         return remember(null)
       }
-      return Promise.resolve(dbapi.loadUser(data.email)).then(function(user) {
-        return remember(user ? hubUser(user) : null)
+      return Promise.resolve(dbapi.loadUser(email)).then(function(user) {
+        return remember(user ? hubUser(user) : null, stored!.expiresAt)
       })
     })
 }

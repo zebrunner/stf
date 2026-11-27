@@ -155,11 +155,15 @@ export interface InstalledAppEntry {
   pathToApp: string
 }
 
+// Fork (Zebrunner): the id is `sha256:<hash of the secret>`; an earlier document (the id is the secret) has
+// the JWT of the user, see lib/util/zebrunner-access-tokens.ts
 export interface AccessTokenDocument {
   id: string
   email: string
   title: string
-  jwt: string
+  jwt?: string
+  createdAt?: Date | null
+  expiresAt?: Date | null
 }
 
 export interface GroupTicket {
