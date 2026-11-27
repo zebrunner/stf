@@ -257,6 +257,10 @@ A sign-in starts a session in the database (`sessions` table, created by `stf mi
 
 A refused callback (state, a denied consent, an unverified or other email) is logged with the reason and the email, never the code or the tokens. Google: authorization URL `https://accounts.google.com/o/oauth2/v2/auth`, token URL `https://oauth2.googleapis.com/token`, user info URL `https://openidconnect.googleapis.com/v1/userinfo`, scope `openid email`. A generic OpenID Connect provider: the `authorization_endpoint`, `token_endpoint` and `userinfo_endpoint` of its `/.well-known/openid-configuration`, scope `openid email`; it must give `email` and `email_verified` in the user info (Keycloak: the "Email verified" of the user).
 
+### WebSocket origin
+
+The session cookie is SameSite=Lax, so a page of the same site (another subdomain of the domain of STF) could open the WebSocket of the UI with the cookie of a signed-in user and act as that user, e.g. make an access token. The websocket unit refuses the handshake of a browser whose `Origin` is none of: an origin of `--allowed-origin` (repeatable, `STF_WEBSOCKET_ALLOWED_ORIGIN`), the origin of `--storage-url` (the public URL, `STF_URL` in mcloud), or the host the request was sent to (`Host`, for a proxy that keeps it, any scheme); `null` and non-http(s) origins are refused (`lib/units/websocket/zebrunner-origin.ts`, the `allowRequest` of socket.io in `lib/units/websocket/index.ts`, logged with the origin). Browsers send `Origin` with every WebSocket handshake, so a handshake without it is not of a browser (a script, a test): it has no cookie of somebody else to use, and goes on to the authentication of the session as before. `stf local` passes the URL of its app (the pages are on another port than the socket). stf-proxy of mcloud checks the same before (an `Origin` of the host of the request only).
+
 ## Storage
 
 With `STF_STORAGE_TOKEN` set, `/s/upload`, `/s/download` and `/s/blob` of the storage units answer only:

@@ -399,6 +399,8 @@ var handler = function(argv: CommandArgv<typeof builder>) {
         , '--secret', argv.authSecret
         , '--storage-url'
         , util.format('http://localhost:%d/', argv.port)
+          // Fork (Zebrunner): the pages of the app open the socket of another port
+        , '--allowed-origin', argv.appUrl || util.format('http://%s:%d/', argv.publicIp, argv.port)
         , '--connect-sub', argv.bindAppPub
         , '--connect-push', argv.bindAppPull
         ])

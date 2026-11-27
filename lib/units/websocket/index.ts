@@ -27,6 +27,7 @@ import auth from './middleware/auth.js'
 import apiutil from '../../util/apiutil.js'
 import adbutil from '../../util/adbutil.js'
 import cypressRequest from '@cypress/request'
+import zebrunnerOrigin from './zebrunner-origin.js'
 import type {DefaultEventsMap} from 'socket.io'
 import type {
   AccountAddMessageFields
@@ -182,9 +183,19 @@ interface WebsocketClientEvents {
 export default function(options: WebsocketOptions) {
   var log = logger.createLogger('websocket')
   var server = http.createServer()
+  // Fork (Zebrunner): a browser opens the socket from the pages of STF only, see zebrunner-origin.ts
+  var origins = zebrunnerOrigin.allowedOrigins(options.allowedOrigins, options.storageUrl)
   var io = new Socketio<WebsocketClientEvents, DefaultEventsMap>(server, {
         serveClient: false
       , transports: ['websocket']
+      , allowRequest: function(req, callback) {
+          var refusal = zebrunnerOrigin.originRefusal(req.headers, origins)
+          if (refusal) {
+            log.warn('Refused a WebSocket of %s: %s', JSON.stringify(req.headers.origin), refusal)
+            return callback('Forbidden', false)
+          }
+          return callback(null, true)
+        }
       })
   var channelRouter = new events.EventEmitter()
 
