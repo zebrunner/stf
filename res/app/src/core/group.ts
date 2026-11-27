@@ -22,10 +22,20 @@ function request(action: 'group.invite' | 'group.kick', device: Device): Promise
     })
 }
 
+// Fork (Zebrunner): the devices this browser released (Stop Using, the device list) since it last took them: the
+// control page of such a device must not take it again when it sees it become available (its "lost device" rejoin,
+// which is for a device a test held and gave back), or Stop Using would end with the device owned again
+const released = new Set<string>()
+
+export function releasedHere(serial: string): boolean {
+  return released.has(serial)
+}
+
 export function inviteDevice(device: Device): Promise<Device> {
   if (!device.usable) {
     return Promise.reject(new Error('Device is not usable'))
   }
+  released.delete(device.serial)
   return request('group.invite', device)
 }
 
@@ -33,5 +43,6 @@ export function kickDevice(device: Device, force = false): Promise<Device> {
   if (!force && !device.usable) {
     return Promise.reject(new Error('Device is not usable'))
   }
+  released.add(device.serial)
   return request('group.kick', device)
 }

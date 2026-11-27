@@ -28,7 +28,7 @@ import {createControl, type Control} from '@/core/control'
 import {useDevice} from '@/core/devices/store'
 import {likelyLeaveReason} from '@/core/devices/enhance'
 import type {Device} from '@/core/devices/types'
-import {inviteDevice} from '@/core/group'
+import {inviteDevice, releasedHere} from '@/core/group'
 import {gettext, useTranslation} from '@/core/i18n'
 import {setSetting, useSetting} from '@/core/settings'
 import {useSocketEvent} from '@/core/socket'
@@ -270,11 +270,16 @@ function ControlSession() {
 
   useEffect(() => {
     if (lost && (deviceState === 'available' || deviceState === 'using')) {
+      // Fork (Zebrunner): the user released it (Stop Using): back to the list, never joined again
+      if (loadedSerial && releasedHere(loadedSerial)) {
+        leaveToDeviceList()
+        return
+      }
       setLost(false)
       previousState.current = null
       setJoined(null)
     }
-  }, [lost, deviceState])
+  }, [lost, deviceState, loadedSerial])
 
   useSocketEvent('temporarily-unavailable', () => {
     setUnavailable('Service is currently unavailable! Try your attempt later.')
