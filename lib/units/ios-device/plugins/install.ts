@@ -129,8 +129,13 @@ function downloadFile(
     }
 
     file.on('error', reject)
-    var headers = storageauth.internalHeaders()
-    var req = httpServer.get(downloadUrl, {headers: headers}, function(response) {
+    var requestOptions: https.RequestOptions = {headers: storageauth.internalHeaders()}
+    // Fork (Zebrunner): the pin of the TLS key of MCloud (MCLOUD_TLS_PIN) for https
+    var agent = storageauth.agentFor(downloadUrl)
+    if (agent) {
+      requestOptions.agent = agent
+    }
+    var req = httpServer.get(downloadUrl, requestOptions, function(response) {
       // an answer of the storage that is not the app (e.g. 401 of the authentication) is not installed
       if (response.statusCode !== 200) {
         response.resume()
